@@ -44,7 +44,6 @@ apnic@router1`. The password is `APNIC2021`. `router1` is a Junos device. Test y
 
 ```bash
 root@group00:~# ssh apnic@router1
-root@group00:~# ssh apnic@router1
 Warning: Permanently added the ECDSA host key for IP address '172.22.0.18' to the list of known hosts.
 Enter passphrase for key '/root/.ssh/id_ed25519': 
 Password:
