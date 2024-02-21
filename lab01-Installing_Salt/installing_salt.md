@@ -84,6 +84,7 @@ apt-get update
 ```
 
 <pre>
+root@group00:~# apt-get update
 Hit:1 http://deb.debian.org/debian buster InRelease
 Hit:2 http://deb.debian.org/debian-security buster/updates InRelease
 Hit:3 http://deb.debian.org/debian buster-updates InRelease
@@ -100,6 +101,7 @@ All packages are up to date.
 apt-get install salt-master
 ```
 <pre>
+root@group00:~# apt-get install -y salt-master
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
@@ -133,9 +135,10 @@ Processing triggers for systemd (232-25+deb9u12) ...
 5. Install the Salt Minion:
 
 ```bash
-apt-get install salt-minion
+apt-get install -y salt-minion
 ```
 <pre>
+root@group00:~# apt-get install -y salt-minion
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
@@ -164,6 +167,7 @@ salt-master -V
 ```
 
 <pre>
+root@group00:~# salt-master -V
 Salt Version:
           Salt: 3006.6
 
