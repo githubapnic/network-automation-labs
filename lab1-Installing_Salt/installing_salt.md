@@ -8,23 +8,24 @@
 * Log into the server using your SSH key. The username is `root`.
 
 **VM Details** 
-	
-	[group01.labs.apnictraining.net]
-	[group02.labs.apnictraining.net]
-	......  
-	[group10.labs.apnictraining.net]
-	[group11.labs.apnictraining.net]
-	......  
-	[group20.labs.apnictraining.net]
-	[group21labs..apnictraining.net]
-	......
-	[group30.labs.apnictraining.net]
+<pre>
+[group01.labs.apnictraining.net]
+[group02.labs.apnictraining.net]
+......  
+[group10.labs.apnictraining.net]
+[group11.labs.apnictraining.net]
+......  
+[group20.labs.apnictraining.net]
+[group21labs..apnictraining.net]
+......
+[group30.labs.apnictraining.net]
+</pre>
 
 Once successfully logged in, the prompt will change to:
 
-```
+<pre>
 root@salt:~#
-```
+</pre>
 
 **Preinstalled packages**
 
@@ -37,10 +38,12 @@ To save time, the following essential packages have been pre-installed on the co
 
 **Check the operating system release**
 
-The most reliable way to check the OS release information is checking the
-`/etc/os-release` file:
+The most reliable way to check the OS release information is checking the `/etc/os-release` file:
 
 ```
+cat /etc/os-release   
+```
+<pre>
 root@group00:~# cat /etc/os-release
 PRETTY_NAME="Debian GNU/Linux 10 (buster)"
 NAME="Debian GNU/Linux"
@@ -51,39 +54,36 @@ ID=debian
 HOME_URL="https://www.debian.org/"
 SUPPORT_URL="https://www.debian.org/support"
 BUG_REPORT_URL="https://bugs.debian.org/"
-```
-
+</pre>
 
 
 ## Part-2: Installing Salt
 
-The official SaltStack repository is the recommended source to be installing
-Salt packages from. SaltStack hosts the repository information at
-https://repo.saltstack.com, with the detailed installation specifics for every
+The official SaltStack repository is the recommended source to be installing Salt packages from. SaltStack hosts the repository information at [https://repo.saltstack.com](https://repo.saltstack.com), with the detailed installation specifics for every
 OS distribution.
 
-As per above (from the `/etc/os-release` file), we will install Salt on a
-_Debian 9 (Stretch)_ machine. Looking under https://docs.saltproject.io/salt/install-guide/en/latest/topics/install-by-operating-system/index.html#install-by-operating-system-index
-and selecting the _Debin 10 (Latest Onedir), we will see the installation
-notes for this specific distribution:
+As per above (from the `/etc/os-release` file), we will install Salt on a _Debian 10 (Buster)_ machine. Looking under [https://docs.saltproject.io/salt/install-guide/en/latest/topics/install-by-operating-system/index.html#install-by-operating-system-index](https://docs.saltproject.io/salt/install-guide/en/latest/topics/install-by-operating-system/index.html#install-by-operating-system-index) and selecting the _Debin 10 (Latest Onedir), we will see the installation notes for this specific distribution:
 
 1. Import the SaltStack repository key:
 
 ```bash
-root@salt:~# mkdir /etc/apt/keyrings
-root@salt:~# curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/debian/10/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
+mkdir -p /etc/apt/keyrings
+curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/debian/10/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
 ```
 
 2. Append the following to the `/etc/apt/sources.list.d/salt.list` file:
 
 ```bash
-root@salt:~# echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.gpg arch=amd64] https://repo.saltproject.io/salt/py3/debian/10/amd64/latest buster main" | tee /etc/apt/sources.list.d/salt.list
+echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.gpg arch=amd64] https://repo.saltproject.io/salt/py3/debian/10/amd64/latest buster main" | tee /etc/apt/sources.list.d/salt.list
 ```
 
 3. Refresh the system package cache:
 
 ```bash
-root@salt:~# apt-get update
+apt-get update
+```
+
+<pre>
 Hit:1 http://deb.debian.org/debian buster InRelease
 Hit:2 http://deb.debian.org/debian-security buster/updates InRelease
 Hit:3 http://deb.debian.org/debian buster-updates InRelease
@@ -92,12 +92,14 @@ Reading package lists... Done
 Building dependency tree
 Reading state information... Done
 All packages are up to date.
-```
+</pre>
 
 4. Install the Salt Master
 
 ```bash
-root@salt:~# apt-get install salt-master
+apt-get install salt-master
+```
+<pre>
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
@@ -122,18 +124,18 @@ Need to get 42.8 MB of archives.
 After this operation, 202 MB of additional disk space will be used.
 Do you want to continue? [Y/n] Y
 
-...
 ... snip ...
-...
 
 Processing triggers for libc-bin (2.24-11+deb9u4) ...
 Processing triggers for systemd (232-25+deb9u12) ...
-```
+</pre>
 
 5. Install the Salt Minion:
 
 ```bash
-root@salt:~# apt-get install salt-minion
+apt-get install salt-minion
+```
+<pre>
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
@@ -150,14 +152,18 @@ Do you want to continue? [Y/n] Y
 
 ...
 ... snip ...
-...
+
 Processing triggers for systemd (232-25+deb9u12) ...
-```
+</pre>
+
 5. Verify the Install
 
 Validate our install with the following command
 ```bash
-root@salt:~# salt-master -V
+salt-master -V
+```
+
+<pre>
 Salt Version:
           Salt: 3006.6
 
@@ -200,7 +206,7 @@ System Versions:
        release: 5.15.0-1047-gcp
         system: Linux
        version: Debian GNU/Linux 10 buster
-```
+</pre>
 
 ---
 **End of Lab**
