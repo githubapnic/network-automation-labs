@@ -10,7 +10,7 @@ The following will install with one command
 - `salt-proxy`
 
 ```bash
-root@salt:~# salt-pip install napalm
+salt-pip install napalm
 ```
 Once done, we can proceed with the rest of the lab
 
@@ -41,17 +41,24 @@ a Pillar file with the connection details.
 
 From your assigned machine, you can log into the devices we have prepared for this course, using SSH, e.g., `ssh 
 apnic@router1`. The password is `APNIC2021`. `router1` is a Junos device. Test you are able to successfully log in:
-
 ```bash
-root@group00:~# ssh apnic@router1
+ssh apnic@router1
+```
+
+
+...
+Sample Output for router SSH
+
 root@group00:~# ssh apnic@router1
 Warning: Permanently added the ECDSA host key for IP address '172.22.0.18' to the list of known hosts.
 Enter passphrase for key '/root/.ssh/id_ed25519': 
 Password:
 Last login: Tue Jan  5 12:32:24 2021 from 10.0.0.2
 --- JUNOS 17.2R1.13 Kernel 64-bit  JNPR-10.3-20170523.350481_build
-apnic> 
-```
+apnic> exit
+...
+... snip ...
+...
 
 (If it asks for the password for the SSH key, simply press `Return`/`Enter`, then log in using the `APNIC2021` password)
 
@@ -89,17 +96,16 @@ This structure ensures that the `router` Proxy Minion will have access to the da
 This is all the preparation required, we can now start our first Proxy Minion, by executing:
 
 ```bash
-root@salt:~# salt-proxy -l debug --proxyid router1
-[DEBUG   ] Reading configuration from /etc/salt/proxy
-[INFO    ] Processing `log_handlers.sentry`
-[DEBUG   ] Grains refresh requested. Refreshing grains.
-[DEBUG   ] Reading configuration from /etc/salt/proxy
-
-...
-... snip ...
-...
+salt-proxy -l debug --proxyid router1
 ```
-
+> [!NOTE]
+> Sample ouput for above command
+````
+[DEBUG   ] Reading configuration from /etc/salt/proxy
+[INFO    ] Processing `log_handlers.sentry` 
+[DEBUG   ] Grains refresh requested. Refreshing grains. 
+[DEBUG   ] Reading configuration from /etc/salt/proxy
+````
 The log is more verbose than with the regular Minion, as there are more steps involved. Along the way, you will be able 
 to notice debug logs such as:
 
@@ -130,8 +136,12 @@ available as Grains.
 
 Once the setup is complete (connection established and the Grains collected), from a separate terminal window you will 
 be able to start executing commands to confirm:
-
 ```bash
+salt router1 test.ping
+```
+> [!NOTE]
+> Sample ouput for above command
+```
 root@salt:~# salt router1 test.ping
 router1:
     True
@@ -174,6 +184,11 @@ The startup is exactly the same, and the intermediate logs are similar to the NA
 To confirm, we can once again execute a simple command such as:
 
 ```
+salt router1 test.ping
+```
+Sample output for test.ping
+
+```
 root@salt:~# salt router1 test.ping
 router1:
     True
@@ -183,7 +198,25 @@ Or display the available Grains:
 
 
 ```bash
+salt router1 grains.items
+```
+Sample output
+```
 root@salt:~# salt router1 grains.items
+router1:
+    ----------
+    cpuarch:
+        x86_64
+    cwd:
+        /root
+    dns:
+        ----------
+        domain:
+        ip4_nameservers:
+            - 127.0.0.11
+        ip6_nameservers:
+        nameservers:
+            - 127.0.0.11
 ... snip ...
 ```
 
@@ -234,6 +267,10 @@ router1:
 And event execute CLI commands on the target device:
 
 ```bash
+salt router1 netmiko.send_command 'show version'
+```
+Sample output for 'show version'
+```
 root@salt:~# salt router1 netmiko.send_command 'show version'
 router1:
 
