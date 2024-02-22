@@ -444,7 +444,6 @@ router1:
     loaded_config:
     result:
         True
-root@salt:~#
 </pre>
 
 As the comment states, you are also able to discard the commit, by executing a specific command.
@@ -478,7 +477,6 @@ router1:
         set system ntp server 10.0.0.1
     result:
         True
-root@salt:~#
 </pre>
 
 ## Part-2: Configuration management using Netmiko
@@ -558,13 +556,11 @@ router1:
     True
 leaf1:
     True
-root@salt:~#
-root@salt:~# salt -L router1,core1,spine1,leaf1 netmiko.send_command 'show version'
-
-...
-... snip ...
-...
 </pre>
+
+```bash
+salt -L router1,core1,spine1,leaf1 netmiko.send_command 'show version'
+```
 
 ### `netmiko.send_config`
 
@@ -675,47 +671,63 @@ root@salt:~#
 As in the previous section, let's start by stopping the Proxy Minions:
 
 ```bash
-root@salt:~# pkill -9 -e -f salt-proxy
+pkill -9 -e -f salt-proxy
 ```
 
-As the Junos PyEZ is focused only on Junos devices, in this scenario we are limited to using only the `router1` and 
-`router2` devices. In that case, updating the `/srv/salt/pillar/junos.sls` file would suffice:
+As the Junos PyEZ is focused only on Junos devices, in this scenario we are limited to using only the `router1` and `router2` devices. In that case, updating the **/srv/salt/pillar/junos.sls** file would suffice:
 
-```yaml
+```bash
+sed -i '/junos/d' /srv/salt/pillar/junos.sls
+sed -i 's/netmiko/junos/' /srv/salt/pillar/junos.sls
+cat /srv/salt/pillar/junos.sls
+```
+
+<pre>
 proxy:
   proxytype: junos
   host: {{ opts.id }}
   username: apnic
   password: APNIC2021
-```
+</pre>
 
 Afterwards, start the Proxy Minions for `router1` and `router2`, respectively:
 
 ```bash
-root@salt:~# salt-proxy --proxyid router1 -d
-root@salt:~# salt-proxy --proxyid router2 -d
-root@salt:~#
+salt-proxy --proxyid router1 -d
+salt-proxy --proxyid router2 -d
+```
+
+Complete a test ping
+
+```bash
+salt router* test.ping
+```
+
+<pre>
 root@salt:~# salt router* test.ping
 router2:
     True
 router1:
     True
-```
+</pre>
 
 Once the Proxies are up and running, take a moment to inspect the collected Grains:
 
 ```bash
-root@salt:~# salt router* grains.items
+salt router* grains.items
 ```
 
-In fact, the Junos Proxy Module, puts the Grains under a dedicated key, `junos_facts`, so whenever you will want to 
-access this data, you will need to nest it under `junos_facts`, e.g.,
+In fact, the Junos Proxy Module, puts the Grains under a dedicated key, `junos_facts`, so whenever you will want to access this data, you will need to nest it under `junos_facts`, e.g.,
 
 ```bash
+salt -G junos_facts:model:VMX --preview
+```
+
+<pre>
 root@salt:~# salt -G junos_facts:model:VMX --preview
 - router1
 - router2
-```
+</pre>
 
 #### `junos.install_config`
 
@@ -723,27 +735,32 @@ The `junos.install_config` function requires the configuration to be provided th
 
 Other optional arguments include:
 
-- `mode`: The mode in which the configuration is locked. Can be one of `private`, `dynamic`, `batch`, `exclusive`. 
-  Default: `exclusive`.
-- `replace`: Specify whether the configuration file uses `replace:` statements. If `True`, only those statements under the `replace` tag will be changed.
-- `format`: Determines the format of the contents.
-- `comment`: Provide a comment for the commit.
-- `confirm`: Provide time in minutes for commit confirmation. If this option is specified, the commit will be rolled 
-  back in the specified amount of time unless the commit is confirmed.
-- `template_vars`: Variables to be passed into the template processing engine in addition to those present in pillar, 
-  the minion configuration, grains, etc.
+- **mode**: The mode in which the configuration is locked. Can be one of `private`, `dynamic`, `batch`, `exclusive`. Default: `exclusive`.
+- **replace**: Specify whether the configuration file uses `replace:` statements. If `True`, only those statements under the `replace` tag will be changed.
+- **format**: Determines the format of the contents.
+- **comment**: Provide a comment for the commit.
+- **confirm**: Provide time in minutes for commit confirmation. If this option is specified, the commit will be rolled back in the specified amount of time unless the commit is confirmed.
+- **template_vars**: Variables to be passed into the template processing engine in addition to those present in pillar, the minion configuration, grains, etc.
 
 For example, let's reuse the static file from _Part-1_, `/srv/salt/static/junos`. As a reminder these are the contents:
 
 ```bash
+cat /srv/salt/static/junos
+```
+
+<pre>
 root@salt:~# cat /srv/salt/static/junos
 set system ntp server 10.0.0.1
 root@salt:~#
-```
+</pre>
 
 As the file is located under the Salt file system, we can reference it as `salt://static/junos`:
 
 ```bash
+salt router* junos.install_config salt://static/junos format=set
+```
+
+<pre>
 root@salt:~# salt router* junos.install_config salt://static/junos format=set
 router1:
     ----------
@@ -757,17 +774,17 @@ router2:
         Successfully loaded and committed!
     out:
         True
-```
+</pre>
 
-Loading the configuration, and specifying that the contents as `set`, will configure the device and commit the results.
-The Junos module doesn't have capabilities to execute a dry-run before deploying the configuration to check the diff.
-It does however provide the individual features in order to somewhat reproduce what you could do from your network 
-device command line. This means, a multi-step procedure:
+Loading the configuration, and specifying that the contents as `set`, will configure the device and commit the results. The Junos module doesn't have capabilities to execute a dry-run before deploying the configuration to check the diff. It does however provide the individual features in order to somewhat reproduce what you could do from your network device command line. This means, a multi-step procedure:
 
-1. Load the configuration, while scheduled a revert (i.e., _commit confirmed_), for example in 1 minute. At the same
-   time, save the diffs into a file.
-   
+1. Load the configuration, while scheduled a revert (i.e., _commit confirmed_), for example in 1 minute. At the same time, save the diffs into a file.
+
    ```bash
+   salt router1 junos.install_config salt://static/junos format=set diffs_file=/tmp/diffs confirm=1
+   ```
+   
+   <pre>
    root@salt:~# salt router1 junos.install_config salt://static/junos format=set diffs_file=/tmp/diffs confirm=1
     router1:
         ----------
@@ -775,22 +792,30 @@ device command line. This means, a multi-step procedure:
             Successfully loaded and committed!
         out:
             True
-    ```
+    </pre>
 
-2. Inspect the contents of the diffs.
+3. Inspect the contents of the diffs.
 
    ```bash
+   cat /tmp/diffs
+   ```
+
+   <pre>
    root@salt:~# cat /tmp/diffs
    
    [edit system]
    +   ntp {
    +       server 10.0.0.1;
    +   }
-   ```
+   </pre>
 
-3. If the config diff looks good, commit so the device won't revert the changes.
+4. If the config diff looks good, commit so the device won't revert the changes.
 
    ```bash
+   salt router1 junos.commit
+   ```
+
+   <pre>
    root@salt:~# salt router1 junos.commit
    router1:
        ----------
@@ -798,17 +823,16 @@ device command line. This means, a multi-step procedure:
            Commit Successful.
        out:
            True
-    ```
+    </pre>
 
 In addition to these function, the Junos module provides for configuration management:
 
-- `junos.commit_check`: Perform a commit check on the configuration.
-- `junos.diff`: Returns the difference between the candidate and the current configuration.
-- `junos.rollback`: Roll back the last committed configuration changes and commit.
-- `junos.set_hostname`: Set the device's hostname.
+- **junos.commit_check**: Perform a commit check on the configuration.
+- **junos.diff**: Returns the difference between the candidate and the current configuration.
+- **junos.rollback**: Roll back the last committed configuration changes and commit.
+- **junos.set_hostname**: Set the device's hostname.
 
-With these, we can consider that we now have the fundamentals to be managing configuration using Salt, for widely-used 
-native modules.
+With these, we can consider that we now have the fundamentals to be managing configuration using Salt, for widely-used native modules.
 
 ---
 **End of Lab**
