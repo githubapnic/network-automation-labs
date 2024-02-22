@@ -577,6 +577,15 @@ Start router1 (Junos)
 salt-proxy --proxyid router1 -d 2> /dev/null
 ```
 
+**NOTE** Sometimes the pkill is still shutting down the proxy and you may see this error.
+
+<pre>
+root@salt:~# salt-proxy --proxyid router1 -d
+The Salt ProxyMinion is shutdown.
+</pre>
+
+If you see this error, just run the command again.
+
 Continue the same operation for core1 (Cisco IOSXR)
 
 ```bash
@@ -594,6 +603,21 @@ Continue the same operation for spine1 (Arista vEOS)
 ```bash
 salt-proxy --proxyid spine1 -d 2> /dev/null
 ```
+
+Confirm the salt-proxy processes that are running
+
+```bash
+ps -aux | grep proxy | grep -v defunct
+```
+
+<pre>
+root@salt:~# ps -aux | grep proxy | grep -v defunct
+root      126067  0.3  0.1 1281720 123624 ?      Sl   06:16   0:07 /usr/local/bin/python /usr/local/bin/salt-proxy --proxyid router1 -d
+root      126292  0.3  0.1 1273508 123508 ?      Sl   06:16   0:06 /usr/local/bin/python /usr/local/bin/salt-proxy --proxyid core1 -d
+root      126521  0.3  0.1 1281480 123436 ?      Sl   06:16   0:07 /usr/local/bin/python /usr/local/bin/salt-proxy --proxyid spine1 -d
+root      126835  0.3  0.1 1273536 123564 ?      Sl   06:18   0:06 /usr/local/bin/python /usr/local/bin/salt-proxy --proxyid leaf1 -d
+root      128360  0.0  0.0   4972  2168 pts/0    S+   06:53   0:00 grep proxy
+</pre>
 
 Then, to confirm they are all up:
 
