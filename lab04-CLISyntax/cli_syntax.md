@@ -10,7 +10,6 @@ below:
 There may be an issue with a conflict with the fingerprint used for Lab01 to Lab03. 
 
 <pre>
-Warning: Identity file salt-lab.key not accessible: No such file or directory.
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -61,6 +60,22 @@ root@salt:~# salt router1 test.ping
 router1:
     True
 </pre>
+
+**Note**: There may be a python error, but the command completes succesfully
+
+<pre>
+  root@salt:~# salt router1 test.ping
+/usr/local/lib/python3.6/site-packages/requests/__init__.py:91: RequestsDependencyWarning: urllib3 (1.26.18) or chardet (3.0.4) doesn't match a supported version!
+  RequestsDependencyWarning)
+router1:
+    True
+</pre>
+
+Add **2> /dev/null** to the end of the commands to suppress the python error. For example:
+
+```bash
+salt router1 test.ping 2> /dev/null
+```
 
 ```bash
 salt spine1 grains.get version
