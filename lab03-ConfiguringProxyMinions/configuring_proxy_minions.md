@@ -133,7 +133,7 @@ salt-key -y -a router1
 Test connectivity to router1
 
 ```bash
-root@salt:~# salt router1 test.ping
+salt router1 test.ping
 ```
 
 <pre>
@@ -206,25 +206,34 @@ salt router1 grains.items
 
 ## Part-3: Configuring the Netmiko Proxy Minion
 
-Similarly to the previous part, let's now switch to using the Netmiko Proxy Module, but updating the 
-`/srv/salt/pillar/router1.sls` file:
+Similarly to the previous part, let's now switch to using the Netmiko Proxy Module, but updating the `/srv/salt/pillar/router1.sls` file:
 
-```yaml
+To update the `/srv/salt/pillar/router1.sls` file:
+
+```bash
+sed -i 's/junos/netmiko/' /srv/salt/pillar/router1.sls
+sed -i '/netmiko/a \ \ device_type: juniper_junos' /srv/salt/pillar/router1.sls
+cat /srv/salt/pillar/router1.sls
+```
+
+<pre>
 proxy:
   proxytype: netmiko
   device_type: juniper_junos
   host: router1
   username: apnic
   password: APNIC2021
-```
+</pre>
 
-The `proxytype` field has been changed to `netmiko`, of course, while `device_type` is the field required by Netmiko in 
-order to identify the platform. See https://docs.saltstack.com/en/3000/ref/proxy/all/salt.proxy.netmiko_px.html for more 
-details and what other platforms are now available to use.
+The `proxytype` field has been changed to `netmiko`, of course, while `device_type` is the field required by Netmiko in order to identify the platform. See https://docs.saltstack.com/en/3000/ref/proxy/all/salt.proxy.netmiko_px.html for more details and what other platforms are now available to use.
 
-Once again, we start the Proxy Minion in the same way as previously:
+Once again, we start the Proxy Minion in the same way as previously. Return the terminal window that is running the Proxy Minion. Press **ctrl+c** to exit the running process, then restart the salt proxy:
 
 ```bash
+salt-proxy -l debug --proxyid router1
+```
+
+<pre>
 root@salt:~# salt-proxy -l debug --proxyid router1
 [DEBUG   ] Reading configuration from /etc/salt/proxy
 [INFO    ] Processing `log_handlers.sentry`
@@ -234,22 +243,29 @@ root@salt:~# salt-proxy -l debug --proxyid router1
 ...
 ... snip ...
 ...
-```
+</pre>
 
-You will notice in the debug logs that the setup is slightly different than previously, as Netmiko connects to the 
-device via pure SSH, unlike NAPALM and Junos, which connect using NETCONF.
+You will notice in the debug logs that the setup is slightly different than previously, as Netmiko connects to the device via pure SSH, unlike NAPALM and Junos, which connect using NETCONF.
 
-Once the Proxy Minion is up, we can start running commands:
+Once the Proxy Minion is up. Return to the other open terminal window and start running commands:
 
 ```bash
+salt router1 test.ping
+```
+
+<pre>
 root@salt:~# salt router1 test.ping
 router1:
     True
-```
+</pre>
 
-And event execute CLI commands on the target device:
+And even execute CLI commands on the target device:
 
 ```bash
+salt router1 netmiko.send_command 'show version'
+```
+
+<pre>
 root@salt:~# salt router1 netmiko.send_command 'show version'
 router1:
 
@@ -269,7 +285,7 @@ router1:
 ...
 ... snip ...
 ...
-```
+</pre>
 
 ---
 **End of Lab**
