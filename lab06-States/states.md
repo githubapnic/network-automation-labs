@@ -27,7 +27,7 @@ Similarly, the Proxy Minions should also be started up:
 ps -aux | grep -v defunct | grep proxy
 ```
 
-If they router1 and router2 Proxy Minions are not running start them with the following commands
+If the router1 and router2 Proxy Minions are not running start them with the following commands
 
 <pre>
 root@salt:~# salt-proxy --proxyid router1 -d
@@ -77,7 +77,7 @@ router1:
 Through the State system now, we can execute with the same effect:
 
 ```bash
-root@salt:~# salt router1 state.apply hostname
+salt router1 state.apply hostname
 ```
 
 <pre>
@@ -147,7 +147,7 @@ Display diffs:
       - junos: Configure hostname
 </pre>
 
-Besides the _Configure hostname_, there's another State defined in the SLS file: _Display diffs_, which executes the `cmd.run` State function: see https://docs.saltstack.com/en/latest/ref/states/all/salt.states.cmd.html for more details. This State runs a simple shell command, `cat /tmp/diff`, in order to display the contents of the `/tmp/diff` file, where the config diffs have been saved. This State however is executed _only_ when _Configure hostname_ is applied successfully.
+Besides the _Configure hostname_, there's another State defined in the SLS file: _Display diffs_, which executes the `cmd.run` State function: see [https://docs.saltstack.com/en/latest/ref/states/all/salt.states.cmd.html](https://docs.saltstack.com/en/latest/ref/states/all/salt.states.cmd.html) for more details. This State runs a simple shell command, `cat /tmp/diff`, in order to display the contents of the `/tmp/diff` file, where the config diffs have been saved. This State however is executed _only_ when _Configure hostname_ is applied successfully.
 
 Firstly let's rollback the changes to the previous state:
 
@@ -336,27 +336,26 @@ Commit config:
 EOF
 ```
 
-This is one of the greatest powers of the State system: building complex workflows. There are other important aspects 
-such as parallelization and execution queueing, but that is beyond the current scope.
+This is one of the greatest powers of the State system: building complex workflows. There are other important aspects such as parallelization and execution queueing, but that is beyond the current scope.
 
 
 ## Part-2: The NetConfig State module
 
-The _NetConfig_ State module is based on NAPALM's capabilities explored in _Lab 5_, and therefore inherits all the 
-features and simplicity. For instance, instead of having a series of states just for checking the diff, we can just 
-execute the state in dry-run mode, by simply passing in the `test=True` flag on the command line.
+The _NetConfig_ State module is based on NAPALM's capabilities explored in _Lab 5_, and therefore inherits all the features and simplicity. For instance, instead of having a series of states just for checking the diff, we can just execute the state in dry-run mode, by simply passing in the `test=True` flag on the command line.
 
 For simplicity, let's stop the running Proxy Minions:
 
 ```bash
-root@salt:~# pkill salt-proxy
-root@salt:~#
+pkill salt-proxy
 ```
 
-In the meantime, the Proxy Minions for all the devices will be started up as Docker containers, and you should be ready 
-to use them:
+In the meantime, the Proxy Minions for all the devices will be started up as Docker containers, and you should be ready to use them:
 
 ```bash
+root@salt:~# salt \* test.ping
+```
+
+<pre>
 root@salt:~# salt \* test.ping
 leaf3:
     True
@@ -382,33 +381,46 @@ router1:
     True
 router2:
     True
-```
+</pre>
 
-Let's open the `hostname.sls` State SLS and ensure the contents are:
+Update the /srv/salt/states/hostname.sls to use the jinja template:
 
-`/srv/salt/states/hostname.sls`
 
-```sls
+```bash
+cat <<EOF > /srv/salt/states/hostname.sls
 Configure hostname:
   netconfig.managed:
     - template_name: salt://templates/hostname.jinja
+EOF
 ```
+
+<pre>
+Configure hostname:
+  netconfig.managed:
+    - template_name: salt://templates/hostname.jinja
+</pre>
 
 The State is referencing the `salt://templates/hostname.jinja`, which has been defined earlier in _Lab 5_:
 
-`/srv/salt/templates/hostname.jinja`
+```bash
+cat /srv/salt/templates/hostname.jinja
+```
 
-```jinja
+<pre>
 {%- if grains.os == 'junos' %}
 set system host-name {{ opts.id }}-{{ grains.vendor }}
 {%- else %}
 hostname {{ opts.id }}-{{ grains.vendor }}
 {%- endif %}
-```
+</pre>
 
 This is all required for now, and we can then execute a dry-run to check the diffs:
 
 ```bash
+salt \* state.apply hostname test=True
+```
+
+<pre>
 root@salt:~# salt \* state.apply hostname test=True
 
 router1:
@@ -493,14 +505,15 @@ Failed:    0
 ------------
 Total states run:     1
 Total run time:   4.115 s
-```
+</pre>
 
-Notice the color scheme on the command line: the output is mostly yellow, due to the `test=True` usage to mark that this 
-is a dry-run and then changes have been reverted, the `unchanged=1` flag in the `Succeeded` section, as well as the
-_Configuration discarded._ message in the `Comment`.
-Now, if we drop the `test=True` flag and execute again, it will effectively apply the changes on the devices and return:
+Notice the color scheme on the command line: the output is mostly yellow, due to the `test=True` usage to mark that this is a dry-run and then changes have been reverted, the `unchanged=1` flag in the `Succeeded` section, as well as the _Configuration discarded._ message in the `Comment`. Now, if we drop the `test=True` flag and execute again, it will effectively apply the changes on the devices and return:
 
 ```bash
+salt \* state.apply hostname
+```
+
+<pre>
 root@salt:~# salt \* state.apply hostname
 router2:
 ----------
@@ -601,16 +614,17 @@ Failed:    0
 ------------
 Total states run:     1
 Total run time:  17.718 s
-```
+</pre>
 
-One interesting detail to notice is the _Total run time_ which depends on the platform being executed on and the 
-transport mechanism being used in order to speak to the network device (i.e., it's slower on Cisco and in general 
-devices that don't have a proper API, where the communication channel is established via SSH / screen scraping, and 
-faster on the others).
+One interesting detail to notice is the _Total run time_ which depends on the platform being executed on and the transport mechanism being used in order to speak to the network device (i.e., it's slower on Cisco and in general devices that don't have a proper API, where the communication channel is established via SSH / screen scraping, and faster on the others).
 
 Let's run again the same command:
 
 ```bash
+salt \* state.apply hostname
+```
+
+<pre>
 root@salt:~# salt \* state.apply hostname
 Executing job with jid 20210108135454878431
 -------------------------------------------
@@ -666,30 +680,42 @@ Failed:    0
 ------------
 Total states run:     1
 Total run time:   4.212 s
+</pre>
+
+The output is slightly different now, the state still succeeds, but without the `changed=1` flag previously seen. Also, the comment says _Already configured_.
+
+Let's make it more interesting and have the `hostname.sls` State save a backup whenever there are changes. For this, we will need our template to do something different, so let's strip the vendor part from the configured hostname, so the template should look just like this:
+
+```bash
+sed -i 's/\-{{ grains.vendor }}//g' /srv/salt/templates/hostname.jinja
+cat /srv/salt/templates/hostname.jinja
 ```
 
-The output is slightly different now, the state still succeeds, but without the `changed=1` flag previously seen. Also, 
-the comment says _Already configured_.
-
-Let's make it more interesting and have the `hostname.sls` State save a backup whenever there are changes. For this, 
-we will need our template to do something different, so let's strip the vendor part from the configured hostname, so the 
-template should look just like this:
-
-`/srv/salt/templates/hostname.jinja`
-
-```jinja
+<pre>
 {%- if grains.os == 'junos' %}
 set system host-name {{ opts.id }}
 {%- else %}
 hostname {{ opts.id }}
 {%- endif %}
-```
+</pre>
 
 Now, let's update the `hostname.sls`, and add another state to backup the configuration:
 
-`/srv/salt/states/hostname.sls`
+```bash
+cat <<EOF >> /srv/salt/states/hostname.sls
 
-```sls
+Backup config:
+  netconfig.saved:
+    - name: /srv/salt/bkups/{{ grains.id }}.conf
+    - source: running
+    - makedirs: true
+    - onchanges:
+      - netconfig: Configure hostname
+EOF
+```
+
+
+<pre>
 Configure hostname:
   netconfig.managed:
     - template_name: salt://templates/hostname.jinja
@@ -701,15 +727,17 @@ Backup config:
     - makedirs: true
     - onchanges:
       - netconfig: Configure hostname
-```
+</pre>
 
-The latter State, named _Backup config_ saves the running configuration of each device, into a file under the 
-`/srv/salt/bkups/` directory, whose naming depends on the Minion ID (`grains.id`) - but _only_ when the _Configure 
-hostname_ State renders changes, thanks to the `onchanges` keyword.
+The latter State, named _Backup config_ saves the running configuration of each device, into a file under the `/srv/salt/bkups/` directory, whose naming depends on the Minion ID (`grains.id`) - but _only_ when the _Configure hostname_ State renders changes, thanks to the `onchanges` keyword.
 
 Running the state:
 
 ```bash
+salt \* state.apply hostname
+```
+
+<pre>
 root@salt:~# salt \* state.apply hostname
 router2:
 ----------
@@ -745,13 +773,17 @@ Failed:    0
 ------------
 Total states run:     2
 Total run time:   2.054 s
-```
+</pre>
 
 Notice that there are two states being executed on each device.
 
 Running the state again, it will produce no action:
 
+```bash
+salt \* state.apply hostname
 ```
+
+<pre>
 root@salt:~# salt \* state.apply hostname
 router1:
 ----------
@@ -779,7 +811,7 @@ Failed:    0
 ------------
 Total states run:     2
 Total run time:   1.361 s
-```
+</pre>
 
 ## Part-3: Generating ACL configuration using Capirca
 
