@@ -336,6 +336,90 @@ Commit config:
 EOF
 ```
 
+Run the state apply command again
+
+```bash
+salt router1 state.apply hostname
+```
+
+<pre>
+root@salt:~# salt router1 state.apply hostname
+router1:
+----------
+          ID: Configure hostname
+    Function: junos.install_config
+        Name: salt://static/junos
+      Result: True
+     Comment:
+     Started: 08:59:07.527369
+    Duration: 482.411 ms
+     Changes:
+              ----------
+              message:
+                  Configuration already applied!
+              out:
+                  True
+----------
+          ID: Display diffs
+    Function: cmd.run
+        Name: cat /tmp/diff
+      Result: True
+     Comment: Command "cat /tmp/diff" run
+     Started: 08:59:08.010675
+    Duration: 11.349 ms
+     Changes:
+              ----------
+              pid:
+                  134269
+              retcode:
+                  0
+              stderr:
+              stdout:
+----------
+          ID: Check diffs
+    Function: file.managed
+        Name: /tmp/diff
+      Result: True
+     Comment: File /tmp/diff updated
+     Started: 08:59:08.027769
+    Duration: 36.298 ms
+     Changes:
+              ----------
+              diff:
+                  ---
+                  +++
+                  @@ -0,0 +1,5 @@
+                  +
+                  +[edit system]
+                  ++   ntp {
+                  ++       server 10.0.0.1;
+                  ++   }
+----------
+          ID: Configuration differs
+    Function: test.fail_without_changes
+      Result: False
+     Comment: Failure!
+     Started: 08:59:08.065952
+    Duration: 1.421 ms
+     Changes:
+----------
+          ID: Commit config
+    Function: junos.commit
+      Result: False
+     Comment: One or more requisite failed: hostname.Configuration differs
+     Started: 08:59:08.067712
+    Duration: 0.003 ms
+     Changes:
+
+Summary for router1
+------------
+Succeeded: 3 (changed=3)
+Failed:    2
+------------
+Total states run:     5
+Total run time: 531.482 ms
+</pre>
+
 This is one of the greatest powers of the State system: building complex workflows. There are other important aspects such as parallelization and execution queueing, but that is beyond the current scope.
 
 
@@ -352,7 +436,7 @@ pkill salt-proxy
 In the meantime, the Proxy Minions for all the devices will be started up as Docker containers, and you should be ready to use them:
 
 ```bash
-root@salt:~# salt \* test.ping
+salt \* test.ping
 ```
 
 <pre>
