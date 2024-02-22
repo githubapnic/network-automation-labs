@@ -899,13 +899,15 @@ Total run time:   1.361 s
 
 ## Part-3: Generating ACL configuration using Capirca
 
-[`Capirca`](https://github.com/google/capirca) is an open-source Python library and tool, which generates ACL 
-configuration based on abstracted data (i.e., the input data is non vendor-specific).
+[`Capirca`](https://github.com/google/capirca) is an open-source Python library and tool, which generates ACL configuration based on abstracted data (i.e., the input data is non vendor-specific).
 
-For instance, the following command generates the Arista-specific configuration for an ACL filter named _filter-name_,
-which allows traffic from `172.17.0.0/16` to `192.168.0.0/16`:
+For instance, the following command generates the Arista-specific configuration for an ACL filter named _filter-name_, which allows traffic from `172.17.0.0/16` to `192.168.0.0/16`:
 
 ```bash
+salt router1 capirca.get_term_config arista filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
+```
+
+<pre>
 root@salt:~# salt router1 capirca.get_term_config arista filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
 router1:
     ! $Date: 2021/01/08 $
@@ -917,12 +919,15 @@ router1:
      permit ip 172.17.0.0/16 192.168.0.0/24
     
     exit
-```
+</pre>
 
-With the exact same input, just updating the platform name to _juniper_, it would provide the configuration for 
-a Juniper device:
+With the exact same input, just updating the platform name to _juniper_, it would provide the configuration for a Juniper device:
 
 ```bash
+salt router1 capirca.get_term_config juniper filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
+```
+
+<pre>
 root@salt:~# salt router1 capirca.get_term_config juniper filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
 router1:
     firewall {
@@ -948,18 +953,17 @@ router1:
             }
         }
     }
+</pre>
+
+An interesting nuance to understand is that while NAPALM provides abstraction when retrieving data, Capirca provides it by generating vendor-specific configuration given pure data.
+
+These functions, as any other Salt execution function, can be executed through the State system and the output loaded into the device. But there's an even simpler way, using the _NetACL_ State module which integrates nicely with the NAPALM Proxy Minions. Consider the following State SLS:
+
+```bash
+cat /srv/salt/states/acl.sls
 ```
 
-An interesting nuance to understand is that while NAPALM provides abstraction when retrieving data, Capirca provides it 
-by generating vendor-specific configuration given pure data.
-
-These functions, as any other Salt execution function, can be executed through the State system and the output loaded 
-into the device. But there's an even simpler way, using the _NetACL_ State module which integrates nicely with the 
-NAPALM Proxy Minions. Consider the following State SLS:
-
-`/srv/salt/states/acl.sls`
-
-```sls
+<pre>
 Configure ACL:
   netacl.filter:
     - filter_name: filter-name
@@ -968,14 +972,17 @@ Configure ACL:
           source_address: 172.17.0.0/16
           destination_address: 192.168.0.0/24
           action: accept
-```
+</pre>
 
-The State configuration is the equivalent of the CLI executed above. Notice that the platform name isn't explicitly 
-specified, as it implies to use the platform the States is being executed on.
+The State configuration is the equivalent of the CLI executed above. Notice that the platform name isn't explicitly specified, as it implies to use the platform the States is being executed on.
 
 Running the following command would deploy the ACL configuration:
 
 ```bash
+salt \* state.apply acl test=True
+```
+
+<pre>
 root@salt:~# salt \* state.apply acl test=True
 router1:
 ----------
@@ -1113,11 +1120,9 @@ Failed:    0
 ------------
 Total states run:     1
 Total run time:  14.692 s
-```
+</pre>
 
-This shows how we can abstract away data, while having the configuration generated for each platform individually, 
-through the State system. Using these patterns, we are able to expand this and defined complex, cross-vendor 
-configuration management, without any limits.
+This shows how we can abstract away data, while having the configuration generated for each platform individually, through the State system. Using these patterns, we are able to expand this and defined complex, cross-vendor configuration management, without any limits.
 
 ---
 **End of Lab**
