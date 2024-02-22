@@ -21,7 +21,7 @@ base:
     - ios
 </pre>
 
-This structure ensures that the routers use the `junos.sls` file, the cores are provided with the Pillar data from **iosxr.sls** and so on. In the next sections we will be looking at each of these files individually and update them with the desired contents.
+This structure ensures that the routers use the **junos.sls** file, the cores are provided with the Pillar data from **iosxr.sls** and so on. In the next sections we will be looking at each of these files individually and update them with the desired contents.
 
 ## Part-1: Configuration management using NAPALM
 
@@ -29,7 +29,7 @@ This structure ensures that the routers use the `junos.sls` file, the cores are 
 
 Firstly, let's go through each of the `junos.sls`, `iosxr.sls`, `eos.sls` and `ios.sls` Pillar file to ensure they are pointing to the NAPALM Proxy Module.
 
-Confirm the Pillar Top File has **napalm** configured as the proxytype:
+Confirm the Pillar SLS Files have **napalm** configured as the proxytype:
 
 ```bash
 grep -in napalm /srv/salt/pillar/*.sls
@@ -493,39 +493,62 @@ pkill -9 -e -f salt-proxy
 
 Without changing anything in the Pillar Top File, we only need to update the individual Pillar file for each platform.
 
-`/srv/salt/pillar/junos.sls` should be:
+Update **/srv/salt/pillar/junos.sls** by completing these commands
 
-```yaml
+```bash
+sed -i 's/napalm/netmiko/' /srv/salt/pillar/*.sls
+sed -i 's/driver/device_type/' /srv/salt/pillar/*.sls
+sed -i 's/junos/juniper_junos/' /srv/salt/pillar/junos.sls
+cat /srv/salt/pillar/junos.sls
+```
+
+<pre>
 proxy:
   proxytype: netmiko
   device_type: juniper_junos
   host: {{ opts.id }}
   username: apnic
   password: APNIC2021
-```
+</pre>
 
-The `proxytype` should now point to `netmiko`, while the `device_type` should be `juniper_junos` as documented in 
-https://docs.saltstack.com/en/master/ref/proxy/all/salt.proxy.netmiko_px.html, as this is what Netmiko expects.
+The `proxytype` should now point to `netmiko`, while the `device_type` should be `juniper_junos` as documented in [https://docs.saltstack.com/en/master/ref/proxy/all/salt.proxy.netmiko_px.html](https://docs.saltstack.com/en/master/ref/proxy/all/salt.proxy.netmiko_px.html), as this is what Netmiko expects.
 
 Similarly, the `device_type` will be as following:
 
-- `cisco_xr` in `/srv/salt/pillar/iosxr.sls`
-- `arista_eos` in `/srv/salt/pillar/eos.sls`
-- `cisco_ios` in `/srv/salt/pillar/ios.sls`
+Update the device type to cisco_xr in /srv/salt/pillar/iosxr.sls:
+
+```bash
+sed -i 's/iosxr/cisco_xr/' /srv/salt/pillar/iosxr.sls
+```
+
+Set device type to arista_eos in /srv/salt/pillar/eos.sls
+
+```bash
+sed -i 's/eos/arista_eos/' /srv/salt/pillar/eos.sls
+```
+
+Set device type to cisco_ios in /srv/salt/pillar/ios.sls
+
+```bash
+sed -i 's/ios/cisco_ios/' /srv/salt/pillar/iosxr.sls
+```
 
 With that said, we can then start the Proxy Minions for each, in the exact same way as previously:
 
 ```bash
-root@salt:~# salt-proxy --proxyid router1 -d
-root@salt:~# salt-proxy --proxyid core1 -d
-root@salt:~# salt-proxy --proxyid spine1 -d
-root@salt:~# salt-proxy --proxyid leaf1 -d
-root@salt:~#
+salt-proxy --proxyid router1 -d
+salt-proxy --proxyid core1 -d
+salt-proxy --proxyid spine1 -d
+salt-proxy --proxyid leaf1 -d
 ```
 
 Then, to confirm they are all up:
 
 ```bash
+salt -L router1,core1,spine1,leaf1 test.ping
+```
+
+<pre>
 root@salt:~# salt -L router1,core1,spine1,leaf1 test.ping
 core1:
     True
@@ -541,29 +564,24 @@ root@salt:~# salt -L router1,core1,spine1,leaf1 netmiko.send_command 'show versi
 ...
 ... snip ...
 ...
-```
+</pre>
 
 ### `netmiko.send_config`
 
-While the features available for Netmiko aren't as diverse as when working with NAPALM, we are still able to execute the 
-`netmiko.send_config` function which accepts the config either as a template, or a list of configuration lines to be 
-deployed on the device. This function has the following arguments:
+While the features available for Netmiko aren't as diverse as when working with NAPALM, we are still able to execute the **netmiko.send_config** function which accepts the config either as a template, or a list of configuration lines to be deployed on the device. This function has the following arguments:
 
-- `config_file`: The source file with the configuration commands to be sent to the device. As with NAPALM's 
-  `net.load_config` and `net.load_template` functions, this argument accepts files specified as absolute path, or using 
-  the `salt://`, `http(s)://`, `s3://`, `ftp:/` URIs.
-- `config_commands`: A list of configuration commands to deploy. The configuration lines can similarly be rendered using 
-  the template language of choice.
-- `commit`: Boolean value, by default `False`, as most of the platforms managed through Netmiko don't have explicit
-  commit capabilities. For platforms such as Cisco IOS that don't have explicit commit mechanisms (i.e., configuration 
-  is automatically deployed into the running config), this is the default implicit behaviour. **Important**: due to this 
-  Netmiko design, on WYSIWYG platforms such as Cisco IOS, there is no dry-run mechanism and everything is directly 
-  deployed into the running config.
+- **config_file**: The source file with the configuration commands to be sent to the device. As with NAPALM's `net.load_config` and `net.load_template` functions, this argument accepts files specified as absolute path, or using the `salt://`, `http(s)://`, `s3://`, `ftp:/` URIs.
+- **config_commands**: A list of configuration commands to deploy. The configuration lines can similarly be rendered using the template language of choice.
+- **commit**: Boolean value, by default `False`, as most of the platforms managed through Netmiko don't have explicit commit capabilities. For platforms such as Cisco IOS that don't have explicit commit mechanisms (i.e., configuration is automatically deployed into the running config), this is the default implicit behaviour. **Important**: due to this Netmiko design, on WYSIWYG platforms such as Cisco IOS, there is no dry-run mechanism and everything is directly deployed into the running config.
 
 
 Let's see how we can apply changes on a Junos device:
 
 ```bash
+salt router1 netmiko.send_config config_commands="['set system ntp server 10.0.0.1']"
+```
+
+<pre>
 root@salt:~# salt router1 netmiko.send_config config_commands="['set system ntp server 10.0.0.1']"
 router1:
     configure
@@ -580,14 +598,15 @@ router1:
 
     apnic@router1>
 root@salt:~#
-```
+</pre>
 
-As one can notice, unfortunately, the configuration-management capabilities of Netmiko are more limited, and the return 
-isn't as structured as when working with NAPALM, while the config diff is not returned either. But there is an 
-workaround that: in the list of configuration changes to be loaded, at the very end, insert the platform-specific 
-command that will show the config diff. On Junos, that is `show | compare`:
+As one can notice, unfortunately, the configuration-management capabilities of Netmiko are more limited, and the return isn't as structured as when working with NAPALM, while the config diff is not returned either. But there is an workaround that: in the list of configuration changes to be loaded, at the very end, insert the platform-specific command that will show the config diff. On Junos, that is `show | compare`:
 
 ```bash
+salt router1 netmiko.send_config config_commands="['set system ntp server 10.0.0.1', 'show | compare']" commit=True
+```
+
+<pre>
 root@salt:~# salt router1 netmiko.send_config config_commands="['set system ntp server 10.0.0.1', 'show | compare']" commit=True
 router1:
     configure 
@@ -610,25 +629,30 @@ router1:
     
     [edit]
     apnic@router1# 
+</pre>
+
+We are able to re-use the previous `salt://templates/hostname.jinja` template, with one big difference: Netmiko doesn't provide the Grains in the same way as NAPALM. For this reasoning, the template must be slightly adjusted; while it's less flexible, we can use other data inputs to model the cross-platform behaviour:
+
+```bash
+cat /srv/salt/templates/hostname-netmiko.jinja
 ```
 
-We are able to re-use the previous `salt://templates/hostname.jinja` template, with one big difference: Netmiko doesn't 
-provide the Grains in the same way as NAPALM. For this reasoning, the template must be slightly adjusted; while it's 
-less flexible, we can use other data inputs to model the cross-platform behaviour:
-
-`/srv/salt/templates/hostname-netmiko.jinja`
-
-```jinja
+<pre>
+root@salt:~# cat /srv/salt/templates/hostname-netmiko.jinja
 {%- if pillar.proxy.device_type == 'juniper_junos' %}
 set system host-name {{ opts.id }}-{{ pillar.proxy.device_type }}
 {%- else %}
 hostname {{ opts.id }}-{{ pillar.proxy.device_type }}
 {%- endif %}
-```
+</pre>
 
 Executing against two Cisco platforms, it returns:
 
 ```bash
+salt -L core1,leaf1 netmiko.send_config salt://templates/hostname-netmiko.jinja
+```
+
+<pre>
 root@salt:~# salt -L core1,leaf1 netmiko.send_config salt://templates/hostname-netmiko.jinja
 core1:
     config term
@@ -644,7 +668,7 @@ leaf1:
     leaf1-cisco_ios(config)#end
     leaf1-cisco_ios#
 root@salt:~#
-```
+</pre>
 
 ## Part-3: Configuration management using PyEZ
 
