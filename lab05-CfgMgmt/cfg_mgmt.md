@@ -294,7 +294,6 @@ root@salt:# cat /srv/salt/templates/junos.jinja
 set system host-name {{ opts.id }}-{{ grains.vendor }}
 </pre>
 
-For the spine level, `/srv/salt/templates/eos.jinja` would have, in this particular scenario, the same contents as `/srv/salt/templates/iosxr.jinja`:
 
 ```bash
 salt router1 net.load_template salt://templates/junos.jinja test=True debug=True
@@ -316,6 +315,15 @@ router1:
         set system host-name router1-Juniper
     result:
         True
+</pre>
+
+For the spine level, `/srv/salt/templates/eos.jinja` would have, in this particular scenario, the same contents as `/srv/salt/templates/iosxr.jinja`:
+
+```bash
+salt spine1 net.load_template salt://templates/eos.jinja test=True debug=True
+```
+
+<pre>
 root@salt:~# salt spine1 net.load_template salt://templates/eos.jinja test=True debug=True
 spine1:
     ----------
