@@ -563,11 +563,28 @@ sed -i 's/ios/cisco_ios/' /srv/salt/pillar/iosxr.sls
 
 With that said, we can then start the Proxy Minions for each, in the exact same way as previously:
 
+Start router1 (Junos)
+
 ```bash
-salt-proxy --proxyid router1 -d
-salt-proxy --proxyid core1 -d
-salt-proxy --proxyid spine1 -d
-salt-proxy --proxyid leaf1 -d
+salt-proxy --proxyid router1 -d 2> /dev/null
+```
+
+Continue the same operation for core1 (Cisco IOSXR)
+
+```bash
+salt-proxy --proxyid core1 -d 2> /dev/null
+```
+
+Continue the same operation for leaf1 (Cisco IOS)
+
+```bash
+salt-proxy --proxyid leaf1 -d 2> /dev/null
+```
+
+Continue the same operation for spine1 (Arista vEOS)
+
+```bash
+salt-proxy --proxyid spine1 -d 2> /dev/null
 ```
 
 Then, to confirm they are all up:
