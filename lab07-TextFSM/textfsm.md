@@ -1,37 +1,31 @@
 ![](images/apnic_logo.png)
 # LAB: Parsing Text Output using TextFSM
 
-For simplicity, all the Proxy Minions for this lab are already started, using the NAPALM Proxy Module. The topic covered 
-in the _Part-1_ however are widely available to any Minion flavour, as long as the `textfsm` library is installed.
+For simplicity, all the Proxy Minions for this lab are already started, using the NAPALM Proxy Module. The topic covered in the _Part-1_ however are widely available to any Minion flavour, as long as the `textfsm` library is installed.
 
 ## Part-1: Using TextFSM through Salt
 
-In this section, we will be using the 
-[`textfsm`](https://docs.saltstack.com/en/master/ref/modules/all/salt.modules.textfsm_mod.html) Salt module which can be 
-used to apply TextFSM operations using arbitrary input text and FSM templates. There are two functions available in this 
-module: `textfsm.extract` and `textfsm.index`:
+In this section, we will be using the [`textfsm`](https://docs.saltstack.com/en/master/ref/modules/all/salt.modules.textfsm_mod.html) Salt module which can be used to apply TextFSM operations using arbitrary input text and FSM templates. There are two functions available in this module: `textfsm.extract` and `textfsm.index`:
 
-- `textfsm.extract` applies the TextFSM template on a text (either provided via the CLI or through a file), then returns 
-  the data it extracted.
-- `testfsm.index` dynamically determines what TextFSM template to apply to a specific text output, based on the various 
-  parameters (command, platform, etc.). The value of this functionality is better understood through cross-vendor 
-  examples, as we will see in _Part-2_ of this lab, so we won't focus on this just yet.
+- **textfsm.extract** applies the TextFSM template on a text (either provided via the CLI or through a file), then returns the data it extracted.
+- **testfsm.index** dynamically determines what TextFSM template to apply to a specific text output, based on the various parameters (command, platform, etc.). The value of this functionality is better understood through cross-vendor examples, as we will see in _Part-2_ of this lab, so we won't focus on this just yet.
 
 ### `textfsm.extract`
 
 The `textfsm.extract` function accepts the following arguments:
 
-- `template_path`: The path to the TextFSM template. This can either be an absolute path or using on the usual URI 
-  schemes `salt://`, `http(s)://`, `s3://`, `ftp://`, `swift://`, etc.
-- `raw_text`: The input text where to extract the data from.
-- `raw_text_file`: The file having the text contents to read from. Supports the same URI schemes as `template_path`.
-- `saltenv`: The name of the Salt environment (particularly useful when using the `salt://` URI scheme).
+- **template_path**: The path to the TextFSM template. This can either be an absolute path or using on the usual URI schemes `salt://`, `http(s)://`, `s3://`, `ftp://`, `swift://`, etc.
+- **raw_text**: The input text where to extract the data from.
+- **raw_text_file**: The file having the text contents to read from. Supports the same URI schemes as `template_path`.
+- **saltenv**: The name of the Salt environment (particularly useful when using the `salt://` URI scheme).
 
 Let's have a file with the following contents:
 
-`/srv/salt/textfsm/eos_show_version.txt`
-
+```bash
+cat /srv/salt/textfsm/eos_show_version.txt
 ```
+
+<pre>
 Arista vEOS
 Hardware version:
 Serial number:
@@ -45,13 +39,15 @@ Internal build ID:      6fcb426e-70a9-48b8-8958-54bb72ee28ed
 Uptime:                 3 days, 23 hours and 18 minutes
 Total memory:           1893316 kB
 Free memory:            609540 kB
-```
+</pre>
 
 The TextFSM template, as discussed in the _Module 9_ slides is:
 
-`/srv/salt/textfsm/eos_show_version.fsm`
-
+```bash
+cat /srv/salt/textfsm/eos_show_version.fsm
 ```
+
+<pre>
 Value MODEL (\S*)
 Value HARDWARE_VERSION (\S+)
 Value SERIAL (\S*)
@@ -64,11 +60,15 @@ Start
   ^Serial\s*number:\s+${SERIAL}
   ^System\s*MAC\s*address:\s+${SYSTEM_MAC}
   ^Software\s*image version:\s+${SOFTWARE_VERSION} -> Record
-```
+</pre>
 
 As both files are located under the Salt filesystem, we can use the `salt://` URI scheme, so we can execute:
 
 ```bash
+salt router1 textfsm.extract salt://textfsm/eos_show_version.fsm raw_text_file=salt://textfsm/eos_show_version.txt
+```
+
+<pre>
 root@salt:~# salt router1 textfsm.extract salt://textfsm/eos_show_version.fsm raw_text_file=salt://textfsm/eos_show_version.txt
 router1:
     ----------
@@ -86,21 +86,28 @@ router1:
               5254.0087.87be
     result:
         True
-```
+</pre>
 
 The return is nothing else than a structured object, a list of Python dictionaries, more specifically:
 
 ```bash
-root@salt:~# salt router1 textfsm.extract salt://textfsm/eos_show_version.fsm raw_text_file=salt://textfsm/eos_show_version.txt --out=raw
-{'router1': {'result': True, 'comment': '', 'out': [{'model': 'vEOS', 'hardware_version': '', 'serial': '', 'system_mac': '5254.0087.87be', 'software_version': '4.18.1F'}]}}
+salt router1 textfsm.extract salt://textfsm/eos_show_version.fsm raw_text_file=salt://textfsm/eos_show_version.txt --out=raw
 ```
 
-The actual TextFSM parsing result is nested under the `out` key, while the others, `result` and `comment` respectively 
-are helpers that tell whether the parsing succeeded.
+<pre>
+root@salt:~# salt router1 textfsm.extract salt://textfsm/eos_show_version.fsm raw_text_file=salt://textfsm/eos_show_version.txt --out=raw
+{'router1': {'result': True, 'comment': '', 'out': [{'model': 'vEOS', 'hardware_version': '', 'serial': '', 'system_mac': '5254.0087.87be', 'software_version': '4.18.1F'}]}}
+</pre>
+
+The actual TextFSM parsing result is nested under the `out` key, while the others, `result` and `comment` respectively are helpers that tell whether the parsing succeeded.
 
 For example, if we were to provide an incorrect path, we'd get the following return:
 
 ```bash
+root@salt:~# salt router1 textfsm.extract salt://textfsm/fake raw_text_file=salt://textfsm/fake
+```
+
+<pre>
 root@salt:~# salt router1 textfsm.extract salt://textfsm/fake raw_text_file=salt://textfsm/fake
 router1:
     ----------
@@ -111,12 +118,16 @@ router1:
     result:
         False
 ERROR: Minions returned with non-zero exit code
+</pre>
+
+Similarly, when the TextFSM template exists, but there's a coding error. Let's remove the first line from `/srv/salt/textfsm/eos_show_version.fsm` (the definition of the `MODEL` variable):
+
+```bash
+sed -i 's/Value MODEL/d' /srv/salt/textfsm/eos_show_version.fsm
+cat /srv/salt/textfsm/eos_show_version.fsm
 ```
 
-Similarly, when the TextFSM template exists, but there's a coding error. Let's remove the first line from 
-`/srv/salt/textfsm/eos_show_version.fsm` (the definition of the `MODEL` variable):
-
-```
+<pre>
 Value HARDWARE_VERSION (\S+)
 Value SERIAL (\S*)
 Value SYSTEM_MAC (\S*)
@@ -128,11 +139,15 @@ Start
   ^Serial\s*number:\s+${SERIAL}
   ^System\s*MAC\s*address:\s+${SYSTEM_MAC}
   ^Software\s*image version:\s+${SOFTWARE_VERSION} -> Record
-```
+</pre>
 
 Re-running the previous command, it would return:
 
 ```bash
+root@salt:~# salt router1 textfsm.extract salt://textfsm/eos_show_version.fsm raw_text_file=salt://textfsm/eos_show_version.txt
+```
+
+<pre>
 root@salt:~# salt router1 textfsm.extract salt://textfsm/eos_show_version.fsm raw_text_file=salt://textfsm/eos_show_version.txt
 router1:
     ----------
@@ -143,12 +158,9 @@ router1:
     result:
         False
 ERROR: Minions returned with non-zero exit code
-```
+</pre>
 
-As the `textfsm` module is available from any Minion type (and, implicitly, any Proxy Minion - thus the Netmiko and 
-Junos we've visited already), we can use it in conjunction with any function that retrieves CLI output from the network 
-devices - e.g., `netmiko.send_command`, or `junos.cli`, etc., then send that output to the `textfsm` module to extract 
-the information required.
+As the `textfsm` module is available from any Minion type (and, implicitly, any Proxy Minion - thus the Netmiko and Junos we've visited already), we can use it in conjunction with any function that retrieves CLI output from the network devices - e.g., `netmiko.send_command`, or `junos.cli`, etc., then send that output to the `textfsm` module to extract the information required.
 
 ## Part-2: Extracting information from show-commands using the `net.cli` function
 
