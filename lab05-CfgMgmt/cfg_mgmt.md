@@ -79,7 +79,15 @@ If everything goes normally, we can then SIGKILL (Ctrl-C) the process, and start
 salt-proxy --proxyid router1 -d
 ```
 
-Continue the same operation for `core1`, `spine1`, and `leaf1`. Verify that the Proxy Minions respond correctly, by running, for example:
+Continue the same operation for `core1`, `spine1`, and `leaf1`. 
+
+```bash
+salt-proxy --proxyid core1 -d
+salt-proxy --proxyid leaf1 -d
+salt-proxy --proxyid spine1 -d
+```
+
+Verify that the Proxy Minions respond correctly, by running, for example:
 
 ```bash
 salt -L router1,core1,spine1,leaf1 test.ping
