@@ -104,7 +104,7 @@ The actual TextFSM parsing result is nested under the `out` key, while the other
 For example, if we were to provide an incorrect path, we'd get the following return:
 
 ```bash
-root@salt:~# salt router1 textfsm.extract salt://textfsm/fake raw_text_file=salt://textfsm/fake
+salt router1 textfsm.extract salt://textfsm/fake raw_text_file=salt://textfsm/fake
 ```
 
 <pre>
@@ -144,7 +144,7 @@ Start
 Re-running the previous command, it would return:
 
 ```bash
-root@salt:~# salt router1 textfsm.extract salt://textfsm/eos_show_version.fsm raw_text_file=salt://textfsm/eos_show_version.txt
+salt router1 textfsm.extract salt://textfsm/eos_show_version.fsm raw_text_file=salt://textfsm/eos_show_version.txt
 ```
 
 <pre>
@@ -164,10 +164,13 @@ As the `textfsm` module is available from any Minion type (and, implicitly, any 
 
 ## Part-2: Extracting information from show-commands using the `net.cli` function
 
-For NAPALM Proxy Minions, the function `net.cli` can be used to execute show commands and return the output as text, for 
-example:
+For NAPALM Proxy Minions, the function `net.cli` can be used to execute show commands and return the output as text, for example:
 
 ```bash
+salt spine1 net.cli "show version"
+```
+
+<pre>
 root@salt:~# salt spine1 net.cli "show version"
 spine1:
     ----------
@@ -191,11 +194,15 @@ spine1:
 
     result:
         True
-```
+</pre>
 
 `net.cli` can execute one or more CLI commands at the same time:
 
 ```bash
+salt spine1 net.cli "show clock" "show users"
+```
+
+<pre>
 root@salt:~# salt spine1 net.cli "show clock" "show users"
 spine1:
     ----------
@@ -213,13 +220,17 @@ spine1:
             
     result:
         True
-```
+</pre>
 
 Notice the CLI results nested under each command.
 
 It is also smart enough to execute the TextFSM templates dynamically and extract the data from the CLI output:
 
 ```bash
+salt spine1 net.cli "show version" textfsm_parse=True textfsm_template=salt://textfsm/eos_show_version.fsm
+```
+
+<pre>
 root@salt:~# salt spine1 net.cli "show version" textfsm_parse=True textfsm_template=salt://textfsm/eos_show_version.fsm
 spine1:
     ----------
@@ -239,22 +250,28 @@ spine1:
                   5254.00e3.d6d3
     result:
         True
-```
+</pre>
 
-The command executed above is simply the previous command, just with the `textfsm_parse` and `textfsm_template` 
-arguments passed in: `textfsm_parse` tells whether we want data extraction through TextFSM and the `textfsm_template` 
-provides the location of the template, as in _Part-1_.
+The command executed above is simply the previous command, just with the `textfsm_parse` and `textfsm_template` arguments passed in: `textfsm_parse` tells whether we want data extraction through TextFSM and the `textfsm_template` provides the location of the template, as in _Part-1_.
 
 Once again, you can verify that the output is nothing else than just a Python object:
 
 ```bash
+salt spine1 net.cli "show version" textfsm_parse=True textfsm_template=salt://textfsm/eos_show_version.fsm --out=raw
+```
+
+<pre>
 root@salt:~# salt spine1 net.cli "show version" textfsm_parse=True textfsm_template=salt://textfsm/eos_show_version.fsm --out=raw
 {'spine1': {'comment': '', 'result': True, 'out': {'show version': [{'model': 'vEOS', 'hardware_version': '', 'serial': '', 'system_mac': '5254.00e3.d6d3', 'software_version': '4.18.1F'}]}}}
-```
+</pre>
 
 But what if we want to extract data from multiple show-commands in one go:
 
+```bash
+salt spine1 net.cli "show version" "show clock" textfsm_parse=True textfsm_template=salt://textfsm/eos_show_version.fsm
 ```
+
+<pre>
 root@salt:~# salt spine1 net.cli "show version" "show clock" textfsm_parse=True textfsm_template=salt://textfsm/eos_show_version.fsm
 spine1:
     ----------
@@ -278,15 +295,17 @@ spine1:
                   5254.00e3.d6d3
     result:
         True
-```
+</pre>
 
 Executing the same template against multiple sources doesn't error, but it doesn't provide the desired result either.
 
 Let's define a TextFSM template corresponding to the output of the _show clock_ command:
 
-`/srv/salt/textfsm/eos_show_clock.fsm`
-
+```bash
+cat /srv/salt/textfsm/eos_show_clock.fsm
 ```
+
+<pre>
 Value DAY_NAME (\w+)
 Value MONTH (\w+)
 Value DAY (\d+)
@@ -299,13 +318,17 @@ Start
   ^${DAY_NAME}\s+${MONTH}\s+${DAY}\s+${TIME}\s+${YEAR}
   ^Timezone:\s+${TIMEZONE}
   ^Clock source:\s+${SOURCE}
-```
+</pre>
 
 Take a moment to understand each configuration bit from this template.
 
 To verify that it works as expected, run:
 
 ```bash
+salt spine1 net.cli "show clock" textfsm_parse=True textfsm_template=salt://textfsm/eos_show_clock.fsm
+```
+
+<pre>
 root@salt:~# salt spine1 net.cli "show clock" textfsm_parse=True textfsm_template=salt://textfsm/eos_show_clock.fsm
 spine1:
     ----------
@@ -331,13 +354,15 @@ spine1:
                   2021
     result:
         True
-```
+</pre>
 
-Running this template against the _show version_ and _show clock_ commands, we bump into the same issue, as previously. 
-But there's a way to work around this, by using the `textfsm_template_dict` which is a nice way to define which TextFSM 
-template gets applied to which show command:
+Running this template against the _show version_ and _show clock_ commands, we bump into the same issue, as previously. But there's a way to work around this, by using the `textfsm_template_dict` which is a nice way to define which TextFSM template gets applied to which show command:
 
 ```bash
+salt spine1 net.cli "show clock" "show version" textfsm_parse=True textfsm_template_dict="{'show clock': 'salt://textfsm/eos_show_clock.fsm', 'show version': 'salt://textfsm/eos_show_version.fsm'}"
+```
+
+<pre>
 root@salt:~# salt spine1 net.cli "show clock" "show version" textfsm_parse=True \
 textfsm_template_dict="{'show clock': 'salt://textfsm/eos_show_clock.fsm', 'show version': 'salt://textfsm/eos_show_version.fsm'}"
 spine1:
@@ -375,24 +400,42 @@ spine1:
                   5254.00e3.d6d3
     result:
         True
-```
+</pre>
 
-But this is rather boring to type (and error prone too!), so there's an easier way: simply define show command--TextFSM 
-template mapping into the Pillar. As this is platform-specific, we can place this under the Pillar where we have defined 
-the Proxy authentication details - in this case, the `/srv/salt/pillar/eos.sls` Pillar file:
+But this is rather boring to type (and error prone too!), so there's an easier way: simply define show command--TextFSM template mapping into the Pillar. As this is platform-specific, we can place this under the Pillar where we have defined the Proxy authentication details - in this case, the `/srv/salt/pillar/eos.sls` Pillar file:
 
-```yaml
+```bash
+cat <<EOF >> /srv/salt/pillar/eos.sls
+
 napalm_cli_textfsm_template_dict:
   "show clock": "salt://textfsm/eos_show_clock.fsm"
   "show version": "salt://textfsm/eos_show_version.fsm"
+EOF
 ```
+
+<pre>
+napalm_cli_textfsm_template_dict:
+  "show clock": "salt://textfsm/eos_show_clock.fsm"
+  "show version": "salt://textfsm/eos_show_version.fsm"
+</pre>
 
 Refresh the Pillar data to ensure the new configuration is loaded:
 
 ```bash
+salt spine1 saltutil.refresh_pillar
+```
+
+<pre>
 root@salt:~# salt spine1 saltutil.refresh_pillar
 spine1:
     True
+</pre>
+
+```bash
+salt spine1 config.get napalm_cli_textfsm_template_dict
+```
+
+<pre>
 root@salt:~# salt spine1 config.get napalm_cli_textfsm_template_dict
 spine1:
     ----------
@@ -400,11 +443,15 @@ spine1:
         salt://textfsm/eos_show_clock.fsm
     show version:
         salt://textfsm/eos_show_version.fsm
-```
+</pre>
 
 With that configured, we can have `net.cli` without having to provide all the details from the command line:
 
 ```bash
+salt spine1 net.cli "show clock" "show version" textfsm_parse=True
+```
+
+<pre>
 root@salt:~# salt spine1 net.cli "show clock" "show version" textfsm_parse=True
 spine1:
     ----------
@@ -441,44 +488,64 @@ spine1:
                   5254.00e3.d6d3
     result:
         True
-```
+</pre>
 
 Even more, by setting the `napalm_cli_textfsm_parse` flag into the same Pillar file:
 
-`/srv/salt/pillar/eos.sls`
+```bash
+cat <<EOF >> /srv/salt/pillar/eos.sls
 
-```yaml
 napalm_cli_textfsm_parse: true
+EOF
 ```
 
-After Pillar refresh, we can execute directly as `salt spine1 net.cli "show clock" "show version"` and the output will 
-always be parsed and the data extracted for the two show commands.
+<pre>
+napalm_cli_textfsm_parse: true
+</pre>
+
+After Pillar refresh, we can execute directly as `salt spine1 net.cli "show clock" "show version"` and the output will always be parsed and the data extracted for the two show commands.
+
+```bash
+salt spine1 saltutil.refresh_pillar
+```
+
+<pre>
+root@salt:~# salt spine1 saltutil.refresh_pillar
+spine1:
+    True
+</pre>
+
+```bash
+salt spine1 net.cli "show clock" "show version"
+```
 
 ### Using the `index` file
 
-Using the `textfsm_template_dict` argument is a good way to map the TextFSM to use for each show command, but on the 
-flip side, it requires to always execute the exact command as defined in the mapping - for example, if you type _sh ver_ 
-instead of _show version_, it won't work so well.
+Using the `textfsm_template_dict` argument is a good way to map the TextFSM to use for each show command, but on the flip side, it requires to always execute the exact command as defined in the mapping - for example, if you type _sh ver_ instead of _show version_, it won't work so well.
 
 Here's why TextFSM has an `index` file where we can reference which templates to be invoked to which show commands:
 
-`/srv/salt/textfsm/index`
-
+```bash
+ cat /srv/salt/textfsm/index
 ```
+
+<pre>
 Template, Hostname, Platform, Command
 
 eos_show_version.fsm, .*, eos, sh[[ow]] ver[[sion]]
-```
+</pre>
 
-The first line of the file is the header, where we define the column names - Template, Hostname, Platform and Command. 
-This is a very granular way to select which template is applied to what command output, platform and hostname.
+The first line of the file is the header, where we define the column names - Template, Hostname, Platform and Command. This is a very granular way to select which template is applied to what command output, platform and hostname.
 
-The next line(s) represent(s) the mapping itself; the line reads as: "on any EOS device, any hostname, apply the 
-`eos_show_version.fsm` on any variation of the *show version* command - i.e., _sh ver_, _sho vers_, etc.").
+The next line(s) represent(s) the mapping itself; the line reads as: "on any EOS device, any hostname, apply the `eos_show_version.fsm` on any variation of the *show version* command - i.e., _sh ver_, _sho vers_, etc.").
 
 With the _index_ file defined in the same place as the TextFSM templates, we can execute:
 
 ```bash
+salt spine1 net.cli "show version" textfsm_parse=True textfsm_path=salt://textfsm/
+```
+
+<pre>
 root@salt:~# salt spine1 net.cli "show version" textfsm_parse=True textfsm_path=salt://textfsm/
 spine1:
     ----------
@@ -498,37 +565,56 @@ spine1:
                   5254.00e3.d6d3
     result:
         True
-```
+</pre>
 
 We can similarly set this into the Pillar and simplify the usage:
 
 `/srv/salt/pillar/eos.sls`
 
-```yaml
+Even more, by setting the `napalm_cli_textfsm_parse` flag into the same Pillar file:
+
+```bash
+cat <<EOF >> /srv/salt/pillar/eos.sls
+
 textfsm_path: salt://textfsm/
+EOF
 ```
 
-With that value set, the execution becomes as simple as `salt spine1 net.cli "show version" textfsm_parse=True` with the 
-`textfsm_parse` flag being toggled whenever we want the output parsed or not.
+<pre>
+textfsm_path: salt://textfsm/
+</pre>
 
-The _index_ file is equally a boon for resolving cross-vendor representation. For example, to have the _show version_ 
-command parsed on any platform, the file becomes:
+After Pillar refresh, we can execute directly as `salt spine1 net.cli "show clock" "show version"` and the output will always be parsed and the data extracted for the two show commands.
 
-`/srv/salt/textfsm/index`
-
+```bash
+salt spine1 saltutil.refresh_pillar
 ```
+
+
+With that value set, the execution becomes as simple as `salt spine1 net.cli "show version" textfsm_parse=True` with the `textfsm_parse` flag being toggled whenever we want the output parsed or not.
+
+The _index_ file is equally a boon for resolving cross-vendor representation. For example, to have the _show version_ command parsed on any platform, the file becomes:
+
+```bash
+cat /srv/salt/textfsm/index
+```
+
+<pre>
 Template, Hostname, Platform, Command
 
 eos_show_version.fsm, .*, eos, sh[[ow]] ver[[sion]]
 junos_show_version.fsm, .*, junos, sh[[ow]] ver[[sion]]
 ios_show_version.fsm, .*, ios, sh[[ow]] ver[[sion]]
 iosxr_show_version.fsm, .*, iosxr, sh[[ow]] ver[[sion]]
-```
+</pre>
 
-You can find the FSM files on the server, under the `/srv/salt/textfsm` path. With that, we can run the same command to 
-return the structured data from any platform:
+You can find the FSM files on the server, under the `/srv/salt/textfsm` path. With that, we can run the same command to return the structured data from any platform:
 
 ```bash
+salt \* net.cli "show version" textfsm_parse=True textfsm_path=salt://textfsm/
+```
+
+<pre>
 root@salt:~# salt \* net.cli "show version" textfsm_parse=True textfsm_path=salt://textfsm/
 Executing job with jid 20210111192750452014
 -------------------------------------------
@@ -590,7 +676,7 @@ leaf1:
 ...
 ... snip ...
 ...
-```
+</pre>
 
 ---
 **End of Lab**
