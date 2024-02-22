@@ -52,7 +52,7 @@ apnic>
 
 This confirms the device is reachable and the credentials are correct.
 
-Now, let's put these credentials in a Pillar file called **/srv/salt/pillar/router1.sls**. The structure is below:
+Now, let's put these credentials in a Pillar file called **/srv/salt/pillar/router1.sls**. The command below will create the file with the correct structure:
 
 ```bash
 cat <<EOF > /srv/salt/pillar/router1.sls
@@ -122,7 +122,15 @@ and
 These logs indicate the NETCONF connection being established and the RPC requests being executed to the device during the initial steps in order to gather the device facts (e.g., operating system, uptime, etc.); these details will be then available as Grains.
 
 
-Once the setup is complete (connection established and the Grains collected), from a separate terminal window you will be able to start executing commands to confirm:
+Once the setup is complete (connection established and the Grains collected). Open a new terminal window and ssh to the salt server; you will be able to start executing commands to confirm:
+
+Accept router1 key
+
+```bash
+salt-key -y -a router1
+```
+
+Test connectivity to router1
 
 ```bash
 root@salt:~# salt router1 test.ping
@@ -136,25 +144,33 @@ router1:
 
 ## Part-2: Configuring the Junos Proxy Minion
 
-The Junos Proxy Minion abides to the same Proxy Minion standards, with the distinction that the device is managed 
-through purely `junos-eznc` instead of NAPALM.
+The Junos Proxy Minion abides to the same Proxy Minion standards, with the distinction that the device is managed through purely `junos-eznc` instead of NAPALM.
 
 Let's update the `/srv/salt/pillar/router1.sls` file:
 
-```yaml
+```bash
+sed -i '/junos/d' /srv/salt/pillar/router1.sls
+sed -i 's/napalm/junos/' /srv/salt/pillar/router1.sls
+cat /srv/salt/pillar/router1.sls
+```
+
+<pre>
 proxy:
   proxytype: junos
   host: router1
   username: apnic
   password: APNIC2021
-```
+</pre>
 
-Notice that the `proxytype` field has been changed from `napalm` to `junos`, and there's no `driver` field anymore as the
-Junos Proxy Module can only manage Juniper devices - unlike the NAPALM one which is able to manage many other platforms.
+Notice that the `proxytype` field has been changed from `napalm` to `junos`, and there's no `driver` field anymore as the Junos Proxy Module can only manage Juniper devices - unlike the NAPALM one which is able to manage many other platforms.
 
-Nothing else needs to be update, and we can start the new Proxy Minion which is now Junos-based:
+Nothing else needs to be update, and we can start the new Proxy Minion which is now Junos-based. Return the terminal window that is running the Proxy Minion. Press **ctrl+c** to exit the running process, then restart the salt proxy:
 
 ```bash
+salt-proxy -l debug --proxyid router1
+```
+
+<pre>
 root@salt:~# salt-proxy -l debug --proxyid router1
 [DEBUG   ] Reading configuration from /etc/salt/proxy
 [INFO    ] Processing `log_handlers.sentry`
@@ -164,24 +180,27 @@ root@salt:~# salt-proxy -l debug --proxyid router1
 ...
 ... snip ...
 ...
-```
+</pre>
 
 The startup is exactly the same, and the intermediate logs are similar to the NAPALM Proxy too.
 
-To confirm, we can once again execute a simple command such as:
+To confirm, go to the other open terminal window and execute a simple command such as:
 
+```bash
+salt router1 test.ping
 ```
+
+<pre>
 root@salt:~# salt router1 test.ping
 router1:
     True
-```
+</pre>
 
 Or display the available Grains:
 
 
 ```bash
-root@salt:~# salt router1 grains.items
-... snip ...
+salt router1 grains.items
 ```
 
 
