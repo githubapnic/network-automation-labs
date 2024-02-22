@@ -1,15 +1,15 @@
 ![](images/apnic_logo.png)
 # LAB: Introduction to configuration management using Salt
 
-As we will be showcasing different mechanisms, depending on the underlying library used (i.e., NAPALM, Netmiko or 
-junos-enzc), the Proxy Minions are not already started, and we will need to start them up as needed - after updating the 
-Pillar data to point to the appropriate Proxy Module.
+As we will be showcasing different mechanisms, depending on the underlying library used (i.e., NAPALM, Netmiko or junos-enzc), the Proxy Minions are not already started, and we will need to start them up as needed - after updating the Pillar data to point to the appropriate Proxy Module.
 
-The Pillar Top File is configured as follows:
+Confirm the Pillar Top File is configured as follows:
 
-`/srv/salt/pillar/top.sls`
+```bash
+cat /srv/salt/pillar/top.sls
+```
 
-```yaml
+<pre>
 base:
   'router*':
     - junos
@@ -19,65 +19,73 @@ base:
     - eos
   'leaf*':
     - ios
-```
+</pre>
 
-This structure ensures that the routers use the `junos.sls` file, the cores are provided with the Pillar data from 
-`iosxr.sls` and so on.
-In the next sections we will be looking at each of these files individually and update them with the desired contents.
+This structure ensures that the routers use the `junos.sls` file, the cores are provided with the Pillar data from **iosxr.sls** and so on. In the next sections we will be looking at each of these files individually and update them with the desired contents.
 
 ## Part-1: Configuration management using NAPALM
 
 ### Preparing the environment
 
-Firstly, let's go through each of the `junos.sls`, `iosxr.sls`, `eos.sls` and `ios.sls` Pillar file to ensure they are 
-pointing to the NAPALM Proxy Module.
+Firstly, let's go through each of the `junos.sls`, `iosxr.sls`, `eos.sls` and `ios.sls` Pillar file to ensure they are pointing to the NAPALM Proxy Module.
 
-`/srv/salt/pillar/junos.sls` should be:
+Confirm the Pillar Top File has **napalm** configured as the proxytype:
 
-```yaml
+```bash
+grep -in napalm /srv/salt/pillar/*.sls
+```
+
+<pre>
+root@salt:~# grep -in napalm /srv/salt/pillar/*.sls
+/srv/salt/pillar/eos.sls:2:  proxytype: napalm
+/srv/salt/pillar/ios.sls:2:  proxytype: napalm
+/srv/salt/pillar/iosxr.sls:2:  proxytype: napalm
+/srv/salt/pillar/junos.sls:2:  proxytype: napalm
+</pre>
+
+To view the contents of junos.sls:
+
+```bash
+cat /srv/salt/pillar/junos.sls
+```
+
+<pre>
 proxy:
   proxytype: napalm
   driver: junos
   host: {{ opts.id }}
   username: apnic
   password: APNIC2021
-```
+</pre>
 
-Here, we find the structure and the credentials as configured in _Lab #3 (Configuring Proxy Minions)_. The `proxytype` 
-points to `napalm` as expected, and the `driver` is `junos` as the SLS file is used to managing Junos devices.
+Here, we find the structure and the credentials as configured in _Lab #3 (Configuring Proxy Minions)_. The `proxytype` points to `napalm` as expected, and the `driver` is `junos` as the SLS file is used to managing Junos devices.
 
 **Important**
-One particular detail to note is the `host: {{ opts.id }}`. To understand this, remember that SLS is, by default, 
-a combination of Jinja + YAML, i.e., the file is rendered as a Jinja template, then the result is loaded as a YAML
-data structure. In this case, `{{ opts.id }}` is just a piece of a Jinja template, which means: replace here with the 
-value of the `id` field from the `opts` object. But what is the `opts` object? It simply points to the configuration 
-options of the Proxy Minions (see _Lab #1 (Configuring Salt)_), and `id` is the Minion ID.
+One particular detail to note is the `host: {{ opts.id }}`. To understand this, remember that SLS is, by default, a combination of Jinja + YAML, i.e., the file is rendered as a Jinja template, then the result is loaded as a YAML data structure. In this case, `{{ opts.id }}` is just a piece of a Jinja template, which means: replace here with the value of the `id` field from the `opts` object. But what is the `opts` object? It simply points to the configuration options of the Proxy Minions (see _Lab #1 (Configuring Salt)_), and `id` is the Minion ID.
 
-In short, the declaration `host: {{ opts.id }}` is interpreted as `host: router1` for the `router1` Minion, `host: 
-router2` for the `router2` Minion, and so on. This is a good and flexible way to have one file being used across 
-multiple devices.
+In short, the declaration `host: {{ opts.id }}` is interpreted as `host: router1` for the `router1` Minion, `host: router2` for the `router2` Minion, and so on. This is a good and flexible way to have one file being used across multiple devices.
 
 Take a moment and go through the rest of the Pillar files.
 
-Once we've verified the contents of the files, let's start one Proxy Minion for each role. Initially, in debug mode to 
-ensure the Proxy Minion is able to start up correctly:
+Once we've verified the contents of the files, let's start one Proxy Minion for each role. Initially, in debug mode to ensure the Proxy Minion is able to start up correctly:
 
 ```bash
-root@salt:~# salt-proxy -l debug --proxyid router1
-root@salt:~# 
+salt-proxy -l debug --proxyid router1
 ```
 
 If everything goes normally, we can then SIGKILL (Ctrl-C) the process, and start it in daemon mode:
 
 ```bash
-root@salt:~# salt-proxy --proxyid router1 -d
-root@salt:~# 
+salt-proxy --proxyid router1 -d
 ```
 
-Continue the same operation for `core1`, `spine1`, and `leaf1`. Verify that the Proxy Minions respond correctly, by 
-running, for example:
+Continue the same operation for `core1`, `spine1`, and `leaf1`. Verify that the Proxy Minions respond correctly, by running, for example:
 
 ```bash
+salt -L router1,core1,spine1,leaf1 test.ping
+```
+
+<pre>
 root@salt:~# salt -L router1,core1,spine1,leaf1 test.ping
 leaf1:
     True
@@ -87,7 +95,7 @@ spine1:
     True
 core1:
     True
-```
+</pre>
 
 ### The NAPALM configuration management functions
 
@@ -98,22 +106,22 @@ NAPALM offers two functions for CLI usage:
 
 #### `net.load_config`
 
-`net.load_config` has the following (optional) arguments:
+**net.load_config** has the following (optional) arguments:
 
-- `filename`: The path to the file to load the configuration from. This can be an absolute path to a physical file, or 
-  a remote file accessed via `salt://`, `http(s)://`, `ftp://`, `s3://`, `swift://`, etc.
-- `text`: In-line configuration passed in via the command line.
-- `test`: Whether to commit the config, or only execute a dry-run. Default value: `False` (would commit the config). When passed in as `True`, it 
-  would discard the config, but still returning the config diff.
-- `commit`: Whether to commit the config. Default value: `True`. The difference between `commit` and `tests` is that 
-  when `commit` is passed in as `False`, it doesn't discard the loaded configuration changes but simply not commit them.
-- `replace`: Boolean value, defaulting to `False`, whether we want to fully replace the running configuration with the 
-  newly loaded one. By default, `net.load_config` performs a _merge_ into the running config.
-- `debug`: Another boolean flag which can be used to check what config we are loading.
+- **filename**: The path to the file to load the configuration from. This can be an absolute path to a physical file, or a remote file accessed via `salt://`, `http(s)://`, `ftp://`, `s3://`, `swift://`, etc.
+- **text**: In-line configuration passed in via the command line.
+- **test**: Whether to commit the config, or only execute a dry-run. Default value: `False` (would commit the config). When passed in as `True`, it would discard the config, but still returning the config diff.
+- **commit**: Whether to commit the config. Default value: `True`. The difference between `commit` and `tests` is that when `commit` is passed in as `False`, it doesn't discard the loaded configuration changes but simply not commit them.
+- **replace**: Boolean value, defaulting to `False`, whether we want to fully replace the running configuration with the newly loaded one. By default, `net.load_config` performs a _merge_ into the running config.
+- **debug**: Another boolean flag which can be used to check what config we are loading.
 
 Let's start by deploying some simple configuration changes:
 
 ```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True debug=True
+```
+
+<pre>
 root@salt:~# salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True debug=True
 router1:
     ----------
@@ -130,23 +138,32 @@ router1:
         set system ntp server 10.0.0.1
     result:
         True
-```
+</pre>
 
 The return has a number of elements:
 
-- `already_configured`: A boolean that states whether there are any configuration changes.
-- `comment`: A human-understandable message (can be a detailed explanation in case there's an error).
-- `diff`: The configuration diff (i.e., between the running config and the config with the newly loaded changes).
-- `loaded_config`: Provides the exact configuration being loaded, _only_ when the `debug=True` flag is passed.
-- `result`: A boolean telling whether the execution succeeded.
+- **already_configured**: A boolean that states whether there are any configuration changes.
+- **comment**: A human-understandable message (can be a detailed explanation in case there's an error).
+- **diff**: The configuration diff (i.e., between the running config and the config with the newly loaded changes).
+- **loaded_config**: Provides the exact configuration being loaded, _only_ when the `debug=True` flag is passed.
+- **result**: A boolean telling whether the execution succeeded.
 
 Let's now put the configuration above into a file, and have `net.load_config` use that:
 
 ```bash
+cat /srv/salt/static/junos
+```
+
+<pre>
 root@salt:~# cat /srv/salt/static/junos
 set system ntp server 10.0.0.1
+</pre>
 
-root@salt:~#
+```bash
+salt router1 net.load_config filename=/srv/salt/static/junos test=True
+```
+
+<pre>
 root@salt:~# salt router1 net.load_config filename=/srv/salt/static/junos test=True
 router1:
     ----------
@@ -162,14 +179,15 @@ router1:
     loaded_config:
     result:
         True
-```
+</pre>
 
-But there's a catch with this method: the filename `/srv/salt/static/junos` has been passed in using the absolute path; 
-the only reason it works now is that the Proxy Minion runs on the same machine as the Master. If the Proxy Minion runs 
-elsewhere - as it's usually the case in practice - this would fail. For this reasoning, it's best to place the files 
-under one of the Salt file system paths, and use the `salt://` URI to have the Minions access the file uniformly:
+But there's a catch with this method: the filename **/srv/salt/static/junos** has been passed in using the absolute path; the only reason it works now is that the Proxy Minion runs on the same machine as the Master. If the Proxy Minion runs elsewhere - as it's usually the case in practice - this would fail. For this reasoning, it's best to place the files under one of the Salt file system paths, and use the **salt://** URI to have the Minions access the file uniformly:
 
 ```bash
+salt router1 net.load_config filename=salt://static/junos test=True debug=True
+```
+
+<pre>
 root@salt:~# salt router1 net.load_config filename=salt://static/junos test=True debug=True
 router1:
     ----------
@@ -186,34 +204,36 @@ router1:
         set system ntp server 10.0.0.1
     result:
         True
-```
+</pre>
 
 This is where the `debug=True` flag comes in handy too.
 
 #### `net.load_template`
 
-`net.load_template` is very similar as in CLI arguments and return structure to `net.load_config`, with the difference 
-that `net.load_template` renders a template and then it loads the resulting configuration.
+`net.load_template` is very similar as in CLI arguments and return structure to `net.load_config`, with the difference that `net.load_template` renders a template and then it loads the resulting configuration.
 
-The template engine is _Jinja_ by default, with the possibility to choose between other languages, such as Cheetah, 
-Genshi, Mako, WemPy, or even pure Python. This can be toggled using the `template_engine` argument.
+The template engine is _Jinja_ by default, with the possibility to choose between other languages, such as Cheetah, Genshi, Mako, WemPy, or even pure Python. This can be toggled using the `template_engine` argument.
 
-The usage is simple, instead of passing in the location of a static file, you will provide the location of the template.
+The usage is simple, instead of passing in the location of a static file, you will provide the location of the template. Let's consider the following simple template:
 
-Let's consider the following simple template:
-
-`/srv/salt/templates/iosxr.jinja`
-
-
-```jinja
-hostname {{ opts.id }}-{{ grains.vendor }}
+```bash
+cat /srv/salt/templates/iosxr.jinja
 ```
+<pre>
+root@salt:# cat /srv/salt/templates/iosxr.jinja
+  
+hostname {{ opts.id }}-{{ grains.vendor }}
+</pre>
 
 All it does it configures the hostname of the device using the Minion ID and the `vendor` Grain.
 
 Let's execute this template and load it on the device:
 
 ```bash
+salt core1 net.load_template salt://templates/iosxr.jinja test=True debug=True
+```
+
+<pre>
 root@salt:~# salt core1 net.load_template salt://templates/iosxr.jinja test=True debug=True
 core1:
     ----------
@@ -236,24 +256,29 @@ core1:
         hostname core1-Cisco
     result:
         True
-```
+</pre>
 
-As one can notice in the configuration diff, loading this template, would update the hostname of `core1` to 
-_core1-Cisco_, as this is how we configured in the Jinja template above (and pointed in the `loaded_config` key from the 
-output, as the command has been executed with `debug=True`).
+As one can notice in the configuration diff, loading this template, would update the hostname of `core1` to _core1-Cisco_, as this is how we configured in the Jinja template above (and pointed in the `loaded_config` key from the output, as the command has been executed with `debug=True`).
 
 Now, for a different platform, we'd have a separate template, say for the routers level:
 
-`/srv/salt/templates/junos.jinja`
-
-```jinja
-set system host-name {{ opts.id }}-{{ grains.vendor }}
+```bash
+cat /srv/salt/templates/junos.jinja
 ```
 
-For the spine level, `/srv/salt/templates/eos.jinja` would have, in this particular scenario, the same contents as 
-`/srv/salt/templates/iosxr.jinja`:
+<pre>
+root@salt:# cat /srv/salt/templates/junos.jinja
+
+set system host-name {{ opts.id }}-{{ grains.vendor }}
+</pre>
+
+For the spine level, `/srv/salt/templates/eos.jinja` would have, in this particular scenario, the same contents as `/srv/salt/templates/iosxr.jinja`:
 
 ```bash
+salt router1 net.load_template salt://templates/junos.jinja test=True debug=True
+```
+
+<pre>
 root@salt:~# salt router1 net.load_template salt://templates/junos.jinja test=True debug=True
 router1:
     ----------
@@ -290,28 +315,30 @@ spine1:
         hostname spine1-Arista
     result:
         True
+</pre>
+
+But wouldn't it be more flexible, and easier to use just one template for all the platforms? We can merge everything into a single template:
+
+```bash
+cat /srv/salt/templates/hostname.jinja
 ```
 
-But wouldn't it be more flexible, and easier to use just one template for all the platforms? We can merge everything 
-into a single template:
-
-`/srv/salt/templates/hostname.jinja`
-
-```jinja
+<pre>
+root@salt:~# cat /srv/salt/templates/hostname.jinja
 {%- if grains.os == 'junos' %}
 set system host-name {{ opts.id }}-{{ grains.vendor }}
 {%- else %}
 hostname {{ opts.id }}-{{ grains.vendor }}
 {%- endif %}
-```
+</pre>
 
-In this short template, we can model in such a way that the same Jinja template can be used transparently against 
-Juniper devices as well as others that share the same syntax for configuring the hostname. Therefore, we can execute the 
-following command which would apply to all the devices simultaneously. Not only this is easier from an user perspective, 
-but provides fluidity and consistency, while abstracting away the operations:
-
+In this short template, we can model in such a way that the same Jinja template can be used transparently against Juniper devices as well as others that share the same syntax for configuring the hostname. Therefore, we can execute the following command which would apply to all the devices simultaneously. Not only this is easier from an user perspective, but provides fluidity and consistency, while abstracting away the operations:
 
 ```bash
+salt -L router1,core1,spine1,leaf1 net.load_template salt://templates/hostname.jinja test=True debug=True
+```
+
+<pre>
 root@salt:~# salt -L router1,core1,spine1,leaf1 net.load_template salt://templates/hostname.jinja test=True debug=True
 router1:
     ----------
@@ -381,23 +408,21 @@ leaf1:
         hostname leaf1-Cisco
     result:
         True
-```
+</pre>
 
-Notice that thanks to a simple check against the `os` Grain, we are able to model different behaviour per separate 
-platform. The same can be extended to other similar use cases, when we need to provide different configuration based on 
-different other factors such as OS version, chassis model, etc.
+Notice that thanks to a simple check against the `os` Grain, we are able to model different behaviour per separate platform. The same can be extended to other similar use cases, when we need to provide different configuration based on different other factors such as OS version, chassis model, etc.
 
 #### Scheduled commits and reverts
 
-Beginning with Salt release 2019.2.0, both `net.load_template` and `net.load_config` functions allow scheduled commits 
-and reverts using the `commit_at`, `commit_in`, `revert_at` and `revert_in` arguments, for any platform managed through 
-NAPALM, regardless if the network operating system itself is capable to offer such features. The main caveat is that 
-Salt needs to constantly have access to the network device, so if your changes are detrimental and access is lost, Salt 
-will be able to revert the changes.
+Beginning with Salt release 2019.2.0, both `net.load_template` and `net.load_config` functions allow scheduled commits and reverts using the `commit_at`, `commit_in`, `revert_at` and `revert_in` arguments, for any platform managed through NAPALM, regardless if the network operating system itself is capable to offer such features. The main caveat is that Salt needs to constantly have access to the network device, so if your changes are detrimental and access is lost, Salt will be able to revert the changes.
 
 For example, schedule a commit to be executed in two minutes:
 
 ```bash
+salt router1 net.load_config filename=salt://static/junos commit_in=2m
+```
+
+<pre>
 root@salt:~# salt router1 net.load_config filename=salt://static/junos commit_in=2m
 router1:
     ----------
@@ -420,13 +445,17 @@ router1:
     result:
         True
 root@salt:~#
-```
+</pre>
 
 As the comment states, you are also able to discard the commit, by executing a specific command.
 
 Similarly, for a revert:
 
 ```bash
+salt router1 net.load_config filename=salt://static/junos debug=True revert_in=2m
+```
+
+<pre>
 root@salt:~# salt router1 net.load_config filename=salt://static/junos debug=True revert_in=2m
 router1:
     ----------
@@ -450,7 +479,7 @@ router1:
     result:
         True
 root@salt:~#
-```
+</pre>
 
 ## Part-2: Configuration management using Netmiko
 
