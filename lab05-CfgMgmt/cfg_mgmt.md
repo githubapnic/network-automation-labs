@@ -79,6 +79,20 @@ If everything goes normally, we can then SIGKILL (Ctrl-C) the process, and start
 salt-proxy --proxyid router1 -d
 ```
 
+**Note**: There may be a python error, but the command completes succesfully
+
+<pre>
+  root@salt:~# salt-proxy --proxyid router1 -d
+/usr/local/lib/python3.6/site-packages/requests/__init__.py:91: RequestsDependencyWarning: urllib3 (1.26.18) or chardet (3.0.4) doesn't match a supported version!
+  RequestsDependencyWarning)
+</pre>
+
+Add **2> /dev/null** to the end of the commands to suppress the python error. For example:
+
+```bash
+salt-proxy --proxyid router1 -d 2> /dev/null
+```
+
 Continue the same operation for `core1`, `spine1`, and `leaf1`. 
 
 ```bash
