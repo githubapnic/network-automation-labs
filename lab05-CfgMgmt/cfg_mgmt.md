@@ -558,7 +558,7 @@ sed -i 's/eos/arista_eos/' /srv/salt/pillar/eos.sls
 Set device type to cisco_ios in /srv/salt/pillar/ios.sls
 
 ```bash
-sed -i 's/ios/cisco_ios/' /srv/salt/pillar/iosxr.sls
+sed -i 's/ios/cisco_ios/' /srv/salt/pillar/ios.sls
 ```
 
 With that said, we can then start the Proxy Minions for each, in the exact same way as previously:
