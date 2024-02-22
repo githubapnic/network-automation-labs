@@ -47,7 +47,7 @@ Replace groupXX with the allocated group.
 First, lets make sure that we have all of our router configs loaded.
 
 ```bash
-root@salt:/# salt \* lab.restore -t 120
+salt \* lab.restore -t 120
 ```
 
 Execute commands against individual devices, using the device name / Minion ID:
@@ -107,6 +107,28 @@ router1:
 router2:
     True
 </pre>
+
+**HINT**: Use salt commands help guide, to view what the optional *-L* switch and other swicthes can do:
+
+```bash
+salt /? | grep -A 2 "\-L"
+```
+
+<pre>
+root@salt:~# salt /? | grep -A 2 "\-L"
+
+Incomplete options passed.
+
+    -L, --list          Instead of using shell globs to evaluate the target
+                        servers, take a comma or whitespace delimited list of
+                        servers.
+</pre>
+
+Try this command to see more options.
+
+```bash
+salt --help | grep -E -A 2 "\-L|\-E|\-G|\-P|\-I|\-J"
+```
 
 ## Part-3: Shell-like globbing
 
