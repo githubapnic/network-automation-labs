@@ -498,6 +498,29 @@ hostname {{ opts.id }}-{{ grains.vendor }}
 {%- endif %}
 </pre>
 
+Ensure the proxytype is set to napalm and the driver is correct for the various vendors
+
+```bash
+grep -in napalm -A 1 /srv/salt/pillar/*.sls
+```
+
+<pre>
+root@salt:~# grep -in napalm -A 1 /srv/salt/pillar/*.sls
+/srv/salt/pillar/eos.sls:2:  proxytype: napalm
+/srv/salt/pillar/eos.sls-3-  driver: eos
+--
+/srv/salt/pillar/ios.sls:2:  proxytype: napalm
+/srv/salt/pillar/ios.sls-3-  driver: ios
+--
+/srv/salt/pillar/iosxr.sls:2:  proxytype: napalm
+/srv/salt/pillar/iosxr.sls-3-  driver: iosxr
+--
+/srv/salt/pillar/junos.sls:2:  proxytype: napalm
+/srv/salt/pillar/junos.sls-3-  driver: junos
+</pre>
+
+**Note**: Please inform the instructor if you do not see this output.
+
 This is all required for now, and we can then execute a dry-run to check the diffs:
 
 ```bash
