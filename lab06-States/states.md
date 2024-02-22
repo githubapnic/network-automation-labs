@@ -1,31 +1,35 @@
 ![](images/apnic_logo.png)
 # LAB: Salt States: Advanced Configuration Management
 
-In this lab we will continue the exercise from _Lab 5_ and continue from there with the configuration management 
-capabilities of Junos and NAPALM through the State system. As of present, Netmiko doesn't provide a State module to 
-manage the configuration, however the function we've seen earlier, `netmiko.send_config` can be accessed through the 
-`module.run` State function (see https://docs.saltstack.com/en/master/ref/states/all/salt.states.module.html for further 
-details on this particular topic).
+In this lab we will continue the exercise from _Lab 5_ and continue from there with the configuration management capabilities of Junos and NAPALM through the State system. As of present, Netmiko doesn't provide a State module to manage the configuration, however the function we've seen earlier, `netmiko.send_config` can be accessed through the `module.run` State function (see https://docs.saltstack.com/en/master/ref/states/all/salt.states.module.html for further details on this particular topic).
 
 ## Part-1: The Junos State Module
 
-The documentation for this State Module is available at 
-https://docs.saltstack.com/en/master/ref/states/all/salt.states.junos.html.
+The documentation for this State Module is available at [https://docs.saltstack.com/en/master/ref/states/all/salt.states.junos.html](https://docs.saltstack.com/en/master/ref/states/all/salt.states.junos.html).
 
-As the previous lab concluded with using the Junos module, the `/srv/salt/pillar/junos.sls` Pillar file should still 
-have the following content:
+As the previous lab concluded with using the Junos module, the `/srv/salt/pillar/junos.sls` Pillar file should still have the following content:
 
-```yaml
+```bash
+cat /srv/salt/pillar/junos.sls
+```
+
+<pre>
 proxy:
   proxytype: junos
   host: {{ opts.id }}
   username: apnic
   password: APNIC2021
-```
+</pre>
 
 Similarly, the Proxy Minions should also be started up:
 
 ```bash
+ps -aux | grep -v defunct | grep proxy
+```
+
+If they router1 and router2 Proxy Minions are not running start them with the following commands
+
+<pre>
 root@salt:~# salt-proxy --proxyid router1 -d
 root@salt:~# salt-proxy --proxyid router2 -d
 root@salt:~#
@@ -34,28 +38,33 @@ router2:
     True
 router1:
     True
-```
+</pre>
 
-Now, under the `/srv/salt/states` directory we can place our first State SLS file, e.g., `hostname.sls`, where we can 
-put the State declarations, for example:
+Now, under the `/srv/salt/states` directory we can place our first State SLS file, e.g., `hostname.sls`, where we can put the State declarations, for example:
 
-```sls
+```bash
+cat <<EOF > /srv/salt/states/hostname.sls
 Configure hostname:
   junos.install_config:
     - name: salt://static/junos
     - format: set
+EOF
 ```
+
+<pre>
+Configure hostname:
+  junos.install_config:
+    - name: salt://static/junos
+    - format: set
+</pre>
 
 The State name is _Configure hostname_, and it invokes the `junos.install_config` State function.
 
-**Important**: The State function `junos.install_config` coincidentally has the same naming as the Execution Function 
-we've used in _Lab 5_, in this particular case. This isn't always the case, and you should always refer to the 
-documentation to make sure.
+**Important**: The State function `junos.install_config` coincidentally has the same naming as the Execution Function we've used in _Lab 5_, in this particular case. This isn't always the case, and you should always refer to the documentation to make sure.
 
-The arguments `name` is the configuration file path and `format` is the same as we've used previously. As a reminder,
-we've previously executed:
+The arguments `name` is the configuration file path and `format` is the same as we've used previously. As a reminder, we've previously executed:
 
-```bash
+<pre>
 root@salt:~# salt router* junos.install_config salt://static/junos format=set
 router1:
     ----------
@@ -63,11 +72,15 @@ router1:
         Successfully loaded and committed!
     out:
         True
-```
+</pre>
 
 Through the State system now, we can execute with the same effect:
 
 ```bash
+root@salt:~# salt router1 state.apply hostname
+```
+
+<pre>
 root@salt:~# salt router1 state.apply hostname
 router1:
 ----------
@@ -92,22 +105,20 @@ Failed:    0
 ------------
 Total states run:     1
 Total run time:   1.523 s
-```
+</pre>
 
 This has a number of advantages over the CLI usage:
 
-- You don't need to remember the syntax of the CLI function, but only configure it one in the SLS file. Instead, you 
-  only need to know the name of the State to invoke to deploy the desired configuration bit.
+- You don't need to remember the syntax of the CLI function, but only configure it one in the SLS file. Instead, you only need to know the name of the State to invoke to deploy the desired configuration bit.
 - The syntax of the CLI function can change from one Salt release to another.
 - The output is more human friendly and provides additional details.
 
-The most important aspect however is that through the State system, you can chain multiple States and build complex 
-workflows. For example, let's update the state to save the configuration diff into a file. As with the 
-`junos.install_config` function, you can use the `diffs_file` argument:
+The most important aspect however is that through the State system, you can chain multiple States and build complex workflows. For example, let's update the state to save the configuration diff into a file. As with the `junos.install_config` function, you can use the `diffs_file` argument:
 
-`/srv/salt/states/hostname.sls`
+Update the /srv/salt/states/hostname.sls file with:
 
-```sls
+```bash
+cat <<EOF > /srv/salt/states/hostname.sls
 Configure hostname:
   junos.install_config:
     - name: salt://static/junos
@@ -119,17 +130,32 @@ Display diffs:
     - name: cat /tmp/diff
     - onsuccess:
       - junos: Configure hostname
+EOF
 ```
 
-Besides the _Configure hostname_, there's another State defined in the SLS file: _Display diffs_, which executes the 
-`cmd.run` State function: see https://docs.saltstack.com/en/latest/ref/states/all/salt.states.cmd.html for more details. 
-This State runs a simple shell command, `cat /tmp/diff`, in order to display the contents of the `/tmp/diff` file, where 
-the config diffs have been saved. This State however is executed _only_ when _Configure hostname_ is applied 
-successfully.
+<pre>
+Configure hostname:
+  junos.install_config:
+    - name: salt://static/junos
+    - format: set
+    - diffs_file: /tmp/diff
+
+Display diffs:
+  cmd.run:
+    - name: cat /tmp/diff
+    - onsuccess:
+      - junos: Configure hostname
+</pre>
+
+Besides the _Configure hostname_, there's another State defined in the SLS file: _Display diffs_, which executes the `cmd.run` State function: see https://docs.saltstack.com/en/latest/ref/states/all/salt.states.cmd.html for more details. This State runs a simple shell command, `cat /tmp/diff`, in order to display the contents of the `/tmp/diff` file, where the config diffs have been saved. This State however is executed _only_ when _Configure hostname_ is applied successfully.
 
 Firstly let's rollback the changes to the previous state:
 
 ```bash
+salt router1 junos.rollback
+```
+
+<pre>
 root@salt:~# salt router1 junos.rollback
 router1:
     ----------
@@ -137,11 +163,15 @@ router1:
         Rollback successful
     out:
         True
-```
+</pre>
 
 Now, run the State:
 
 ```bash
+salt router1 state.apply hostname
+```
+
+<pre>
 root@salt:~# salt router1 state.apply hostname
 router1:
 ----------
@@ -187,62 +217,58 @@ Failed:    0
 ------------
 Total states run:     2
 Total run time:   1.361 s
+</pre>
+
+This way, just by running a command, we are able to execute a sequence of tasks. Let's take this further and execute the previous 3-step commit-confirm, diff check and commit from _Lab 5_. For this, say we put the expected diff into a file, say `/srv/salt/static/junos.diff` with this content:
+
+```bash
+cat /srv/salt/static/junos.diff
 ```
 
-This way, just by running a command, we are able to execute a sequence of tasks. Let's take this further and execute the 
-previous 3-step commit-confirm, diff check and commit from _Lab 5_. For this, say we put the expected diff into a file, 
-say `/srv/salt/static/junos.diff` with this content:
-
-```
+<pre>
 [edit system]
 +   ntp {
 +       server 10.0.0.1;
 +   }
-```
+</pre>
 
-For this, we will need a way to compare the two files. For this task, we can use the 
-[`file.managed`](https://docs.saltstack.com/en/latest/ref/states/all/salt.states.file.html#salt.states.file.managed) 
-State function, which is one of the most widely used for managing the contents of the 
-`/srv/salt/states/hostname.sls`
+For this, we will need a way to compare the two files. For this task, we can use the [`file.managed`](https://docs.saltstack.com/en/latest/ref/states/all/salt.states.file.html#salt.states.file.managed) State function, which is one of the most widely used for managing the contents of the `/srv/salt/states/hostname.sls`
 
-```sls
+<pre>
 Check diffs:
   file.managed:
     - name: /tmp/diff
     - source: salt://static/junos.diff
     - onsuccess:
       - junos: Configure hostname
-```
+</pre>
 
-This State would only be executed on successful configuration changes, and it would attempt to bring the file 
-`/tmp/diff` to have the contents from `/srv/salt/static/junos.diff`. If there are changes, then the diff isn't as we 
-expected it to be, so we shouldn't commit, but rather error and stop the execution. Using the `onchanges` requisite, we 
-can do this exactly like this:
+This State would only be executed on successful configuration changes, and it would attempt to bring the file `/tmp/diff` to have the contents from `/srv/salt/static/junos.diff`. If there are changes, then the diff isn't as we expected it to be, so we shouldn't commit, but rather error and stop the execution. Using the `onchanges` requisite, we can do this exactly like this:
 
-```sls
+<pre>
 Configuration differs:
   test.fail_without_changes:
     - onchanges:
       - file: Check diffs
-```
+</pre>
 
 The _Configuration differs_, which marks a failure, would be executed only when _Check diffs_ returns changes.
 
 And, finally, the _Commit config_ State:
 
-```sls
+<pre>
 Commit config:
   junos.commit:
     - require:
       - test: Configuration differs
-```
+</pre>
 
-This one, through the `require` keyword, would only be executed when _Configuration differs_ "succeeds" (or, better 
-worded it is not executed, as if it is executed, it is a failure).
+This one, through the `require` keyword, would only be executed when _Configuration differs_ "succeeds" (or, better worded it is not executed, as if it is executed, it is a failure).
 
 To sum it up, here is the complete `hostname.sls` State SLS:
 
-```sls
+
+<pre>
 Configure hostname:
   junos.install_config:
     - name: salt://static/junos
@@ -272,6 +298,42 @@ Commit config:
   junos.commit:
     - require:
       - test: Configuration differs
+</pre>
+
+Create the hostname.sls with these settings
+
+```bash
+cat <<EOF > /srv/salt/states/hostname.sls
+Configure hostname:
+  junos.install_config:
+    - name: salt://static/junos
+    - format: set
+    - diffs_file: /tmp/diff
+    - confirm: 1
+
+Display diffs:
+  cmd.run:
+    - name: cat /tmp/diff
+    - onsuccess:
+      - junos: Configure hostname
+
+Check diffs:
+  file.managed:
+    - name: /tmp/diff
+    - source: salt://static/junos.diff
+    - onsuccess:
+      - junos: Configure hostname
+
+Configuration differs:
+  test.fail_without_changes:
+    - onchanges:
+      - file: /tmp/diff
+
+Commit config:
+  junos.commit:
+    - require:
+      - test: Configuration differs
+EOF
 ```
 
 This is one of the greatest powers of the State system: building complex workflows. There are other important aspects 
