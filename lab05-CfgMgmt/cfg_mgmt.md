@@ -561,6 +561,14 @@ Set device type to cisco_ios in /srv/salt/pillar/ios.sls
 sed -i 's/ios/cisco_ios/' /srv/salt/pillar/ios.sls
 ```
 
+Delete the last 2 lines of /srv/salt/pillar/ios.sls
+
+```bash
+sed -i '/inline/d' /srv/salt/pillar/ios.sls
+sed -i '/args/d' /srv/salt/pillar/ios.sls
+```
+
+
 With that said, we can then start the Proxy Minions for each, in the exact same way as previously:
 
 Start router1 (Junos)
