@@ -225,7 +225,7 @@ Do a test ping
 salt router1 test.ping
 ```
 
-Return to the terminal window that is running the Salt master in debug mode. Besides the usual job events, we'd also notice the following:
+Return to the terminal window that is running the Salt event Bus. Besides the usual job events, we'd also notice the following:
 
 <pre>
 20210118144807692394	{
