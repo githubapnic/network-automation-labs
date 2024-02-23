@@ -96,7 +96,7 @@ router1:
 Display in JSON format
 
 ```bash
-salt router1 test.ping --out=json && salt router1 test.ping --out=yaml
+salt router1 test.ping --out=json
 ```
 <pre>
 root@salt:~# salt router1 test.ping --out=json
@@ -235,27 +235,26 @@ There are many other clients that can be explored and other modes the Salt API c
 
 ## Part-2: Using the Salt API to inject events via webhooks
 
-In the previous modules and labs we've learned that the Engines and Beacons can be used to monitor external systems, by 
-importing events on the Salt bus. The way they work was based on polling the devices at specific intervals in order to 
-gather the data.
+In the previous modules and labs we've learned that the Engines and Beacons can be used to monitor external systems, by importing events on the Salt bus. The way they work was based on polling the devices at specific intervals in order to gather the data.
 
-But there are systems that are able to send a notification whenever they have something to communicate about. This is at 
-the opposite end, and Salt is _informed_ where there's an event (as in opposite to continuously asking "is there an 
-event?").
+But there are systems that are able to send a notification whenever they have something to communicate about. This is at the opposite end, and Salt is _informed_ where there's an event (as in opposite to continuously asking "is there an event?").
 
-This can be done through the Salt API, but leveraging the webhooks. Essentially, this is another API endpoint, `/hook`, 
-and the data provided is simply put on the Salt bus.
+This can be done through the Salt API, but leveraging the webhooks. Essentially, this is another API endpoint, `/hook`, and the data provided is simply put on the Salt bus.
 
 For example, executing:
 
 ```bash
+curl -X POST http://0.0.0.0:8080/hook/
+```
+
+<pre>
 root@salt:~# curl -X POST http://0.0.0.0:8080/hook/
 {"success": true}
-```
+</pre>
 
 We can see that the webhook succeeds. On the Salt bus, there's an event under the `salt/netapi/hook` namespace:
 
-```
+<pre>
 salt/netapi/hook	{
     "_stamp": "2021-01-20T17:26:18.661688",
     "body": "",
@@ -267,19 +266,22 @@ salt/netapi/hook	{
     },
     "post": {}
 }
-```
+</pre>
 
-The URL path that follows after `/hook` is appended to the event tag. Any data provided with this request, will be 
-inserted under the `post` event key:
+The URL path that follows after `/hook` is appended to the event tag. Any data provided with this request, will be inserted under the `post` event key:
 
 ```bash
+curl -X POST http://0.0.0.0:8080/hook/custom/tag/ -d foo=bar
+```
+
+<pre>
 root@salt:~# curl -X POST http://0.0.0.0:8080/hook/custom/tag/ -d foo=bar
 {"success": true}
-```
+</pre>
 
 This request puts the following event on the Salt bus:
 
-```
+<pre>
 salt/netapi/hook/custom/tag	{
     "_stamp": "2021-01-20T17:28:11.863393",
     "body": "",
@@ -295,18 +297,19 @@ salt/netapi/hook/custom/tag	{
         "foo": "bar"
     }
 }
-```
+</pre>
 
-Notice that the tag is now `salt/netapi/hook/custom/tag`, with `custom/tag` nested under `salt/netapi/hook`, and the 
-`"foo": "bar"` into the `post` field of the event data.
+Notice that the tag is now `salt/netapi/hook/custom/tag`, with `custom/tag` nested under `salt/netapi/hook`, and the `"foo": "bar"` into the `post` field of the event data.
 
-One nice example of a system that invokes webhooks is Alertmanager. Alertmanager handles alerts sent by client
-applications such as the Prometheus server. We've worked with Prometheus in one of the previous labs, for gathering 
-metrics from napalm-logs.
+One nice example of a system that invokes webhooks is Alertmanager. Alertmanager handles alerts sent by client applications such as the Prometheus server. We've worked with Prometheus in one of the previous labs, for gathering metrics from napalm-logs.
 
 To trigger napalm-logs to generate a metric, let's disable an interface, for example:
 
 ```
+salt router1 net.load_config text='set interfaces ge-0/0/2 disable'
+```
+
+<pre>
 root@salt:~# salt router1 net.load_config text='set interfaces ge-0/0/2 disable'
 router1:
     ----------
@@ -319,17 +322,17 @@ router1:
     loaded_config:
     result:
         True
-```
+</pre>
 
 This generates a syslog message:
 
-```
+<pre>
 Jan 20 17:46:25  router1 mib2d[4745]: SNMP_TRAP_LINK_DOWN: ifIndex 520, ifAdminStatus down(2), ifOperStatus down(2), ifName ge-0/0/2
-```
+</pre>
 
 This syslog message is received by napalm-logs, and generates a couple of Prometheus metrics:
 
-```
+<pre>
 # HELP napalm_logs_interface_down_total Multiprocess metric
 # TYPE napalm_logs_interface_down_total counter
 napalm_logs_interface_down_total{host="router1",interface="ge-0/0/2"} 1.0
@@ -337,17 +340,14 @@ napalm_logs_interface_down_total{host="router1",interface="ge-0/0/2"} 1.0
 # HELP napalm_logs_interface_state Multiprocess metric
 # TYPE napalm_logs_interface_state gauge
 napalm_logs_interface_state{host="router1",interface="ge-0/0/2",pid="9"} 0.0
-```
+</pre>
 
-`napalm_logs_interface_down_total` counts how many times the interface has been marked as down, while 
-`napalm_logs_interface_state` maintains the interface state (0 = DOWN, 1 = UP). Each of these metrics has two labels, 
-`host` and `interface` which help us identify what interface is down and where (i.e., `ge-0/0/2` on `router1`).
+`napalm_logs_interface_down_total` counts how many times the interface has been marked as down, while `napalm_logs_interface_state` maintains the interface state (0 = DOWN, 1 = UP). Each of these metrics has two labels, `host` and `interface` which help us identify what interface is down and where (i.e., `ge-0/0/2` on `router1`).
 
 Prometheus not only that scrapes the metrics, but also is able to generate alerts on specific conditions.
-For example the following configuration would generate an alert when `napalm-logs` receives an _Interface 
-Down_ notification:
+For example the following configuration would generate an alert when `napalm-logs` receives an _InterfaceDown_ notification:
 
-```yaml
+<pre>
 groups:
 
   - name: Interface Alerts
@@ -360,41 +360,31 @@ groups:
           severity: major
         annotations:
           description: "Interface {{$labels.interface}} is down on {{$labels.host}}"
-```
+</pre>
 
-The alert has a specific name, "Interface Down", and it is fired when Prometheus detects the condition from `expr`, 
-which is `napalm_logs_interface_state == 0` (i.e., an interface is down). Using the `interface` and `host` labels, we
-are able to build a human-understandable message. For `ge-0/0/2` on `router1`, `Interface {{$labels.interface}} is down 
-on {{$labels.host}}` becomes `Interface ge-0/0/2 is down on router1`. Together with this, adding two extra labels, 
-`severity` and `service` - in general it is a good idea to have various labels to easily identify where and why the 
-alert is coming from, and how severe it is.
+The alert has a specific name, "Interface Down", and it is fired when Prometheus detects the condition from `expr`, which is `napalm_logs_interface_state == 0` (i.e., an interface is down). Using the `interface` and `host` labels, we are able to build a human-understandable message. For `ge-0/0/2` on `router1`, `Interface {{$labels.interface}} is down on {{$labels.host}}` becomes `Interface ge-0/0/2 is down on router1`. Together with this, adding two extra labels, `severity` and `service` - in general it is a good idea to have various labels to easily identify where and why the alert is coming from, and how severe it is.
 
-The configuration of this alert can be inspected visually, on the Prometheus web interface. Open your browser and go to 
-http://group00.labs.apnictraining.net:9090/rules. Here you should see the alert being configured as:
+The configuration of this alert can be inspected visually, on the Prometheus web interface. Open your browser and go to http://group00.labs.apnictraining.net:9090/rules. Here you should see the alert being configured as:
 
 ![](images/prometheus_rules.png)
 
-If you hover the `expr`, and click on it, you will be redirected to 
-http://group00.labs.apnictraining.net:9090/graph?g0.expr=napalm_logs_interface_state%20%3D%3D%200&g0.tab=0&g0.stacked=0&g0.range_input=1h 
-where you can see the evolution of the metric. As the value of the metric matches the expression, the alert is set, and 
-this can be seen under http://group00.labs.apnictraining.net:9090/alerts:
+If you hover the `expr`, and click on it, you will be redirected to http://group00.labs.apnictraining.net:9090/graph?g0.expr=napalm_logs_interface_state%20%3D%3D%200&g0.tab=0&g0.stacked=0&g0.range_input=1h where you can see the evolution of the metric. As the value of the metric matches the expression, the alert is set, and this can be seen under http://group00.labs.apnictraining.net:9090/alerts:
 
 ![](images/prometheus_alert_firing.png)
 
 Here we notice that Prometheus generates the alert for interface down, using the labels we expect.
 
-Here comes Alertmanager into play. Alertmanager is configured to aggregate the Prometheus alerts. Go to 
-http://group00.labs.apnictraining.net:9093/#/alerts using your web browser. This is where you can find the alerts in 
-Alertmanager. Notice that there's an alert currently firing, just like we've seen earlier in Prometheus.
+Here comes Alertmanager into play. Alertmanager is configured to aggregate the Prometheus alerts. Go to http://group00.labs.apnictraining.net:9093/#/alerts using your web browser. This is where you can find the alerts in Alertmanager. Notice that there's an alert currently firing, just like we've seen earlier in Prometheus.
 
 ![](images/alertmanager_alert.png)
 
-The biggest advantage of Alertmanager however is that it is able to "export" these alerts. For our use case,
-Alertmanager can invoke a webhook to send the alerts to a specific endpoint; this endpoint will be the Salt API:
+The biggest advantage of Alertmanager however is that it is able to "export" these alerts. For our use case, Alertmanager can invoke a webhook to send the alerts to a specific endpoint; this endpoint will be the Salt API:
 
-`/etc/alertmanager/alertmanager.yml`
+```bash
+cat /etc/alertmanager/alertmanager.yml
+```
 
-```yaml
+<pre>
 route:
   group_by: ['alertname']
   group_wait: 10s
@@ -408,22 +398,19 @@ receivers:
    - url: 'http://salt:8080/hook/alertmanager/'
      max_alerts: 1
      send_resolved: true
-```
+</pre>
 
-Notice that under `webhook_configs`, the URL is the `/hook` endpoint, followed by the `/alertmanager` URL path. This 
-would ensure that the events tags would have the following format: `salt/netapi/hook/alertmanager`.
+Notice that under `webhook_configs`, the URL is the `/hook` endpoint, followed by the `/alertmanager` URL path. This would ensure that the events tags would have the following format: `salt/netapi/hook/alertmanager`.
 
 Visually, the entire topology becomes:
 
 ![](images/napalm-logs-webhook.png)
 
-As previously, napalm-logs receives the syslog messages, and exposes the data as metrics, from where Prometheus collects 
-them, and fires alerts as needed; the alerts are sent to Alertmanager for aggregation, and then sent to Salt as events 
-via webhooks.
+As previously, napalm-logs receives the syslog messages, and exposes the data as metrics, from where Prometheus collects them, and fires alerts as needed; the alerts are sent to Alertmanager for aggregation, and then sent to Salt as events via webhooks.
 
 Check the event bus and you should notice an event with the following structure:
 
-```
+<pre>
 salt/netapi/hook/alertmanager	{
     "_stamp": "2021-01-20T17:52:18.317465",
     "body": "{\"receiver\":\"salt\",\"status\":\"firing\",\"alerts\":[{\"status\":\"firing\",\"labels\":{\"alertname\":\"Interface Down\",\"host\":\"router1\",\"instance\":\"napalm-logs:9443\",\"interface\":\"ge-0/0/2\",\"job\":\"napalm-logs\",\"pid\":\"9\",\"service\":\"Interfaces\",\"severity\":\"major\"},\"annotations\":{\"description\":\"Interface ge-0/0/2 is down on router1\"},\"startsAt\":\"2021-01-20T17:52:08.313103438Z\",\"endsAt\":\"0001-01-01T00:00:00Z\",\"generatorURL\":\"http://prometheus:9090/graph?g0.expr=napalm_logs_interface_state+%3D%3D+0\\u0026g0.tab=1\",\"fingerprint\":\"eff8f0b09251aeba\"}],\"groupLabels\":{\"alertname\":\"Interface Down\"},\"commonLabels\":{\"alertname\":\"Interface Down\",\"host\":\"router1\",\"instance\":\"napalm-logs:9443\",\"interface\":\"ge-0/0/2\",\"job\":\"napalm-logs\",\"pid\":\"9\",\"service\":\"Interfaces\",\"severity\":\"major\"},\"commonAnnotations\":{\"description\":\"Interface ge-0/0/2 is down on router1\"},\"externalURL\":\"http://alertmanager:9093\",\"version\":\"4\",\"groupKey\":\"{}:{alertname=\\\"Interface Down\\\"}\",\"truncatedAlerts\":0}\n",
@@ -481,7 +468,7 @@ salt/netapi/hook/alertmanager	{
         "version": "4"
     }
 }
-```
+</pre>
 
 This event is now on the Salt bus, and we can, for example, define reactions in response to these events.
 
