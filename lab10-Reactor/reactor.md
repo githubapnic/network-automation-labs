@@ -640,35 +640,42 @@ napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1	{
 The _napalm-logs_ `CONFIGURATION_COMMIT_COMPLETED` notification type tells that there was a successful commit, and just above it, `CONFIGURATION_COMMIT_REQUESTED` tells us that user `apnic` has requested this commit. Using the Reactor system, we can make use of the `CONFIGURATION_COMMIT_COMPLETED` notifications and backup the config when this event is seen on the bus.
 
 The event tag is `napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1`, and as we want to be able to match `CONFIGURATION_COMMIT_COMPLETED`-type events from any platform and any device, the tag match becomes: 
-`napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*`. Let's configure this on the Master. **ctrl+c** to stop the running Master process, and update the `reactor` configuration as follows:
+`napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*`. View the reactor configuration for the Master. 
 
-`/etc/salt/master`:
+```bash
+grep "reactor:" -A 4 /etc/salt/master
+```
 
-```yaml
+**Note**: The following code block should be included
+
+<pre>
 reactor:
   - 'napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*':
     - salt://reactor/bkup.sls
-```
+</pre>
 
-With this configuration Salt will call the `salt://reactor/bkup.sls` Reactor SLS on `CONFIGURATION_COMMIT_COMPLETED` 
-notifications received from _napalm-logs_.
+If it is not please update the Master. Press **ctrl+c** to stop the running Master process, and update the `reactor` configuration as follows:
+
+With this configuration Salt will call the `salt://reactor/bkup.sls` Reactor SLS on `CONFIGURATION_COMMIT_COMPLETED` notifications received from _napalm-logs_.
 
 Now start the Master in debug mode and let it run in the background: `root@salt:~# salt-master -l debug`.
 
-The Reactor SLS `/srv/salt/reactor/bkup.sls` is:
+The Reactor SLS is:
 
-```yaml
+```bash
+cat /srv/salt/reactor/bkup.sls
+```
+
+<pre>
 Backup config:
   local.net.save_config:
     - tgt: {{ data.host }}
     - kwarg:
         source: running
         path: /tmp/{{ data.host }}.conf
-```
+</pre>
 
-This is Reactor SLS we've used previously, but minus the conditions, as now we're sure that this reactor is invoked only 
-on successful commits. One particular detail has been changed: `data.id` becomes `data.host` as the _napalm-logs_ events 
-don't contain an `id` field, but `host`.
+This is Reactor SLS we've used previously, but minus the conditions, as now we're sure that this reactor is invoked only on successful commits. One particular detail has been changed: `data.id` becomes `data.host` as the _napalm-logs_ events don't contain an `id` field, but `host`.
 
 The following diagram illustrates the full design and the interaction between napalm-logs, Salt and the network devices:
 
@@ -676,7 +683,11 @@ The following diagram illustrates the full design and the interaction between na
 
 In the terminal window where we have the command line, run:
 
+```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.2'
 ```
+
+<pre>
 root@salt:~# salt router1 net.load_config text='set system ntp server 10.0.0.2'
 router1:
     ----------
@@ -689,13 +700,12 @@ router1:
     loaded_config:
     result:
         True
-```
+</pre>
 
 
-In the Master logs, we can notice some activity and the following logs which show that our `salt://reactor/bkup.sls` is 
-being invoked on the `CONFIGURATION_COMMIT_COMPLETED` _napalm-logs_ event:
+In the Master logs, we can notice some activity and the following logs which show that our `salt://reactor/bkup.sls` is being invoked on the `CONFIGURATION_COMMIT_COMPLETED` _napalm-logs_ event:
 
-```
+<pre>
 [DEBUG   ] Sending event: tag = napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1; data = {'error': 'CONFIGURATION_COMMIT_COMPLETED', 'host': 'router1', 'ip': '172.22.1.1', 'timestamp': 1610992577, 'yang_message': {'system': {'operations': {'commit_complete': True}}}, 'message_details': {'date': 'Jan 18', 'time': '17:56:17', 'hostPrefix': None, 'host': 'router1', 'processName': 'mgd', 'processId': '33918', 'tag': 'UI_COMMIT_COMPLETED', 'pri': '188', 'message': 'commit complete', 'facility': 23, 'severity': 4}, 'yang_model': 'NO_MODEL', 'os': 'junos', 'facility': 23, 'severity': 4, '_stamp': '2021-01-18T17:56:32.127359'}
 [DEBUG   ] Closing IPCMessageSubscriber instance
 [DEBUG   ] Closing IPCMessageClient instance
@@ -718,11 +728,11 @@ Backup config:
 [DEBUG   ] Results of YAML rendering:
 OrderedDict([('Backup config', OrderedDict([('local.net.save_config', [OrderedDict([('tgt', 'router1')]), OrderedDict([('kwarg', OrderedDict([('source', 'running'), ('path', '/tmp/router1.conf')]))])])]))])
 [PROFILE ] Time (in seconds) to render '/var/cache/salt/master/files/base/reactor/bkup.sls' using 'yaml' renderer: 0.0013186931610107422
-```
+</pre>
 
 On the event bus the following sequence of events can be seen:
 
-```
+<pre>
 napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1	{
     "_stamp": "2021-01-18T17:56:32.127359",
     "error": "CONFIGURATION_COMMIT_COMPLETED",
@@ -820,14 +830,11 @@ salt/job/20210118175632135438/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
-Notice that `salt/job/20210118175632135438/new` event is actually being kicked off **before** even the Minion returns 
-(`salt/job/20210118175632135438/ret/router1` is the return event). This proves that backing up the configuration through 
-this methodology is more reliable as the events are being generated by the device itself. Similarly, if someone else 
-performs manual changes (outside of Salt), Salt is still aware of this and will backup the config for you:
+Notice that `salt/job/20210118175632135438/new` event is actually being kicked off **before** even the Minion returns (`salt/job/20210118175632135438/ret/router1` is the return event). This proves that backing up the configuration through this methodology is more reliable as the events are being generated by the device itself. Similarly, if someone else performs manual changes (outside of Salt), Salt is still aware of this and will backup the config for you:
 
-```
+<pre>
 napalm/syslog/junos/CONFIGURATION_COMMIT_REQUESTED/router1	{
     "_stamp": "2021-01-18T18:06:40.756902",
     "error": "CONFIGURATION_COMMIT_REQUESTED",
@@ -940,7 +947,7 @@ salt/job/20210118180641279826/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
 ---
 **End of Lab**
