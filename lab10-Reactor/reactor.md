@@ -10,6 +10,10 @@ The main difference however is that the Salt Master is not started, and we will 
 Before anything else, let's firstly start the Salt Master (in debug mode):
 
 ```bash
+salt-master -l debug
+```
+
+<pre>
 root@salt:~# salt-master -l debug
 [DEBUG   ] Reading configuration from /etc/salt/master
 [DEBUG   ] Using cached minion ID from /etc/salt/minion_id: salt
@@ -17,14 +21,12 @@ root@salt:~# salt-master -l debug
 ...
 ... snip ...
 ...
-```
+</pre>
 
-As the Master is not started in daemon mode, it won't return the CLI, so let's leave it running. Open another terminal 
-window where we'll be watching the Salt event bus:
+As the Master is not started in daemon mode, it won't return the CLI, so let's leave it running. Open another terminal window where we'll be watching the Salt event bus:
 
 ```bash
-root@salt:~# salt-run state.event pretty=True
-
+salt-run state.event pretty=True
 ```
 
 Similarly, as seen before, this doesn't return the command line either, so let's open a third terminal window. The other 
@@ -35,13 +37,17 @@ Execute the following command:
 
 ```bash
 root@salt:~# salt router1 test.ping
+```
+
+<pre>
+root@salt:~# salt router1 test.ping
 router1:
     True
-```
+</pre>
 
 In the Master logs, you will notice the following:
 
-```
+<pre>
 [DEBUG   ] Sending event: tag = 20210118133221334469; data = {'minions': ['router1'], '_stamp': '2021-01-18T13:32:21.335059'}
 [DEBUG   ] Sending event: tag = salt/job/20210118133221334469/new; data = {'jid': '20210118133221334469', 'tgt_type': 'glob', 'tgt': 'router1', 'user': 'root', 'fun': 'test.ping', 'arg': [], 'minions': ['router1'], 'missing': [], '_stamp': '2021-01-18T13:32:21.335317'}
 [DEBUG   ] Adding minions for job 20210118133221334469: ['router1']
@@ -49,11 +55,11 @@ In the Master logs, you will notice the following:
 [DEBUG   ] Published command details {'fun': 'test.ping', 'arg': [], 'tgt': 'router1', 'jid': '20210118133221334469', 'ret': '', 'tgt_type': 'glob', 'user': 'root'}
 [INFO    ] Got return from router1 for job 20210118133221334469
 [DEBUG   ] Sending event: tag = salt/job/20210118133221334469/ret/router1; data = {'cmd': '_return', 'id': 'router1', 'success': True, 'return': True, 'retcode': 0, 'jid': '20210118133221334469', 'fun': 'test.ping', 'fun_args': [], '_stamp': '2021-01-18T13:32:21.355350'}
-```
+</pre>
 
 These represent a more verbose version of the events from the Salt bus. You can check the event bus:
 
-```
+<pre>
 20210118133221334469	{
     "_stamp": "2021-01-18T13:32:21.335059",
     "minions": [
@@ -84,44 +90,56 @@ salt/job/20210118133221334469/ret/router1	{
     "return": true,
     "success": true
 }
-```
+</pre>
 
 Any of these events can be matched by the Salt Reactor and kick off jobs in response.
 
 Let's look at the _tag_ and the _data_ of the return event. The _tag_ has the following pattern: 
-`salt/job/<JID>/ret/<MINION>`. This can be translated to the following glob expression, which would match _any_ return 
-event (from any job, any Minion): `salt/job/*/ret/*`. We can therefore configure the Reactor (in the Master 
-configuration file):
+`salt/job/<JID>/ret/<MINION>`. This can be translated to the following glob expression, which would match _any_ return event (from any job, any Minion): `salt/job/*/ret/*`. We can therefore configure the Reactor (in the Master configuration file):
 
-`/etc/salt/master`
+```bash
+grep reactor -A 2 /etc/salt/master
+```
 
-```yaml
+<pre>
 reactor:
   - 'salt/job/*/ret/*':
     - /srv/salt/reactor/test.sls
-```
+</pre>
 
-This Reactor configuration, would invoke the `/srv/salt/reactor/test.sls` Reactor SLS file, on any return event. As the 
-Reactor file is under the Salt file system, this can also be written as:
+This Reactor configuration, would invoke the `/srv/salt/reactor/test.sls` Reactor SLS file, on any return event. As the Reactor file is under the Salt file system, this can also be written as:
 
-```yaml
+<pre>
 reactor:
   - 'salt/job/*/ret/*':
     - salt://reactor/test.sls
-```
+</pre>
 
 In `/srv/salt/reactor/test.sls` let's simply log an error when the Reactor is invoked:
 
-`/srv/salt/reactor/test.sls`
-
+```bash
+cat /srv/salt/reactor/test.sls
 ```
+
+<pre>
 {%- do salt.log.error('Hello world') %}
+</pre>
+
+**ctrl+c** to stop the Master, then restart it by running:
+
+```bash
+salt-master -l debug
 ```
 
-Ctrl-C to stop the Master, then restart it by running `salt-master -l debug`. Once the Master is settled, execute a Salt 
-command (anything), e.g., `salt router1 test.ping`. In the Master logs you'll notice the following sequence:
+Once the Master is settled, open a new terminal window and execute a Salt command (anything), e.g., 
 
+```bash
+salt router1 test.ping
 ```
+
+In the Master logs you'll notice the following sequence:
+
+<pre>
 [DEBUG   ] Sending event: tag = salt/job/20210118151211250355/ret/router1; data = {'cmd': '_return', 'id': 'router1', 'success': True, 'return': True, 'retcode': 0, 'jid': '20210118151211250355', 'fun': 'test.ping', 'fun_args': [], '_stamp': '2021-01-18T15:12:11.270550'}
 [DEBUG   ] Gathering reactors for tag salt/job/20210118151211250355/ret/router1
 [DEBUG   ] In saltenv 'base', looking at rel_path 'reactor/test.sls' to resolve 'salt://reactor/test.sls'
@@ -135,18 +153,14 @@ command (anything), e.g., `salt router1 test.ping`. In the Master logs you'll no
 {}
 [PROFILE ] Time (in seconds) to render '/var/cache/salt/master/files/base/reactor/test.sls' using 'yaml' renderer: 0.0002777576446533203
 [DEBUG   ] Gathering reactors for tag salt/auth
-```
+</pre>
 
-These lines say that after the `salt/job/20210118151211250355/ret/router1` event, Salt is looking if there are any 
-Reactors configured for this event. As there are, it's trying to locate `reactor/test.sls` under the Salt file system, 
-then render the SLS file. Notice the `[ERROR   ] Hello world` log line, which confirms that the Reactor is working well.
+These lines say that after the `salt/job/20210118151211250355/ret/router1` event, Salt is looking if there are any Reactors configured for this event. As there are, it's trying to locate `reactor/test.sls` under the Salt file system, then render the SLS file. Notice the `[ERROR   ] Hello world` log line, which confirms that the Reactor is working well.
 
-Without stopping the Salt Master, we are able to update the Reactor SLS. Let's do more than just log. For example, 
-invoke a number of actions, e.g., execute two functions `test.echo` and `grains.items` on the Minion.
+Without stopping the Salt Master, we are able to update the Reactor SLS. Let's do more than just log. For example, invoke a number of actions, e.g., execute two functions `test.echo` and `grains.items` on the Minion.
 
-`/srv/salt/reactor/test.sls`
-
-```sls
+```bash
+cat <<EOF > /srv/salt/reactor/test.sls
 {%- if data.fun == 'test.ping' %}
 
 Echo:
@@ -160,16 +174,36 @@ Grains:
     - tgt: {{ data.id }}
 
 {%- endif %}
+EOF
 ```
 
-This reactor would kick off two jobs whenever `test.ping` is being executed. The `if data.fun == 'test.ping'` test is 
-important to avoid a Reaction loop: both `Echo` and `Grains` generate job events, and therefore return events, and 
-without checking the function name, this would result in a continuous cycle. `data.fun` refers to the `fun` field in the 
-event _data_.
+<pre>
+{%- if data.fun == 'test.ping' %}
 
-Executing `salt router1 test.ping`, besides the usual job events, we'd also notice the following:
+Echo:
+  local.test.echo:
+    - tgt: {{ data.id }}
+    - arg:
+      - "Hello, here are my Grains"
 
+Grains:
+  local.grains.items:
+    - tgt: {{ data.id }}
+
+{%- endif %}
+</pre>
+
+This reactor would kick off two jobs whenever `test.ping` is being executed. The `if data.fun == 'test.ping'` test is important to avoid a Reaction loop: both `Echo` and `Grains` generate job events, and therefore return events, and without checking the function name, this would result in a continuous cycle. `data.fun` refers to the `fun` field in the event _data_.
+
+Do a test ping
+
+```bash
+salt router1 test.ping
 ```
+
+Return to the terminal window that is running the Salt master in debug mode. Besides the usual job events, we'd also notice the following:
+
+<pre>
 20210118144807692394	{
     "_stamp": "2021-01-18T14:48:07.693101",
     "minions": [
@@ -179,9 +213,9 @@ Executing `salt router1 test.ping`, besides the usual job events, we'd also noti
 salt/job/20210118144807692394/new	{
     "_stamp": "2021-01-18T14:48:07.693351",
     "arg": [
-        "Hello, here are my Grains"
+       <strong>"Hello, here are my Grains"</strong>
     ],
-    "fun": "test.echo",
+    <strong>"fun": "test.echo" </strong>,
     "jid": "20210118144807692394",
     "minions": [
         "router1"
@@ -258,11 +292,9 @@ salt/job/20210118144807701874/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
-There are two separate jobs, one with the JID `20210118144807692394` and another one with `20210118144807701874` - one 
-for the _Hello_ job executing `test.echo` and the other one for the _Grains_ job respectively, executing `grains.items`,
-with the afferent job creation and return events.
+There are two separate jobs, one with the JID `20210118144807692394` and another one with `20210118144807701874` - one for the _Hello_ job executing `test.echo` and the other one for the _Grains_ job respectively, executing `grains.items`, with the afferent job creation and return events.
 
 ## Part-2: Backing up the device configuration on changes
 
