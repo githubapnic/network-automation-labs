@@ -127,8 +127,17 @@ reactor:
 ```bash
 sed -i '/bkup/a \ \ \ \ \- salt\:\/\/reactor\/test.sls' /etc/salt/master
 sed -i "/test.sls/i \ \ \- \'salt\/job\/\*\/ret\/\*\'\:" /etc/salt/master
+grep "reactor:" -A 4 /etc/salt/master
 ```
 
+<pre>
+root@salt:~# grep "reactor:" -A 4 /etc/salt/master
+reactor:
+  - 'napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*':
+    - salt://reactor/bkup.sls
+  - 'salt/job/*/ret/*':
+    - salt://reactor/test.sls
+</pre>
 
 In `/srv/salt/reactor/test.sls` let's simply log an error when the Reactor is invoked:
 
