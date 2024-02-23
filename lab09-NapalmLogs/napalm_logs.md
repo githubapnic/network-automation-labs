@@ -496,39 +496,48 @@ From a graph like this it's easy to identify when something is going on in the n
 
 ## Part-3: Importing napalm-logs events on the Salt bus
 
-As we've seen in the _Lab 8_ (_The Salt Event Bus_), we can both import and export events to / from the Salt bus. As 
-napalm-logs is capable to generate network events from the syslog messages, we can then import them onto the Salt bus. 
-This can be done via the `napalm_syslog` Engine. Enabling this engine on the Master is very simple, similar to what 
-we've seen in the previous example with the `http_logstash` Engine:
+As we've seen in the _Lab 8_ (_The Salt Event Bus_), we can both import and export events to / from the Salt bus. As napalm-logs is capable to generate network events from the syslog messages, we can then import them onto the Salt bus. This can be done via the `napalm_syslog` Engine. Enabling this engine on the Master is very simple, similar to what we've seen in the previous example with the `http_logstash` Engine:
 
-`/etc/salt/master`
+```bash
+grep -A 4 -B 9 napalm_syslog /etc/salt/master
+```
 
-```yaml
+<pre>
 engines:
   - napalm_syslog:
       disable_security: true
       transport: zmq
       address: napalm-logs
       port: 49017
-```
+</pre>
 
-The options configured under the `napalm_syslog` key represent the exact options we have configured on the napalm-logs 
-side:
+The options configured under the `napalm_syslog` key represent the exact options we have configured on the napalm-logs side:
 
-- `disable_security: true`: as napalm-logs is started with this option, Salt must be aware as well that the 
-  communication is unencrypted.
-- `address: napalm-logs`: this is the address where we can reach our napalm-logs instance, from Salt.
-- `port: 49017`: this is the port we have configured the `zmq` Publisher on the napalm-logs side (see `/etc/napalm/logs` 
-  above).
+- **disable_security: true**: as napalm-logs is started with this option, Salt must be aware as well that the communication is unencrypted.
+- **address: napalm-logs**: this is the address where we can reach our napalm-logs instance, from Salt.
+- **port: 49017**: this is the port we have configured the `zmq` Publisher on the napalm-logs side (see `/etc/napalm/logs` above).
 
 The topology is depicted below:
 
 ![](images/napalm_logs_full.png)
 
-With these options set, let's trigger some events - for example let's revert the NTP configuration we've deployed 
-previously:
+If the Salt bus is not running. Open a new terminal window and type the following:
 
 ```bash
+napalm-logs -c /etc/napalm/logs
+```
+
+As it's running in debug mode, it is quite verbose, but this is very useful when setting it up for the very first time. 
+
+The command doesn't return the prompt, as it's meant to run as a daemon, so **don't** terminate (Ctr-C) or close the terminal. Leave this terminal like this, as we will get back to it in a bit, to watch napalm-logs starting to receive the messages.
+
+With these options set, let's trigger some events - for example let's revert the NTP configuration we've deployed previously. In the other terminal window
+
+```bash
+salt router1 net.load_config text='delete system ntp'
+```
+
+<pre>
 root@salt:~# salt router1 net.load_config text='delete system ntp'
 router1:
     ----------
@@ -543,13 +552,13 @@ router1:
     loaded_config:
     result:
         True
-```
+</pre>
 
 
 On the Salt bus we should notice the following events:
 
 
-```
+<pre>
 napalm/syslog/junos/CONFIGURATION_COMMIT_REQUESTED/router1	{
     "_stamp": "2021-01-14T15:33:24.796600",
     "error": "CONFIGURATION_COMMIT_REQUESTED",
@@ -617,21 +626,19 @@ napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1	{
     },
     "yang_model": "NO_MODEL"
 }
-```
+</pre>
 
-Notice the structure of the two events. The event tag starts with `napalm/syslog`; as this is not a native Salt event, 
-it can't be registered under the `salt/` namespace. The tag also contains the operating system name (i.e., `junos` in 
-this case), the napalm-logs notification type (either `CONFIGURATION_COMMIT_REQUESTED` or 
-`CONFIGURATION_COMMIT_COMPLETED` in the above), and, lastly the device name (i.e., `router1`). Using this pattern, you 
-are able to group the events based on a number of criteria, e.g., group by OS, group by device, group by napalm-logs 
-type, or a combination of these, and so on.
+Notice the structure of the two events. The event tag starts with `napalm/syslog`; as this is not a native Salt event, it can't be registered under the `salt/` namespace. The tag also contains the operating system name (i.e., `junos` in this case), the napalm-logs notification type (either `CONFIGURATION_COMMIT_REQUESTED` or `CONFIGURATION_COMMIT_COMPLETED` in the above), and, lastly the device name (i.e., `router1`). Using this pattern, you are able to group the events based on a number of criteria, e.g., group by OS, group by device, group by napalm-logs type, or a combination of these, and so on.
 
-The event data is simply the napalm-logs event unchanged. Remember - or see above - the structure of the 
-`CONFIGURATION_COMMIT_REQUESTED` and `CONFIGURATION_COMMIT_COMPLETED` napalm-logs messages from _Part-1_.
+The event data is simply the napalm-logs event unchanged. Remember - or see above - the structure of the `CONFIGURATION_COMMIT_REQUESTED` and `CONFIGURATION_COMMIT_COMPLETED` napalm-logs messages from _Part-1_.
 
 Let's re-apply the NTP configuration that will trigger an NTP server unreachable notification:
 
 ```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.1'
+```
+
+<pre>
 root@salt:~# salt router1 net.load_config text='set system ntp server 10.0.0.1'
 router1:
     ----------
@@ -646,13 +653,12 @@ router1:
     loaded_config:
     result:
         True
-```
+</pre>
 
-The device will try to synchronize with `10.0.0.1` and after several seconds it will send a notification. Watch the Salt 
-event bus and wait. You should see an event similar to the following:
+The device will try to synchronize with `10.0.0.1` and after several seconds it will send a notification. Watch the Salt event bus and wait. You should see an event similar to the following:
 
 
-```
+<pre>
 napalm/syslog/junos/NTP_SERVER_UNREACHABLE/router1	{
     "_stamp": "2021-01-14T15:46:01.243215",
     "error": "NTP_SERVER_UNREACHABLE",
@@ -692,11 +698,9 @@ napalm/syslog/junos/NTP_SERVER_UNREACHABLE/router1	{
     },
     "yang_model": "openconfig-system"
 }
-```
+</pre>
 
-Using this simple methodology, just by configuring a few lines on the napalm-logs and Salt side, we have syslog data 
-transformed into Salt events, imported on the Salt bus. From there, using the _Reactor_ system, which we'll explore in 
-the next lab, we are able to trigger jobs in response to the network events reported via syslog.
+Using this simple methodology, just by configuring a few lines on the napalm-logs and Salt side, we have syslog data transformed into Salt events, imported on the Salt bus. From there, using the _Reactor_ system, which we'll explore in the next lab, we are able to trigger jobs in response to the network events reported via syslog.
 
 ---
 **End of Lab**
