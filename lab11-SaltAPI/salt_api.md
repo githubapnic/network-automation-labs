@@ -184,13 +184,7 @@ As everything in Salt, this generates a series of events. To verify this, let's 
 salt-run state.event pretty=True
 ```
 
-<pre>
-root@salt:~# salt-run state.event pretty=True
-...
-</pre>
-
-Execute `curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=local -d tgt=router1 
--d fun=test.ping` again and you should see the following events on the Salt bus:
+Execute `curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=local -d tgt=router1 -d fun=test.ping` again and you should see the following events on the Salt bus:
 
 ```bash
 curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=local -d tgt=router1 -d fun=test.ping
@@ -380,9 +374,7 @@ Here comes Alertmanager into play. Alertmanager is configured to aggregate the P
 
 The biggest advantage of Alertmanager however is that it is able to "export" these alerts. For our use case, Alertmanager can invoke a webhook to send the alerts to a specific endpoint; this endpoint will be the Salt API:
 
-```bash
-cat /etc/alertmanager/alertmanager.yml
-```
+Normally the Alertmanager will be configured in **/etc/alertmanager/alertmanager.yml**. For this lab it is running on an external system, but you can view the file contents below:
 
 <pre>
 route:
