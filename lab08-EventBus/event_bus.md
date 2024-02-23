@@ -99,8 +99,8 @@ The configuration of the Engines is simple, and they can be both enabled on the 
 
 <pre>
 engines:
-  - <engine name>:
-      <engine arguments>
+  - \<engine name\>:
+      \<engine arguments\>
 </pre>
 
 In this lab we will be looking into the [`http_logstash`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.http_logstash.html#module-salt.engines.http_logstash) Engine which is used to send the events to a Logstash endpoint, via HTTP requests. This is an excellent way to monitor the Salt activity (i.e., who executed what command and when), while it's very easy to enable it.
@@ -197,7 +197,13 @@ Here, we will need to create a new search index, where we will be able to find o
 
 ![](images/create_index_part02.png)
 
-At _Step 1_, _Define an index pattern_, insert `logstash*` and click _Next step_. At _Step 2_, _Configure settings_, from the drop-down, select `@timestamp` from the _Time field_ and click on the _Create index pattern_ button. Now, we have created a new Kibana index, so we can start visualising the Salt logs: go to the main page, then select on _Discover_. Here, we can see that there are three logs:
+At _Step 1_, _Define an index pattern_, insert `logstash*` and click _Next step_. 
+
+![](images/kibana_create_index.png)
+
+At _Step 2_, _Configure settings_, from the drop-down, select `@timestamp` from the _Time field_ and click on the _Create index pattern_ button. 
+
+Now, we have created a new Kibana index, so we can start visualising the Salt logs: go to the main page, then select on _Discover_. Here, we can see that there are three logs:
 
 ![](images/create_index_part01.png)
 
