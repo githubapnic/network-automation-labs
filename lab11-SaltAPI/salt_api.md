@@ -318,11 +318,29 @@ router1:
         True
 </pre>
 
-This generates a syslog message:
+This generates a syslog message on router1. To view the message ssh into router1.
+
+```bash
+ssh -o "StrictHostKeyChecking no" apnic@router1
+```
+
+**password** = APNIC2021
+
+Show the log message
+
+```bash
+show log messages | match ge-0/0/2 | match SNMP
+```
 
 <pre>
 Jan 20 17:46:25  router1 mib2d[4745]: SNMP_TRAP_LINK_DOWN: ifIndex 520, ifAdminStatus down(2), ifOperStatus down(2), ifName ge-0/0/2
 </pre>
+
+Exit router1 session
+
+```bash
+exit
+```
 
 This syslog message is received by napalm-logs, and generates a couple of Prometheus metrics:
 
