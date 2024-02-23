@@ -490,6 +490,18 @@ OrderedDict([('Backup config', OrderedDict([('local.net.save_config', [OrderedDi
 
 Rendering the Reactor SLS now generates a structure that would invoke `net.save_config` on `router`. This is the CLI equivalent of calling: `salt router1 net.save_config source=running path=/tmp/router1.conf`.
 
+Try to find the router1.conf file on the master.
+
+```bash
+ls -lash /tmp/*.conf
+```
+
+**Note**: It is not found as it is actually stored on the local file system of the Minion. Use a salt command to view the file:
+
+```bash
+salt router1 file.read /tmp/router1.conf
+```
+
 A few line further down in the logs, you can also see:
 
 <pre>
@@ -550,16 +562,11 @@ This shows that `net.save_config` has been executed immediately after we've appl
 
 ## Part-3: Reacting to napalm-logs events
 
-While `net.load_config` and `net.load_template` are vendor-agnostic, and the methodology presented above can be used 
-uniformly for whatever platform, it still has one minor disadvantage: the `net.load_config` and `net.load_template` 
-function are available only for NAPALM Proxy Minions. On top of that, if someone performs a manual configuration change 
-(i.e., not via Salt, but using the router / switch CLI), we are not going to be able to catch it by doing this. This is 
-where the events imported from _napalm-logs_, using the `napalm_syslog` Engine may help.
+While `net.load_config` and `net.load_template` are vendor-agnostic, and the methodology presented above can be used uniformly for whatever platform, it still has one minor disadvantage: the `net.load_config` and `net.load_template` function are available only for NAPALM Proxy Minions. On top of that, if someone performs a manual configuration change (i.e., not via Salt, but using the router / switch CLI), we are not going to be able to catch it by doing this. This is where the events imported from _napalm-logs_, using the `napalm_syslog` Engine may help.
 
-Check the Salt event bus and scroll up. During the previous commit operation, there was an event telling us that there 
-was a commit operation on the device:
+Check the Salt event bus and scroll up. During the previous commit operation, there was an event telling us that there was a commit operation on the device:
 
-```
+<pre>
 napalm/syslog/junos/CONFIGURATION_COMMIT_REQUESTED/router1	{
     "_stamp": "2021-01-18T17:30:45.556427",
     "error": "CONFIGURATION_COMMIT_REQUESTED",
@@ -628,17 +635,12 @@ napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1	{
     },
     "yang_model": "NO_MODEL"
 }
-```
+</pre>
 
-The _napalm-logs_ `CONFIGURATION_COMMIT_COMPLETED` notification type tells that there was a successful commit, and just 
-above it, `CONFIGURATION_COMMIT_REQUESTED` tells us that user `apnic` has requested this commit. Using the Reactor 
-system, we can make use of the `CONFIGURATION_COMMIT_COMPLETED` notifications and backup the config when this event is 
-seen on the bus.
+The _napalm-logs_ `CONFIGURATION_COMMIT_COMPLETED` notification type tells that there was a successful commit, and just above it, `CONFIGURATION_COMMIT_REQUESTED` tells us that user `apnic` has requested this commit. Using the Reactor system, we can make use of the `CONFIGURATION_COMMIT_COMPLETED` notifications and backup the config when this event is seen on the bus.
 
-The event tag is `napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1`, and as we want to be able to match 
-`CONFIGURATION_COMMIT_COMPLETED`-type events from any platform and any device, the tag match becomes: 
-`napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*`. Let's configure this on the Master. Ctrl-C to stop the running 
-Master process, and update the `reactor` configuration as follows:
+The event tag is `napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1`, and as we want to be able to match `CONFIGURATION_COMMIT_COMPLETED`-type events from any platform and any device, the tag match becomes: 
+`napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*`. Let's configure this on the Master. **ctrl+c** to stop the running Master process, and update the `reactor` configuration as follows:
 
 `/etc/salt/master`:
 
