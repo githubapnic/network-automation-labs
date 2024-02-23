@@ -3,48 +3,48 @@
 
 As in the previous labs, for simplicity, all the Proxy Minions are started up and running.
 
-In addition to this, in the environment, there's an instance of Elasticsearch, Logstash and Kibana (the ELK stack)
-running and available (the installation and setup are beyond the scope, but can be followed at
-https://www.elastic.co/guide/en/elastic-stack/current/installing-elastic-stack.html)
+In addition to this, in the environment, there's an instance of Elasticsearch, Logstash and Kibana (the ELK stack) running and available (the installation and setup are beyond the scope, but can be followed at [https://www.elastic.co/guide/en/elastic-stack/current/installing-elastic-stack.html](https://www.elastic.co/guide/en/elastic-stack/current/installing-elastic-stack.html))
+
 The ELK stack will be used in the _Part-2_ section of the lab.
 
-Elasticsearch is a distributed, open source search and analytics engine for all types of data, including textual,
-numerical, geospatial, structured, and unstructured. 
+Elasticsearch is a distributed, open source search and analytics engine for all types of data, including textual, numerical, geospatial, structured, and unstructured. 
 
-Logstash is an open source data collection engine with real-time pipelining capabilities. Logstash can dynamically unify
-data from disparate sources and normalize the data into destinations of your choice.
+Logstash is an open source data collection engine with real-time pipelining capabilities. Logstash can dynamically unify data from disparate sources and normalize the data into destinations of your choice.
 
-Kibana is an open source frontend application that sits on top of the Elastic Stack, providing search and data
-visualization capabilities for data indexed in Elasticsearch.
+Kibana is an open source frontend application that sits on top of the Elastic Stack, providing search and data visualization capabilities for data indexed in Elasticsearch.
 
 Before commencing the lab, lets make sure our router configs have loaded correctly
 
 ```bash 
-root@salt:/# salt \* lab.restore -t 120
+salt \* lab.restore -t 120
 ```
 ## Part-1: Exploring the Salt Event Bus
 
-For this part, we will need to open two separate terminal windows: in one window we will be executing command, in the 
-other one we will be watching the Salt event bus.
+For this part, we will need to open two (2) separate terminal windows: in one window we will be executing command, in the other one we will be watching the Salt event bus.
 
 In the terminal where we will be watching the Salt event bus, execute:
 
 ```bash
-root@salt:~# salt-run state.event pretty=True
+salt-run state.event pretty=True
 ```
 
 The command doesn't return the prompt, so don't stop it!
 
-In the other window, execute:
+In the second (2nd) terminal window, execute:
 
 ```bash
-root@salt:~# salt router1 test.ping
-    True
+salt router1 test.ping
 ```
+
+<pre>
+root@salt:~# salt router1 test.ping
+router1:
+    True
+</pre>
 
 On the Salt bus, you should see a sequence of events similar to:
 
-```
+<pre>
 20210112141459301829	{
     "_stamp": "2021-01-12T14:14:59.302089",
     "minions": [
@@ -75,7 +75,7 @@ salt/job/20210112141459301829/ret/router1	{
     "return": true,
     "success": true
 }
-```
+</pre>
 
 What do they represent? Repeat the exercise, running various commands and targets:
 
@@ -86,41 +86,32 @@ What do they represent? Repeat the exercise, running various commands and target
 
 ## Part-2: Salt Engines
 
-The Salt event bus is a pluggable component, which works bi-directional: we can both export the events and import 
-external events on the Salt bus. This is done using the Engines subsystem. A Salt Engine is typically enabled on the 
-Master side, which runs in the background continuously doing a specific task to either import or export events, or even 
-transform an existing event and re-inject it.
+The Salt event bus is a pluggable component, which works bi-directional: we can both export the events and import external events on the Salt bus. This is done using the Engines subsystem. A Salt Engine is typically enabled on the Master side, which runs in the background continuously doing a specific task to either import or export events, or even transform an existing event and re-inject it.
 
-There are several Engine module available: https://docs.saltstack.com/en/master/ref/engines/all/index.html. Examples 
-include:
+There are several Engine module available: https://docs.saltstack.com/en/master/ref/engines/all/index.html. Examples include:
 
-- [`slack`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.slack.html#module-salt.engines.slack): An 
-  Engine that reads messages from Slack and can act on them. Interesting use case: execute Salt commands directly from 
-  Slack ("chat automation").
-- [`webhook`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.webhook.html#module-salt.engines.webhook):
-  Send events from webhook API.
-- [`logstash`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.logstash_engine.html#module-salt.engines.logstash_engine):
-  An engine that reads messages from the salt event bus and pushes them onto a logstash endpoint.
-- [`script`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.script.html#module-salt.engines.script): 
-  Send events based on an arbitrary script's stdout.
+- [`slack`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.slack.html#module-salt.engines.slack): An Engine that reads messages from Slack and can act on them. Interesting use case: execute Salt commands directly from Slack ("chat automation").
+- [`webhook`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.webhook.html#module-salt.engines.webhook): Send events from webhook API.
+- [`logstash`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.logstash_engine.html#module-salt.engines.logstash_engine): An engine that reads messages from the salt event bus and pushes them onto a logstash endpoint.
+- [`script`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.script.html#module-salt.engines.script): Send events based on an arbitrary script's stdout.
 
-The configuration of the Engines is simple, and they can be both enabled on the Master or Minion side - depending on the 
-use case:
+The configuration of the Engines is simple, and they can be both enabled on the Master or Minion side - depending on the use case:
 
-```yaml
+<pre>
 engines:
   - <engine name>:
       <engine arguments>
-```
+</pre>
 
-In this lab we will be looking into the 
-[`http_logstash`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.http_logstash.html#module-salt.engines.http_logstash) 
-Engine which is used to send the events to a Logstash endpoint, via HTTP requests. This is an excellent way to monitor 
-the Salt activity (i.e., who executed what command and when), while it's very easy to enable it.
+In this lab we will be looking into the [`http_logstash`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.http_logstash.html#module-salt.engines.http_logstash) Engine which is used to send the events to a Logstash endpoint, via HTTP requests. This is an excellent way to monitor the Salt activity (i.e., who executed what command and when), while it's very easy to enable it.
 
 The Engine is easy to enable, on the Master:
 
-```yaml
+```bash
+grep -in engines -A 7 /etc/salt/master
+```
+
+<pre>
 engines:
   - http_logstash:
       url: http://logstash:8080
@@ -129,28 +120,27 @@ engines:
         - salt/job/*/ret/*
       funs:
         - test.ping
-```
+</pre>
 
-This simple configuration enables the `http_logstash` Engine to send the Salt events to `http://logstash:8080` (via POST 
-requests), where Logstash is listening. But there's a lot of activity on the Salt bus - we could, of course, forward 
-everything, but it's probably a better idea to filter out and send _only_ what's important for us to monitor. For this 
-reasoning, we can chose to send only events whose tag match the expressions from the `tags`, and the function from 
-`funs`. With these particular settings, we would therefore send to Kibana the execution details of any new job as well 
-as returns invoking the `test.ping` Salt function.
+This simple configuration enables the `http_logstash` Engine to send the Salt events to `http://logstash:8080` (via POST requests), where Logstash is listening. But there's a lot of activity on the Salt bus - we could, of course, forward everything, but it's probably a better idea to filter out and send _only_ what's important for us to monitor. For this reasoning, we can chose to send only events whose tag match the expressions from the `tags`, and the function from `funs`. With these particular settings, we would therefore send to Kibana the execution details of any new job as well as returns invoking the `test.ping` Salt function.
 
 In a new terminal window, execute:
 
 ```bash
+salt router* test.ping
+```
+
+<pre>
 root@salt:~# salt router* test.ping
 router2:
     True
 router1:
     True
-```
+</pre>
 
 On the event bus, just like previously, you will notice the sequence of events:
 
-```
+<pre>
 salt/job/20210112183105949782/new	{
     "_stamp": "2021-01-12T18:31:05.950376",
     "arg": [],
@@ -187,47 +177,41 @@ salt/job/20210112183105949782/ret/router1	{
     "return": true,
     "success": true
 }
-```
+</pre>
 
-`salt/job/20210112182537674816/new` is the new job event, while `salt/job/20210112182537674816/ret/router2` and 
-`salt/job/20210112182537674816/ret/router1` are the return events, all part of the Job ID (JID) `20210112182537674816`.
+`salt/job/20210112182537674816/new` is the new job event, while `salt/job/20210112182537674816/ret/router2` and `salt/job/20210112182537674816/ret/router1` are the return events, all part of the Job ID (JID) `20210112182537674816`.
 
-So nothing has changed from this perspective. But behind the scenes, the `http_logstash` Engine, has also sent these 
-events to Logstash. We can visualise this using Kibana, also part of the ELK stack. For this, we need to open a web 
-browser and go to: http://group00.labs.apnictraining.net:5601 (replace `group00` with the group you have been assigned).
+So nothing has changed from this perspective. But behind the scenes, the `http_logstash` Engine, has also sent these events to Logstash. We can visualise this using Kibana, also part of the ELK stack. For this, we need to open a web browser and go to: **http://group00.labs.apnictraining.net:5601** (replace `group00` with the group you have been assigned).
 
-Why look into Kibana when we are sending the messages to Logstash? Logstash only receives the logs then sends them to 
-Elasticsearch to be indexed. The logs can then be visualised using Kibana.
+Why look into Kibana when we are sending the messages to Logstash? Logstash only receives the logs then sends them to Elasticsearch to be indexed. The logs can then be visualised using Kibana.
 
-On the front page, we will see a large section where it says Kibana, so click on it.
+On the front page, you will see the following:
 
-![](images/kibana_front_page.png)
+![](images/welcome_to_elastic.png)
 
-As it hasn't been setup initially, we will be redirected to a _Getting started with Kibana_ page. Click on the large
-_Add your data_ blue button at the bottom. Here, we will need to create a new search index, where we will be able to
-find our Salt logs. So let's proceed with _Create index pattern_.
+As it hasn't been setup initially, we will be redirected to a _Getting started with Kibana_ page. Click on the large _Add your data_ blue button at the bottom. On the next page click on the menu icon in the top left hand corner and then click on **discover**.
 
-![](images/kibana_create_index.png)
+![](images/create_index_part01.png)
 
-At _Step 1_, _Define an index pattern_, insert `logstash*` and click _Next step_. At _Step 2_, _Configure settings_, 
-from the drop-down, select `@timestamp` from the _Time field_ and click on the _Create index pattern_ button. Now, we 
-have created a new Kibana index, so we can start visualising the Salt logs: go to the main page, then select on
-_Discover_. Here, we can see that there are three logs:
+Here, we will need to create a new search index, where we will be able to find our Salt logs. So let's proceed with _Create index pattern_.
+
+![](images/create_index_part02.png)
+
+At _Step 1_, _Define an index pattern_, insert `logstash*` and click _Next step_. At _Step 2_, _Configure settings_, from the drop-down, select `@timestamp` from the _Time field_ and click on the _Create index pattern_ button. Now, we have created a new Kibana index, so we can start visualising the Salt logs: go to the main page, then select on _Discover_. Here, we can see that there are three logs:
+
+![](images/create_index_part01.png)
 
 ![](images/logstash_kibana_events.png)
 
-These three entries are nothing else than the three events above (one for the job creation, and another two - one for 
-each reply from the matched devices).
+These three entries are nothing else than the three events above (one for the job creation, and another two - one for each reply from the matched devices).
 
-If we look at the 3rd document (from top to the bottom), we can see the following details: `user: root`, `minions: 
-router1, router2`, `tgt: router*`, `fun: test.ping`, `tgt_type: glob`. These are the event details of the job execution. 
+If we look at the 3rd document (from top to the bottom), we can see the following details: `user: root`, `minions: router1, router2`, `tgt: router*`, `fun: test.ping`, `tgt_type: glob`. These are the event details of the job execution. 
+
 You can click on the document to visualise it in more detail, or in JSON format.
 
-Using this simple pattern and configuration, we can leverage advanced monitoring for our Salt environment. It is a great 
-way to gather insights and have a deep understanding how your users use Salt.
+Using this simple pattern and configuration, we can leverage advanced monitoring for our Salt environment. It is a great way to gather insights and have a deep understanding how your users use Salt.
 
-As a free bonus, this is equally a very important security gain, as you will be able to track down exactly who has 
-deploy a specific configuration change in your network, and when.
+As a free bonus, this is equally a very important security gain, as you will be able to track down exactly who has deploy a specific configuration change in your network, and when.
 
 ## Part-3: Salt Beacons
 
