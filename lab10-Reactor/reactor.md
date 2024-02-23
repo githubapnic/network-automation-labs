@@ -102,6 +102,15 @@ grep reactor -A 2 /etc/salt/master
 ```
 
 <pre>
+root@salt:~# grep reactor -A 2 /etc/salt/master
+reactor:
+  - 'napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*':
+    - salt://reactor/bkup.sls
+</pre>
+
+Now add one of the following code blocks underneath the bkup.sls.
+
+<pre>
 reactor:
   - 'salt/job/*/ret/*':
     - /srv/salt/reactor/test.sls
@@ -114,6 +123,12 @@ reactor:
   - 'salt/job/*/ret/*':
     - salt://reactor/test.sls
 </pre>
+
+```bash
+sed -i '/bkup/a \ \ \ \ \- salt\:\/\/reactor\/test.sls' /etc/salt/master
+sed -i "/test.sls/i \ \ \- \'salt\/job\/\*\/ret\/\*\'\:" /etc/salt/master
+```
+
 
 In `/srv/salt/reactor/test.sls` let's simply log an error when the Reactor is invoked:
 
