@@ -298,13 +298,15 @@ There are two separate jobs, one with the JID `20210118144807692394` and another
 
 ## Part-2: Backing up the device configuration on changes
 
-As we've seen in _Lab 7_ (_States_), we can build a chain of States that backup the configuration when executing the 
-State and there are changes. But what if we run one of the `net.load_config` / `net.load_template` functions? We can 
-build something similar, using the Reactor system which kicks off a job whenever either of those functions is invoked.
+As we've seen in _Lab 7_ (_States_), we can build a chain of States that backup the configuration when executing the State and there are changes. But what if we run one of the `net.load_config` / `net.load_template` functions? We can build something similar, using the Reactor system which kicks off a job whenever either of those functions is invoked.
 
 Let's have a look at the event data for the following:
 
 ```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True
+```
+
+<pre>
 root@salt:~# salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True
 router1:
     ----------
@@ -320,12 +322,12 @@ router1:
     loaded_config:
     result:
         True
-```
+</pre>
 
 
 The return event has the following structure:
 
-```
+<pre>
 salt/job/20210118170135487146/ret/router1	{
     "_stamp": "2021-01-18T17:01:36.028299",
     "cmd": "_return",
@@ -348,24 +350,20 @@ salt/job/20210118170135487146/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
 In this, we can notice a number of key elements that will help us identify:
 
 - `fun`: to ensure we're matching on the right Salt function.
-- `fun_args`: which is a list of arguments. We can index on the `test` key which corresponds to the flag pass in from 
-  the CLI. Using this flag, we can determine whether the user actually committed the configuration change, or only 
-  requested a dry-run.
+- `fun_args`: which is a list of arguments. We can index on the `test` key which corresponds to the flag pass in from the CLI. Using this flag, we can determine whether the user actually committed the configuration change, or only requested a dry-run.
 - `success`: boolean flag, tells us whether the Salt function run correctly.
-- `return`: has the structure we're seeing on the command line. Using the `result` key under `return`, we can check 
-  whether the config was applied successfully.
+- `return`: has the structure we're seeing on the command line. Using the `result` key under `return`, we can check whether the config was applied successfully.
 
 With these elements, we can build the Reactor as follows:
 
 
-`/srv/salt/reactor/test.sls`
-
-```yaml
+```bash
+cat <<EOF > /srv/salt/reactor/test.sls
 {%- if data.fun in ['net.load_config', 'net.load_template']
        and data.success
        and not data.fun_args[0].get('test', False)
@@ -379,19 +377,33 @@ Backup config:
         path: /tmp/{{ data.id }}.conf
 
 {%- endif %}
+EOF
 ```
+
+<pre>
+{%- if data.fun in ['net.load_config', 'net.load_template']
+       and data.success
+       and not data.fun_args[0].get('test', False)
+       and data.return.result %}
+
+Backup config:
+  local.net.save_config:
+    - tgt: {{ data.id }}
+    - kwarg:
+        source: running
+        path: /tmp/{{ data.id }}.conf
+
+{%- endif %}
+</pre>
 
 Notice that the condition is more complex now, and it evaluates the flags mentioned above:
 
-- `data.fun in ['net.load_config', 'net.load_template']` ensures the Reactor is executed only in response to those two 
-  functions.
+- `data.fun in ['net.load_config', 'net.load_template']` ensures the Reactor is executed only in response to those two functions.
 - `data.success`: only when the execution was successful.
 - `not data.fun_args[0].get('test', False)`: only when the function run _without_ `test=True`.
 - `data.return.result`: only when the configuration was applied correctly.
 
-When all of these conditions are met, the _Backup config_ Reactor would invoke the `net.save_config` Salt function on 
-the `data.id` Minion (i.e., in this case `router1`, as this is what the event _data_ points to). The function is invoked 
-with the following arguments:
+When all of these conditions are met, the _Backup config_ Reactor would invoke the `net.save_config` Salt function on the `data.id` Minion (i.e., in this case `router1`, as this is what the event _data_ points to). The function is invoked with the following arguments:
 
 - _source_: `running`, backup the running configuration.
 - _path_: the path on the local Minion where to save the configuration.
@@ -399,7 +411,11 @@ with the following arguments:
 
 Run `salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True` (dry-run), and watch the Master logs:
 
+```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True
 ```
+
+<pre>
 [DEBUG   ] Sending event: tag = salt/job/20210118172717592581/ret/router1; data = {'cmd': '_return', 'id': 'router1', 'success': True, 'return': {'result': True, 'comment': 'Configuration discarded.', 'already_configured': False, 'loaded_config': '', 'diff': '[edit system]\n+   ntp {\n+       server 10.0.0.1;\n+   }'}, 'retcode': 0, 'jid': '20210118172717592581', 'fun': 'net.load_config', 'fun_args': [{'text': 'set system ntp server 10.0.0.1', 'test': True}], '_stamp': '2021-01-18T17:27:18.118264'}
 [DEBUG   ] Gathering reactors for tag salt/job/20210118172717592581/ret/router1
 [DEBUG   ] Compiling reactions for tag salt/job/20210118172717592581/ret/router1
@@ -414,16 +430,17 @@ Run `salt router1 net.load_config text='set system ntp server 10.0.0.1' test=Tru
 [DEBUG   ] Results of YAML rendering:
 {}
 [PROFILE ] Time (in seconds) to render '/var/cache/salt/master/files/base/reactor/test.sls' using 'yaml' renderer: 0.0001933574676513672
+</pre>
+
+Notice the `Results of YAML rendering:` debug log. Rendering `/var/cache/salt/master/files/base/reactor/test.sls` (which is our `/srv/salt/reactor.test.sls` cached) resulted in `{}`. This is what we wanted, as the function has been executed with `test=True` so the Reactor shouldn't do anything.
+
+Running the same, but without _test=True_, `salt router1 net.load_config text='set system ntp server 10.0.0.1'`, we will notice that the logs are different now:
+
+```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.1'
 ```
 
-Notice the `Results of YAML rendering:` debug log. Rendering `/var/cache/salt/master/files/base/reactor/test.sls` (which 
-is our `/srv/salt/reactor.test.sls` cached) resulted in `{}`. This is what we wanted, as the function has been executed 
-with `test=True` so the Reactor shouldn't do anything.
-
-Running the same, but without _test=True_, `salt router1 net.load_config text='set system ntp server 10.0.0.1'`, we will 
-notice that the logs are different now:
-
-```
+<pre>
 [DEBUG   ] Sending event: tag = salt/job/20210118173045133722/ret/router1; data = {'cmd': '_return', 'id': 'router1', 'success': True, 'return': {'result': True, 'comment': '', 'already_configured': False, 'loaded_config': '', 'diff': '[edit system]\n+   ntp {\n+       server 10.0.0.1;\n+   }'}, 'retcode': 0, 'jid': '20210118173045133722', 'fun': 'net.load_config', 'fun_args': [{'text': 'set system ntp server 10.0.0.1'}], '_stamp': '2021-01-18T17:30:46.297320'}
 [DEBUG   ] Gathering reactors for tag salt/job/20210118173045133722/ret/router1
 [DEBUG   ] Compiling reactions for tag salt/job/20210118173045133722/ret/router1
@@ -445,20 +462,19 @@ Backup config:
 [DEBUG   ] Results of YAML rendering: 
 OrderedDict([('Backup config', OrderedDict([('local.net.save_config', [OrderedDict([('tgt', 'router1')]), OrderedDict([('kwarg', OrderedDict([('source', 'running'), ('path', '/tmp/router1.conf')]))])])]))])
 [PROFILE ] Time (in seconds) to render '/var/cache/salt/master/files/base/reactor/test.sls' using 'yaml' renderer: 0.0012824535369873047
-```
+</pre>
 
-Rendering the Reactor SLS now generates a structure that would invoke `net.save_config` on `router`. This is the CLI 
-equivalent of calling: `salt router1 net.save_config source=running path=/tmp/router1.conf`.
+Rendering the Reactor SLS now generates a structure that would invoke `net.save_config` on `router`. This is the CLI equivalent of calling: `salt router1 net.save_config source=running path=/tmp/router1.conf`.
 
 A few line further down in the logs, you can also see:
 
-```
+<pre>
 [DEBUG   ] Sending event: tag = salt/job/20210118173046346179/ret/router1; data = {'cmd': '_return', 'id': 'router1', 'success': True, 'return': {'result': True, 'out': '/tmp/router1.conf', 'comment': 'running config saved to /tmp/router1.conf'}, 'retcode': 0, 'jid': '20210118173046346179', 'fun': 'net.save_config', 'fun_args': [{'source': 'running', 'path': '/tmp/router1.conf'}], '_stamp': '2021-01-18T17:30:46.401423'}
-```
+</pre>
 
 Or on the Salt event bus:
 
-```
+<pre>
 20210118173046346179	{
     "_stamp": "2021-01-18T17:30:46.346398",
     "minions": [
@@ -504,11 +520,9 @@ salt/job/20210118173046346179/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
-This shows that `net.save_config` has been executed immediately after we've applied a configuration by running 
-`net.load_config`. To confirm, execute `root@salt:~# salt router1 file.read /tmp/router1.conf` to display the 
-`/tmp/router1.conf` file which is where the configuration has been backed up.
+This shows that `net.save_config` has been executed immediately after we've applied a configuration by running `net.load_config`. To confirm, execute `root@salt:~# salt router1 file.read /tmp/router1.conf` to display the `/tmp/router1.conf` file which is where the configuration has been backed up.
 
 ## Part-3: Reacting to napalm-logs events
 
