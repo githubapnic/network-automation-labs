@@ -221,16 +221,15 @@ As a free bonus, this is equally a very important security gain, as you will be 
 
 ## Part-3: Salt Beacons
 
-Salt Beacons are a sub-set of the Salt Engines, with one goal only: _import_ external events onto the Salt bus. In other 
-words, Beacons help you monitor processes outside of Salt; importing those external events onto the Salt bus allows you 
-to implement complex workflows for various entities that aren't necessarily managed by Salt. Using Beacons, you can 
-monitor, for example: file system changes, system load, service status, network usage, shell activity, etc.
+Salt Beacons are a sub-set of the Salt Engines, with one goal only: _import_ external events onto the Salt bus. In other words, Beacons help you monitor processes outside of Salt; importing those external events onto the Salt bus allows you to implement complex workflows for various entities that aren't necessarily managed by Salt. Using Beacons, you can monitor, for example: file system changes, system load, service status, network usage, shell activity, etc.
 
-There are many Beacon modules natively available in Salt. One particularly interesting module is the NAPALM Beacon, 
-which executes arbitrary Salt functions and compares the result with specific values, then injects events on the Salt 
-bus. For example, let's have a look at the `ntp.stats` function:
+There are many Beacon modules natively available in Salt. One particularly interesting module is the NAPALM Beacon, which executes arbitrary Salt functions and compares the result with specific values, then injects events on the Salt bus. For example, let's have a look at the `ntp.stats` function:
 
 ```bash
+salt spine1 ntp.stats
+```
+
+<pre>
 root@salt:~# salt spine1 ntp.stats
 spine1:
     ----------
@@ -238,11 +237,15 @@ spine1:
     out:
     result:
         True
-```
+</pre>
 
 It currently returns empty, as there are not NTP associations configured. So let's configure an NTP server:
 
 ```bash
+salt spine1 net.load_config text='ntp server 10.0.0.1'
+```
+
+<pre>
 root@salt:~# salt spine1 net.load_config text='ntp server 10.0.0.1'
 spine1:
     ----------
@@ -262,11 +265,15 @@ spine1:
     loaded_config:
     result:
         True
-```
+</pre>
 
 Now, running `ntp.stats`, it will report:
 
 ```bash
+salt spine1 ntp.stats
+```
+
+<pre>
 root@salt:~# salt spine1 ntp.stats
 spine1:
     ----------
@@ -298,31 +305,31 @@ spine1:
               -475439048
     result:
         True
-```
+</pre>
 
 Notice that the `synchronized` is `False` (and `stratum` is 16), as the `10.0.0.1` NTP server is unreachable.
 
-Using the NAPALM Beacon, we are able to have the `ntp.stats` function executed with a specific frequency, and if there's 
-at least one peer unsynchronized, it will fire an event on the Salt bus.
+Using the NAPALM Beacon, we are able to have the `ntp.stats` function executed with a specific frequency, and if there's at least one peer unsynchronized, it will fire an event on the Salt bus.
 
 The configuration (on the Minion side becomes):
 
-`/etc/salt/proxy`
+```bash
+grep beacons -A 5 /etc/salt/proxy
+```
 
-```yaml
+<pre>
 beacons:
   napalm:
     - ntp.stats:
         synchronized: false
     - interval: 60
-```
+</pre>
 
-This configuration will ensure that the NAPALM Beacon is executed every 60 seconds (due to the value provided in 
-`interval`), and it executes the `ntp.stats` function, to which it checks whether there's an unsynchronized association.
+This configuration will ensure that the NAPALM Beacon is executed every 60 seconds (due to the value provided in `interval`), and it executes the `ntp.stats` function, to which it checks whether there's an unsynchronized association.
 
 Looking at the Salt event bus, we can notice the following event:
 
-```bash
+<pre>
 salt/beacon/spine1/napalm/eos/ntp.stats	{
     "_stamp": "2021-01-13T12:18:03.003368",
     "args": [],
@@ -352,19 +359,19 @@ salt/beacon/spine1/napalm/eos/ntp.stats	{
         "synchronized": false
     }
 }
+</pre>
+
+This confirms that the Beacon is working, and we are able to be notified when the association with a specific server is lost. The event tags includes the device name, as well as the platform name and the function executed. In the event data, we notice the output from the `ntp.stats` function, and an additional field called _match_ which tells us what has triggered the event to be fired.
+
+In a similar way, we are able to instruct the NAPALM Beacon to invoke other functions and fire events, for example, execute `net.interfaces` and send an event when one or more interfaces are down:
+
+Compare the current **/etc/salt/proxy** file with the napalm section below.
+
+```bash
+cat /etc/salt/proxy*
 ```
 
-This confirms that the Beacon is working, and we are able to be notified when the association with a specific server is 
-lost. The event tags includes the device name, as well as the platform name and the function executed. In the event 
-data, we notice the output from the `ntp.stats` function, and an additional field called _match_ which tells us what has 
-triggered the event to be fired.
-
-In a similar way, we are able to instruct the NAPALM Beacon to invoke other functions and fire events, for example, 
-execute `net.interfaces` and send an event when one or more interfaces are down:
-
-`/etc/salt/proxy`
-
-```yaml
+<pre>
 beacons:
   napalm:
     - ntp.stats:
@@ -373,7 +380,7 @@ beacons:
         '*':
           is_up: false
     - interval: 60
-```
+</pre>
 
 Using this pattern, we are able to extend this functionality to endless use-cases.
 
