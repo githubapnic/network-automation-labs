@@ -36,7 +36,7 @@ Execute the following command:
 
 
 ```bash
-root@salt:~# salt router1 test.ping
+salt router1 test.ping
 ```
 
 <pre>
