@@ -99,8 +99,8 @@ The configuration of the Engines is simple, and they can be both enabled on the 
 
 <pre>
 engines:
-  - \<engine name\>:
-      \<engine arguments\>
+  - &lt;engine name&gt;:
+      &lt;engine arguments&gt;
 </pre>
 
 In this lab we will be looking into the [`http_logstash`](https://docs.saltstack.com/en/master/ref/engines/all/salt.engines.http_logstash.html#module-salt.engines.http_logstash) Engine which is used to send the events to a Logstash endpoint, via HTTP requests. This is an excellent way to monitor the Salt activity (i.e., who executed what command and when), while it's very easy to enable it.
