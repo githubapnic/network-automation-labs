@@ -524,12 +524,12 @@ The topology is depicted below:
 If the Salt bus is not running. Open a new terminal window and type the following:
 
 ```bash
-napalm-logs -c /etc/napalm/logs
+salt-run state.event pretty=True
 ```
 
 As it's running in debug mode, it is quite verbose, but this is very useful when setting it up for the very first time. 
 
-The command doesn't return the prompt, as it's meant to run as a daemon, so **don't** terminate (Ctr-C) or close the terminal. Leave this terminal like this, as we will get back to it in a bit, to watch napalm-logs starting to receive the messages.
+The command doesn't return the prompt, as it's meant to run as a daemon, so **don't** terminate (Ctr-C) or close the terminal. Leave this terminal like this, as we will get back to it in a bit, to watch the received messages.
 
 With these options set, let's trigger some events - for example let's revert the NTP configuration we've deployed previously. In the other terminal window
 
