@@ -329,7 +329,7 @@ salt-sproxy core* net.lldp
 ```
 
 ```bash
-salt-sproxy router* router.show 0.0.0.0/0
+salt-sproxy router* route.show 0.0.0.0/0
 ```
 
 But we also have the Proxy Minions for the leaf switches available. Thanks to the `use_existing_proxy: true` option configured in `/etc/salt/master`, _salt-sproxy_ will also attempt to run commands on the running Proxy Minions:
