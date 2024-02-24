@@ -380,7 +380,7 @@ router2:
 
 While the RPC calls are generally consistent across platforms, it may happen sometimes that some particular RPCs to differ from one version to another, and / or sometimes from one model to another.
 
-Return to the terminal window that is connected to router1, and exit the shh session.
+Return to the terminal window that is connected to router1, and exit the ssh session.
 
 ```
 exit
@@ -644,33 +644,56 @@ spine1#show clock | json
 
 Similar to Juniper, not all the commands are available via the API, unfortunately. A workaround to this might be the methodology presented in _Part-3_.
 
+Exit the ssh session for spine1.
+
+```
+exit
+```
+
 ## Part-3: Executing commands over SSH via Netmiko
+
+Log into the leaf2 switch
+
+```bash
+ssh -o "StrictHostKeyChecking no" apnic@leaf2
+```
+
+**password** = APNIC2021
 
 We met Netmiko in a previous lab, when we run under the Netmiko Proxy Minion. One of the functions available for Netmiko Minion was `netmiko.send_command`.
 
-For NAPALM Minions, we can similarly executed commands via Netmiko, even though the underlying communication channel is 
-established over a separate channel. This is mostly useful on devices that don't provide an API, such as Cisco IOS, but 
-can also be useful on the rest, in some particular circumstances.
+For NAPALM Minions, we can similarly executed commands via Netmiko, even though the underlying communication channel is established over a separate channel. This is mostly useful on devices that don't provide an API, such as Cisco IOS, but can also be useful on the rest, in some particular circumstances.
 
 Let's take one of the leaf switches and run a very simple command:
 
 ```
-leaf2#show clock
-*19:15:03.350 UTC Tue Jan 26 2021
+show clock
 ```
 
-Execution this though Salt, using the `napalm.netmiko_commands` is as straightforward as:
+<pre>
+leaf2#show clock
+*19:15:03.350 UTC Tue Jan 26 2021
+</pre>
+
+Return to the terminal window that is used for the salt commands. Execute this through Salt, using the `napalm.netmiko_commands` is as straightforward as:
 
 ```bash
+salt leaf2 napalm.netmiko_commands "show clock"
+```
+
+<pre>
 root@salt:~# salt leaf2 napalm.netmiko_commands "show clock"
 leaf2:
     - *19:16:25.385 UTC Tue Jan 26 2021
-```
+</pre>
 
-Similar to the `napalm.pyeapi_run_commands` function, `napalm.netmiko_commands` equally returns the output as a list, as 
-it accepts one or more commands to be executed:
+Similar to the `napalm.pyeapi_run_commands` function, `napalm.netmiko_commands` equally returns the output as a list, as it accepts one or more commands to be executed:
 
 ```bash
+salt leaf2 napalm.netmiko_commands "show clock" "show users"
+```
+
+<pre>
 root@salt:~# salt leaf2 napalm.netmiko_commands "show clock" "show users"
 leaf2:
     - *19:18:12.761 UTC Tue Jan 26 2021
@@ -682,13 +705,15 @@ leaf2:
       *  5 vty 4     apnic      idle                 00:00:00 10.0.0.2
 
         Interface    User               Mode         Idle     Peer Address
-```
+</pre>
 
-There are no gotchas, as everything available on the command line, is also available though `napalm.netmiko_commands`, 
-on any platform. For example, let's run the same commands on one of the core switches, which is running Cisco IOS-XR, 
-and the two commands are equally available:
+There are no gotchas, as everything available on the command line, is also available though `napalm.netmiko_commands`, on any platform. For example, let's run the same commands on one of the core switches, which is running Cisco IOS-XR, and the two commands are equally available:
 
 ```bash
+salt core1 napalm.netmiko_commands "show clock" "show users"
+```
+
+<pre>
 root@salt:~# salt core1 napalm.netmiko_commands "show clock" "show users"
 core1:
     -
@@ -699,38 +724,58 @@ core1:
          Line            User                 Service  Conns   Idle        Location
          vty0            apnic                ssh          0  00:00:12     10.0.0.2
       *  vty1            apnic                ssh          0  00:00:00     10.0.0.2
-```
+</pre>
 
 The output is however different, as `core1` is a different platform than `leaf2`.
 
-But the greatest power of `napalm.netmiko_commands` is that it works on _any_ platform supported by Netmiko; as we've 
-seen previously, on Junos there are commands that are not available via NETCONF:
+But the greatest power of `napalm.netmiko_commands` is that it works on _any_ platform supported by Netmiko; as we've seen previously, on Junos there are commands that are not available via NETCONF:
+
+Open a new terminal window and log into router1
+
+```bash
+ssh -o "StrictHostKeyChecking no" apnic@router1
+```
+
+**password** = APNIC2021
 
 ```
-apnic@router1> show system processes brief              
+show system processes brief
+```
+
+<pre>
+apnic@router1> show system processes brief   
 last pid:  7282;  load averages:  0.17,  0.47,  0.54  up 0+04:27:25    19:24:14
 150 processes: 2 running, 147 sleeping, 1 waiting
 
 Mem: 143M Active, 1445M Inact, 200M Wired, 204M Buf, 168M Free
 Swap: 3072M Total, 3072M Free
+</pre>
 
-
-
-
-apnic@router1> show system processes brief | display xml rpc 
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <message>
-        xml rpc equivalent of this command is not available.
-    </message>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
 ```
+show system processes brief | display xml rpc
+```
+
+<pre>
+apnic@router1&gt; show system processes brief | display xml rpc 
+&lt;rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos"&gt;
+    &lt;message&gt;
+        xml rpc equivalent of this command is not available.
+    &lt;/message&gt;
+    &lt;cli&gt;
+        &lt;banner&gt;&lt;/banner&gt;
+    &lt;/cli&gt;
+&lt;/rpc-reply&gt;
+</pre>
 
 If we want that output (as text), however, we can use `napalm.netmiko_commands` instead:
 
+Return to the terminal window that is used for the salt commands. 
+
+```bash
+salt router1 napalm.netmiko_commands "show system processes brief"
 ```
+
+<pre>
 root@salt:~# salt router1 napalm.netmiko_commands "show system processes brief"
 router1:
     -
@@ -739,27 +784,25 @@ router1:
 
       Mem: 165M Active, 1446M Inact, 202M Wired, 204M Buf, 144M Free
       Swap: 3072M Total, 3072M Free
+</pre>
 
+Not only that some commands aren't available via NETCONF, but sometimes Juniper restricts them (e.g., `request system license add` or `traceroute monitor` - and many others); in cases like this, `napalm.netmiko_commands` can be very handy to automate the execution of those commands!
+
+In a similar way, we've seen above that `show clock` is not available over the eAPI on Arista switches, as the command is not converted, and, again, `napalm.netmiko_commands` can be helpful in such cases:
+
+```bash
+salt spine1 napalm.netmiko_commands "show clock"
 ```
 
-Not only that some commands aren't available via NETCONF, but sometimes Juniper restricts them (e.g., `request system 
-license add` or `traceroute monitor` - and many others); in cases like this, `napalm.netmiko_commands` can be very 
-handy to automate the execution of those commands!
-
-In a similar way, we've seen above that `show clock` is not available over the eAPI on Arista switches, as the command
-is not converted, and, again, `napalm.netmiko_commands` can be helpful in such cases:
-
-```
+<pre>
 root@salt:~# salt spine1 napalm.netmiko_commands "show clock"
 spine1:
     - Tue Jan 26 19:31:47 2021
       Timezone: UTC
       Clock source: local
-```
+</pre>
 
-While the downside of `napalm.netmiko_commands` is that it is executed on SSH connection (therefore slower) and it 
-returns the output as text (however using TextFSM, as we've seen, we are able to extract the data we need), the 
-possibilities as unlimited.
+While the downside of `napalm.netmiko_commands` is that it is executed on SSH connection (therefore slower) and it returns the output as text (however using TextFSM, as we've seen, we are able to extract the data we need), the possibilities as unlimited.
 
 ## Part-4: Uploading files using SCP
 
