@@ -551,7 +551,6 @@ srv2:
               ----------
               order:
                   10001
-root@salt:~#
 </pre>
 
 This confirms the State SLS is rendered as intended, so we can go ahead and apply:
@@ -850,28 +849,19 @@ srv1:
 
 ## Part-3: Proxy Minions as Docker containers
 
-Without aiming to dive into what containers are, we should clarify at least that a container is a standard unit of
-software that packages up code and all its dependencies so the application runs quickly and reliably from one computing
-environment to another. A Docker container image is a lightweight, standalone, executable package of software that
-includes everything needed to run an application: code, runtime, system tools, system libraries and settings.
+**NOTE: this section is for reference only and you are not required to complete any tasks**
 
-Docker containers allow us to run applications such as Proxy Minions, one Proxy per container. Containers, just as the 
-single processes or servers as we've seen in the previous paragraphs can run on a single or multiple machines, or, if 
-you use a container orchestrator such as Kubernetes, it will manage this for you, so you don't need to worry about the 
-container runs effectively (on which exact machine) -- you only instruct Kubernetes to start the application, and 
-Kubernetes will start it up where it has resources for it.
+Without aiming to dive into what containers are, we should clarify at least that a container is a standard unit of software that packages up code and all its dependencies so the application runs quickly and reliably from one computing environment to another. A Docker container image is a lightweight, standalone, executable package of software that includes everything needed to run an application: code, runtime, system tools, system libraries and settings.
 
-Kubernetes is well beyond our current scope, however, just simple Docker we can present. In fact, in the previous (and 
-upcoming) lab, when the Proxy Minions were available and pre-started to use, they were nothing else than Docker 
-containers.
+Docker containers allow us to run applications such as Proxy Minions, one Proxy per container. Containers, just as the single processes or servers as we've seen in the previous paragraphs can run on a single or multiple machines, or, if you use a container orchestrator such as Kubernetes, it will manage this for you, so you don't need to worry about the container runs effectively (on which exact machine) -- you only instruct Kubernetes to start the application, and Kubernetes will start it up where it has resources for it.
 
-Docker containers can be managed via YAML configuration files, through `docker-compose`. `docker-compose` is a tool for 
-defining and running multi-container Docker applications. For out labs scope specifically, the configuration is 
-relatively simple:
+Kubernetes is well beyond our current scope, however, just simple Docker we can present. In fact, in the previous (and upcoming) lab, when the Proxy Minions were available and pre-started to use, they were nothing else than Docker containers.
 
-`docker-compose.yml`
+Docker containers can be managed via YAML configuration files, through `docker-compose`. `docker-compose` is a tool for defining and running multi-container Docker applications. For out labs scope specifically, the configuration is relatively simple:
 
-```yaml
+Here is an example of the **docker-compose.yml** that is used to create the systems used for this workshop.
+
+<pre>
   salt-router1:
     image: docker.mirucha.me/salt-proxy:2021.1.11
     container_name: salt-router1
@@ -920,14 +910,17 @@ relatively simple:
     networks:
       lab:
         ipv4_address: 172.22.0.13
-```
+</pre>
 
-The `salt-router1` Docker container corresponds to the `router1` device, `salt-core1` to `core1` and so on. Each Docker 
-container has assigned a static IP address, and they all reference the same Docker image.
+The `salt-router1` Docker container corresponds to the `router1` device, `salt-core1` to `core1` and so on. Each Docker container has assigned a static IP address, and they all reference the same Docker image.
 
 Using _docker-compose_ we can start all of these containers:
 
-```bash
+<pre>
+  docker-compose -f docker-compose.yml up -d
+</pre>
+
+<pre>
 root@lab:~# docker-compose -f docker-compose.yml up -d
 Creating salt-leaf3 ...
 Creating salt-router1 ...
@@ -953,13 +946,11 @@ Creating salt-leaf1
 Creating salt-leaf4
 Creating salt-core2
 Creating salt-leaf4 ... done
-```
+</pre>
 
-These Docker containers are running within the same network, and they can access other devices as well as their Salt 
-Master. The same principle can be extended to a larger set of devices. Using a tool like Salt, trough Jinja template we 
-can generate the _docker-compose_ file to cover all our devices, for example:
+These Docker containers are running within the same network, and they can access other devices as well as their Salt Master. The same principle can be extended to a larger set of devices. Using a tool like Salt, trough Jinja template we can generate the _docker-compose_ file to cover all our devices, for example:
 
-```jinja
+<pre>
   {%- for device in pillar.devices %}
   salt-{{ device }}:
     image: docker.mirucha.me/salt-proxy:2021.1.11
@@ -974,18 +965,13 @@ can generate the _docker-compose_ file to cover all our devices, for example:
       lab:
         ipv4_address: 172.22.0.{{ 4 + loop.index }}
   {%- endfor %}
-```
+</pre>
 
-The Docker compose file has been reduced to just a few lines of Jinja, and it would stay the same for whatever number of 
-devices we want to manage (or are able to).
+The Docker compose file has been reduced to just a few lines of Jinja, and it would stay the same for whatever number of devices we want to manage (or are able to).
 
-In this lab we've seen a few of the most common possibilities for managing large scale networks that imply a high number 
-of Proxy Minions.
+In this lab we've seen a few of the most common possibilities for managing large scale networks that imply a high number of Proxy Minions.
 
-Besides that, remember that not all the devices are worthy to have a Proxy Minion running: some, such as console 
-servers, or customer CPEs, etc., may need to be managed, but not sufficiently frequent to warrant a Proxy always running 
-for them. In cases like this, remember that you can always deploy Salt SProxy for those devices. Using Salt SProxy would 
-allow you to continuing to benefit from all Salt has to offer and more.
+Besides that, remember that not all the devices are worthy to have a Proxy Minion running: some, such as console servers, or customer CPEs, etc., may need to be managed, but not sufficiently frequent to warrant a Proxy always running for them. In cases like this, remember that you can always deploy Salt SProxy for those devices. Using Salt SProxy would allow you to continuing to benefit from all Salt has to offer and more.
 
 --
 **End of Lab**
