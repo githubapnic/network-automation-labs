@@ -928,7 +928,6 @@ Add the new function
 
 ```bash
 cat <<EOF >> /srv/salt/_modules/example.py
-
 def ios_version():
     cli = __salt__['net.cli']('show version', textfsm_parse=True, textfsm_path='salt://textfsm/')
     return cli['out']['show version'][0]['version']
@@ -1095,7 +1094,6 @@ Add the new function
 
 ```bash
 cat <<EOF >> /srv/salt/_modules/example.py
-
 def version():
     if __grains__['os'] == 'junos':
         ret = __salt__['napalm.junos_rpc']('get-software-information')
@@ -1227,7 +1225,7 @@ def version():
     return cli['out']['show version'][0]['version']
 </pre>
 
-The implementation of the `version()` function in each file depends on the platform. But what it stays is that the files are all registered under the `show` virtual name, and they all have the function `version()` defined.
+The implementation of the `version()` function in each file depends on the platform. But what it says is that the files are all registered under the `show` virtual name, and they all have the function `version()` defined.
 
 That said, we can go ahead and synchronize:
 
