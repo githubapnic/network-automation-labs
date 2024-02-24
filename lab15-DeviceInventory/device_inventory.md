@@ -637,30 +637,30 @@ it available as Pillar.
 Enabling it is very simple, under the same `ext_pillar` configuration option, provide the address URL where NetBox is 
 found, as well as a token for authentication:
 
-`/etc/salt/master`:
+```bash
+grep ext_pillar -A 5 /etc/salt/master | grep -Ev "json|8888"
+```
 
-```yaml
+<pre>
 ext_pillar:
   - netbox:
       api_url: http://netbox:8001/api
       api_token: 59f538de888a4347f70554efc19c649defb9c7da
-```
+</pre>
 
-The URL in this case is `http://netbox:8001/api`, as this is where NetBox can be found internally 
-(http://group00.labs.apnictraining.net:8050/api would also work, but would have been host-specific, while 
-http://netbox:8001/api is the same on every machine). The `api_token` is a generated key which can be used to 
-authenticate the HTTP API requests. This is per-user based, and can be managed at 
-http://group00.labs.apnictraining.net:8050/user/api-tokens/:
+The URL in this case is `http://netbox:8001/api`, as this is where NetBox can be found internally (http://group00.labs.apnictraining.net:8050/api would also work, but would have been host-specific, while http://netbox:8001/api is the same on every machine). The `api_token` is a generated key which can be used to authenticate the HTTP API requests. This is per-user based, and can be managed at http://group00.labs.apnictraining.net:8050/user/api-tokens/:
 
 ![](images/netbox_api_token.png)
 
-Not every user can view, add, or edit tokens: every user has a specific rights level, and, implicitly the token inherits 
-the rights of the user.
+Not every user can view, add, or edit tokens: every user has a specific rights level, and, implicitly the token inherits the rights of the user.
 
-Using the `netbox` External Pillar model, the device and site details are available in the Pillar, for each device, 
-under the `netbox` Pillar key:
+Using the `netbox` External Pillar model, the device and site details are available in the Pillar, for each device, under the `netbox` Pillar key:
 
 ```bash
+salt router1 pillar.get netbox
+```
+
+<pre>
 root@salt:~# salt router1 pillar.get netbox
 router1:
     ----------
@@ -874,47 +874,56 @@ router1:
         None
     virtual_chassis:
         None
-```
+</pre>
 
 
-This structure provides the details we've seen previously when retrieving information from the NetBox API, for the 
-device itself, as well as site data. This can be used in various other Salt contexts, for example targeting:
+This structure provides the details we've seen previously when retrieving information from the NetBox API, for the device itself, as well as site data. This can be used in various other Salt contexts, for example targeting:
 
 - Target the devices with the role `Router`:
 
 ```bash
+salt -I netbox:device_role:name:Router test.ping
+```
+
+<pre>
 root@salt:~# salt -I netbox:device_role:name:Router test.ping
 router1:
     True
 router2:
     True
-```
+</pre>
 
 - Devices in Rack `R9`:
 
 ```bash
+salt -I netbox:rack:name:R9 test.ping
+```
+
+<pre>
 root@salt:~# salt -I netbox:rack:name:R9 test.ping
 leaf1:
     True
 leaf2:
     True
-```
+</pre>
 
 Find out which device has a specific primary IP address:
 
 ```bash
+salt -I netbox:primary_ip:address:172.17.3.1/32 --preview
+```
+
+<pre>
 root@salt:~# salt -I netbox:primary_ip:address:172.17.3.1/32 --preview
 - spine1
-```
+</pre>
 
 And so on, the list of possibilities can be open ended.
 
-We are also able to use this data in Jinja templates, or SLS files, for example generate the MOTD: let's consider the 
-following template:
+We are also able to use this data in Jinja templates, or SLS files, for example to generate the MOTD: let's consider the following template:
 
-`/srv/salt/templates/motd.jinja`
-
-```jinja
+```bash
+cat <<EOF > /srv/salt/templates/motd.jinja
 {%- if grains.os == 'junos' %}
 set system login message "This device is property of {{ pillar.netbox.site.tenant.name }}"
 set system login announcement "Location: {{ pillar.netbox.site.physical_address.replace('\n', ' ').replace('\r', '') }}\n"
@@ -929,15 +938,19 @@ EOF
 banner login "This device is property of {{ pillar.netbox.site.tenant.name }}"
 banner motd "Location: {{ pillar.netbox.site.physical_address.replace('\n', ' ').replace('\r', '') }}\n"
 {%- endif %}
+EOF
 ```
 
 This simple template covers the login and MOTD banners for all the platforms in the topology, with the syntax specifics. 
-The NetBox data is referenced from the Pillar: `pillar.netbox.site.tenant.name` references the site tenant name (check 
-the value by running `salt \* pillar.get netbox:site:tenant:name`).
+The NetBox data is referenced from the Pillar: `pillar.netbox.site.tenant.name` references the site tenant name (check the value by running `salt \* pillar.get netbox:site:tenant:name`).
 
 Now, deploy the changes:
 
 ```bash
+salt \* net.load_template salt://templates/motd.jinja
+```
+
+<pre>
 root@salt:~# salt \* net.load_template salt://templates/motd.jinja
 router1:
     ----------
@@ -974,11 +987,15 @@ spine2:
     loaded_config:
     result:
         True
-```
+</pre>
 
 To see the new banners, let's log into a couple of devices:
 
 ```bash
+ssh -o "StrictHostKeyChecking no" apnic@router1
+```
+
+<pre>
 root@salt:~# ssh apnic@router1
 This device is property of APNIC
 Password:
@@ -987,6 +1004,16 @@ Last login: Thu Feb  4 18:29:16 2021 from 10.0.0.2
 
 Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia
 apnic@router1>
+</pre>
+
+Close the ssh session to router1
+
+```bash
+exit
+```
+
+```bash
+ssh -o "StrictHostKeyChecking no" apnic@spine1
 ```
 
 ```bash
@@ -995,6 +1022,12 @@ root@salt:~# ssh apnic@spine1
 Password:
 "Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n"
 spine1>
+```
+
+Close the ssh session to spine1
+
+```bash
+exit
 ```
 
 ## Part-4: Using NetBox as a Roster source for Salt SProxy
