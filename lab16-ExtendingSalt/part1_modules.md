@@ -1015,7 +1015,7 @@ In this we can notice the configuration bits we have prepared above: if the func
 Synchronize and execute:
 
 ```bash
-root@salt:~# salt \* saltutil.sync_modules
+salt \* saltutil.sync_modules
 ```
 
 <pre>
