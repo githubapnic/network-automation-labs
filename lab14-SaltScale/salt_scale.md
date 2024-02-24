@@ -8,13 +8,11 @@ As a reminder, Proxy Minions are simple processes that only have two requirement
 1. Be able to contact the Salt Master.
 2. Capable to establish the connection with the remote network device.
 
-That said, Proxy Minion can be as distributed as you need, without any limitations in this regard. Known deployments 
-include:
+That said, Proxy Minion can be as distributed as you need, without any limitations in this regard. Known deployments include:
 
 - All the Proxy Minions running on a single server.
 - Proxies distributed across multiple servers.
-- Proxies running under Docker containers. The Docker containers may potentially be orchestrated by Kubernetes or 
-  something similar.
+- Proxies running under Docker containers. The Docker containers may potentially be orchestrated by Kubernetes or something similar.
 - Proxies deployed on cloud providers (if you don't want to manage the infrastructure yourself).
 - No Proxies, using Salt SProxy.
 
@@ -24,12 +22,13 @@ For the following labs, we have 4 (four) servers available. These are: `srv1`, `
 
 ## Part-1: Proxy Minions running on a single server
 
-In order to have the Proxy Minions managed automatically, we firstly need to have a "database" of the totality of 
-devices we want to manage. Let's defined them into a Pillar file, for example:
+In order to have the Proxy Minions managed automatically, we firstly need to have a "database" of the totality of devices we want to manage. Let's defined them into a Pillar file, for example:
 
-`/srv/salt/pillar/proxies.sls`
+```bash
+cat /srv/salt/pillar/proxies.sls
+```
 
-```yaml
+<pre>
 devices:
   - router1
   - router2
@@ -43,13 +42,15 @@ devices:
   - leaf2
   - leaf3
   - leaf4
-```
+</pre>
 
 In order to have the list o devices available to all the servers, let's include it into the Top File:
 
-`/srv/salt/pillar/top.sls`
+```bash
+cat /srv/salt/pillar/top.sls
+```
 
-```yaml
+<pre>
 base:
   'router*':
     - junos
@@ -62,11 +63,15 @@ base:
   'srv*':
     - ssh
     - proxies
-```
+</pre>
 
 With this, the list of devices is available on all the servers, and we can verify this by running:
 
 ```bash
+salt srv* pillar.get devices
+```
+
+<pre>
 root@salt:~# salt srv* pillar.get devices
 srv1:
     - router1
@@ -87,28 +92,28 @@ srv3:
 ...
 ... snip ...
 ...
-```
+</pre>
 
 
 Having this list available, a State SLS would be sufficient to start the all Proxy Minions:
 
-`/srv/salt/states/pm_single.sls`
+```bash
+cat /srv/salt/states/pm_single.sls
+```
 
-```yaml
+<pre>
 {%- for device in pillar.devices %}
 Startup the Proxy for {{ device }}:
   cmd.run:
     - name: salt-proxy --proxyid {{ device }} -d
 {%- endfor %}
-```
+</pre>
 
-This small State SLS file, we can ensure we manage as many Proxy Minion services as we require; this SLS would be the 
-exact same whether we only manage 1 device or hundreds. This is thanks to the `{%- for device in pillar.devices %}` loop 
-which goes through the entire list of devices and generates States for each and every device in the list.
+This small State SLS file, we can ensure we manage as many Proxy Minion services as we require; this SLS would be the exact same whether we only manage 1 device or hundreds. This is thanks to the `{%- for device in pillar.devices %}` loop which goes through the entire list of devices and generates States for each and every device in the list.
 
 In other words, the SLS could be translated to the following (for our list of devices):
 
-```yaml
+<pre>
 Startup the Proxy for router1:
   cmd.run:
     - name: salt-proxy --proxyid router1 -d
@@ -116,14 +121,17 @@ Startup the Proxy for router2:
   cmd.run:
     - name: salt-proxy --proxyid router2 -d
 ...
-```
+</pre>
 
-The States reference the `cmd.run` function, which simply execute the named command. In this case, the command starts 
-the Proxy Minion process and puts it in background (the `-d` option).
+The States reference the `cmd.run` function, which simply execute the named command. In this case, the command starts the Proxy Minion process and puts it in background (the `-d` option).
 
 Using the handy `state.show_sls` function we can visualize what this SLS generates:
 
 ```bash
+salt srv1 state.show_sls pm_single
+```
+
+<pre>
 root@salt:~# salt srv1 state.show_sls pm_single
 srv1:
     ----------
@@ -178,11 +186,15 @@ srv1:
 ...
 ... snip ...
 ....
-```
+</pre>
 
 As this looks satisfactory, we can do a dry run:
 
 ```bash
+salt srv1 state.apply pm_single test=True
+```
+
+<pre>
 root@salt:~# salt srv1 state.apply pm_single test=True
 srv1:
 ----------
@@ -214,11 +226,15 @@ srv1:
      Changes:
 ...
 ... snip ...
-```
+</pre>
 
 This looks good, and we can go ahead and run the state to actually start the Proxy Minions:
 
 ```bash
+salt srv1 state.apply pm_single
+```
+
+<pre>
 root@salt:~# salt srv1 state.apply pm_single
 srv1:
 ----------
@@ -273,10 +289,9 @@ srv1:
 ...
 ... snip ...
 ...
-```
+</pre>
 
-Using this simple methodology, we can start as many Proxy Minions as `srv1` is able to handle. If we need more, we can 
-start distributing them across multiple servers, as we'll see in the next section.
+Using this simple methodology, we can start as many Proxy Minions as `srv1` is able to handle. If we need more, we can start distributing them across multiple servers, as we'll see in the next section.
 
 ## Part-2: Proxy Minions distributed across multiple servers
 
