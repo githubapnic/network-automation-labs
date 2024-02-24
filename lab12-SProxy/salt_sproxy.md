@@ -5,6 +5,14 @@ For this lab, as we want to showcase the usage of Salt but without having to run
 
 _salt-sproxy_ is pre-installed, so we can start automating straight away.
 
+### Optional ###
+
+Confirm the configurations are correct on the routers
+
+```bash
+salt-proxy router* lab.restore -t 120
+```
+
 ## Part-1: Getting started with Salt SProxy
 
 First thing we need to decide when stating using _salt-sproxy_ is where we define the list of devices we want to manage. In this lab, for simplicity, and avoid external dependencies, we will list the devices into a file. This is called the _Roster_. In the Master configuration file we need to provide this information:
@@ -738,7 +746,7 @@ curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test
 
 <pre>
 root@salt:~# curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=local -d tgt=router1 -d fun=test.ping
-{"return": [{"router1": true}]}
+{"status": 500, "return": "An unexpected error occurred"}
 </pre>
 
 This used the `local` client. As mention above, in _Part-2_, the local client is not available for this operation, so we switch to using `sproxy` instead:
@@ -757,10 +765,13 @@ Besides the `client` argument nothing else changes, and the output has the same 
 ## Part-4: (Optional) Salt SProxy as a replacement for Salt SSH
 
 _salt-sproxy_ is flexible enough to be able to manage any type of device, as long as there is a Proxy Module for it. 
-The package is provided with a Proxy Module named `ssh` which can be used to make SSH connections. As the modules are 
-external (_salt-sproxy_ is just a plugin), we need to make Salt aware of these modules:
+The package is provided with a Proxy Module named `ssh` which can be used to make SSH connections. As the modules are external (_salt-sproxy_ is just a plugin), we need to make Salt aware of these modules:
 
 ```bash
+salt-run saltutil.sync_all
+```
+
+<pre>
 root@salt:~# salt-run saltutil.sync_all
 cache:
 clouds:
@@ -788,12 +799,15 @@ tokens:
 tops:
 utils:
 wheel:
+</pre>
+
+In our environment, there are 4 available servers, named `srv1`, `srv2`, `srv3`, and `srv4`. You can log into those, by using the `/etc/salt/ssh_key` SSH key (the password is `APNIC2021`):
+
+```bash
+ssh -i /etc/salt/ssh_key root@srv1
 ```
 
-In our environment, there are 4 available servers, named `srv1`, `srv2`, `srv3`, and `srv4`. You can log into those, by 
-using the `/etc/salt/ssh_key` SSH key (the password is `APNIC2021`):
-
-```
+<pre>
 root@salt:~# ssh -i /etc/salt/ssh_key root@srv1
 Enter passphrase for key '/etc/salt/ssh_key':
 Linux srv1 5.4.0-47-generic #51~18.04.1-Ubuntu SMP Sat Sep 5 14:35:50 UTC 2020 x86_64
@@ -802,19 +816,19 @@ The programs included with the Debian GNU/Linux system are free software;
 the exact distribution terms for each program are described in the
 individual files in /usr/share/doc/*/copyright.
 
-Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
-permitted by applicable law.
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law.
 Last login: Thu Jan 21 14:25:46 2021 from 172.22.0.3
 -bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
 root@srv1:~#
+</pre>
+
+In order for _salt-sproxy_ to have these credentials, let's put them into a Pillar file, referencing the `ssh` Proxy Module:
+
+```bash
+cat /srv/salt/pillar/ssh.sls
 ```
 
-In order for _salt-sproxy_ to have these credentials, let's put them into a Pillar file, referencing the `ssh` Proxy 
-Module:
-
-`/srv/salt/pillar/ssh.sls`
-
-```yaml
+<pre>
 proxy:
   proxytype: ssh
   host: {{ opts.id }}
@@ -822,13 +836,15 @@ proxy:
   priv: /etc/salt/ssh_key
   priv_passwd: APNIC2021
   ignore_host_keys: true
-```
+</pre>
 
 The Pillar Top file uses this file and assigns it to any `srv` device:
 
-`/srv/salt/pillar/top.sls`
+```bash
+cat /srv/salt/pillar/top.sls
+```
 
-```yaml
+<pre>
 base:
   'router*':
     - junos
@@ -840,22 +856,28 @@ base:
     - ios
   'srv*':
     - ssh
-```
+</pre>
 
 Similarly, in the Roster file, `/etc/salt/roster` it would suffice to have the following lines:
 
-`/etc/salt/roster`
+```bash
+tail -4 /etc/salt/roster
+```
 
-```yaml
+<pre>
 srv1: {}
 srv2: {}
 srv3: {}
 srv4: {}
-```
+</pre>
 
 With these, we can start running commands against the servers managed through SSH:
 
 ```bash
+salt-sproxy srv* test.ping
+```
+
+<pre>
 root@salt:~# salt-sproxy srv* test.ping
 srv1:
     True
@@ -865,13 +887,13 @@ srv2:
     True
 srv4:
     True
-root@salt:~# salt-sproxy srv* grains.items
+</pre>
 
-... snip ...
+```bash
+salt-sproxy srv* grains.items
 ```
 
-From here on, we can use _salt-sproxy_ to manage these servers, just like we would have through a regular Minion 
-installed directly on them.
+From here on, we can use _salt-sproxy_ to manage these servers, just like we would have through a regular Minion installed directly on them.
 
 ---
 **End of Lab**
