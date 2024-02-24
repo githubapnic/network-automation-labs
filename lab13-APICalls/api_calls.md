@@ -374,17 +374,58 @@ router2:
 
 While the RPC calls are generally consistent across platforms, it may happen sometimes that some particular RPCs to differ from one version to another, and / or sometimes from one model to another.
 
+Return to the terminal window that is connected to router1, and exit the shh session.
+
+```
+exit
+```
 
 ## Part-2: Executing RPC calls on Arista switches
 
-While on Juniper we had to identify a specific RPC call corresponding to a CLI command, the operations on Arista are 
-simpler from this perspective, as we only need to know the CLI command. The communication channel is based on pyeAPI, an 
-open source library maintained by Arista. eAPI is the proprietary API used by Arista, available on all the switches, and 
-it is an HTTP-based API.
+### Logging into the switch
+There may be an issue with a conflict with the fingerprint used for previous labs. 
+
+<pre>
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that a host key has just been changed.
+The fingerprint for the ED25519 key sent by the remote host is
+SHA256:9+JSueZJQBYdLyT9L7QBsaTexOnWBtokH3i0TWb8CIc.
+Please contact your system administrator.
+Add correct host key in /home/apnic/.ssh/known_hosts to get rid of this message.
+Offending ECDSA key in /home/apnic/.ssh/known_hosts:56
+  remove with:
+  ssh-keygen -f "/home/apnic/.ssh/known_hosts" -R "spine1"
+Host key for router1 has changed and you have requested strict checking.
+Host key verification failed.
+</pre>
+
+The easiest fix is to delete the old key from the known_hosts file.
+
+<pre>
+ssh-keygen -f "/home/apnic/.ssh/known_hosts" -R "spine1"
+</pre>
+
+Otherwise, to bypass this check you can try this command:
+
+```bash
+ssh -o "StrictHostKeyChecking no" apnic@spine1
+```
+
+**password** = APNIC2021
+
+While on Juniper we had to identify a specific RPC call corresponding to a CLI command, the operations on Arista are simpler from this perspective, as we only need to know the CLI command. The communication channel is based on pyeAPI, an open source library maintained by Arista. eAPI is the proprietary API used by Arista, available on all the switches, and it is an HTTP-based API.
 
 To check what eAPI would return, from the command line, we only need to prefix the command with `| json`:
 
 ```bash
+show version
+```
+
+<pre>
 spine1#show version
 Arista vEOS
 Hardware version:
@@ -399,7 +440,13 @@ Internal build ID:      6fcb426e-70a9-48b8-8958-54bb72ee28ed
 Uptime:                 1 day, 2 hours and 49 minutes
 Total memory:           1893316 kB
 Free memory:            690108 kB
+</pre>
 
+```
+show version | json 
+```
+
+<pre>
 spine1#show version | json 
 {
     "modelName": "vEOS",
@@ -415,14 +462,17 @@ spine1#show version | json
     "internalBuildId": "6fcb426e-70a9-48b8-8958-54bb72ee28ed",
     "hardwareRevision": ""
 }
-```
+</pre>
 
-Using `| json`, the command provides the same details, just in structured JSON format, which is then exposed by the eAPI 
-and made available over HTTP requests.
+Using `| json`, the command provides the same details, just in structured JSON format, which is then exposed by the eAPI and made available over HTTP requests.
 
-Through Salt, we can use the `napalm.pyeapi_run_commands` to execute this command:
+Return to the terminal window that is used for the salt commands. Through Salt, we can use the `napalm.pyeapi_run_commands` to execute this command:
 
 ```bash
+salt spine1 napalm.pyeapi_run_commands "show version"
+```
+
+<pre>
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version"
 spine1:
     |_
@@ -449,12 +499,15 @@ spine1:
           52:54:00:c0:88:2b
       version:
           4.18.1F
-```
+</pre>
 
-By default, the function returns structured data, as provided by the eAPI. Alternatively, if we want the raw format, as 
-text, for human readable output, we only need to pass in the `encoding=text` argument:
+By default, the function returns structured data, as provided by the eAPI. Alternatively, if we want the raw format, as text, for human readable output, we only need to pass in the `encoding=text` argument:
 
 ```bash
+salt spine1 napalm.pyeapi_run_commands "show version" encoding=text
+```
+
+<pre>
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" encoding=text
 spine1:
     - Arista vEOS
@@ -470,21 +523,35 @@ spine1:
       Uptime:                 1 day, 2 hours and 51 minutes
       Total memory:           1893316 kB
       Free memory:            690192 kB
-```
+</pre>
 
 Re-run both commands with `--out=raw`:
 
 ```bash
-root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" --out=raw
-{'spine1': [{'modelName': 'vEOS', 'internalVersion': '4.18.1F-4591672.4181F', 'systemMacAddress': '52:54:00:c0:88:2b', 'serialNumber': '', 'memTotal': 1893316, 'bootupTimestamp': 1611589526.53, 'memFree': 689992, 'version': '4.18.1F', 'architecture': 'i386', 'isIntlVersion': False, 'internalBuildId': '6fcb426e-70a9-48b8-8958-54bb72ee28ed', 'hardwareRevision': ''}]}
-root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" encoding=text --out=raw
-{'spine1': ['Arista vEOS\nHardware version:    \nSerial number:       \nSystem MAC address:  5254.00c0.882b\n\nSoftware image version: 4.18.1F\nArchitecture:           i386\nInternal build version: 4.18.1F-4591672.4181F\nInternal build ID:      6fcb426e-70a9-48b8-8958-54bb72ee28ed\n\nUptime:                 1 day, 2 hours and 52 minutes\nTotal memory:           1893316 kB\nFree memory:            690192 kB\n\n']}
+salt spine1 napalm.pyeapi_run_commands "show version" --out=raw
 ```
 
-Notice that in either case the output is a list, as `napalm.pyeapi_run_commands` is capable to run multiple commands at 
-once:
+<pre>
+root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" --out=raw
+{'spine1': [{'modelName': 'vEOS', 'internalVersion': '4.18.1F-4591672.4181F', 'systemMacAddress': '52:54:00:c0:88:2b', 'serialNumber': '', 'memTotal': 1893316, 'bootupTimestamp': 1611589526.53, 'memFree': 689992, 'version': '4.18.1F', 'architecture': 'i386', 'isIntlVersion': False, 'internalBuildId': '6fcb426e-70a9-48b8-8958-54bb72ee28ed', 'hardwareRevision': ''}]}
+</pre>
 
 ```bash
+salt spine1 napalm.pyeapi_run_commands "show version" encoding=text --out=raw
+```
+
+<pre>
+root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" encoding=text --out=raw
+{'spine1': ['Arista vEOS\nHardware version:    \nSerial number:       \nSystem MAC address:  5254.00c0.882b\n\nSoftware image version: 4.18.1F\nArchitecture:           i386\nInternal build version: 4.18.1F-4591672.4181F\nInternal build ID:      6fcb426e-70a9-48b8-8958-54bb72ee28ed\n\nUptime:                 1 day, 2 hours and 52 minutes\nTotal memory:           1893316 kB\nFree memory:            690192 kB\n\n']}
+</pre>
+
+Notice that in either case the output is a list, as `napalm.pyeapi_run_commands` is capable to run multiple commands at once:
+
+```bash
+salt spine1 napalm.pyeapi_run_commands "show version" "show clock" "show boot stages log" encoding=text
+```
+
+<pre>
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" "show clock" "show boot stages log" encoding=text
 spine1:
     - Arista vEOS
@@ -507,12 +574,15 @@ spine1:
     - Timestamp           Delta Begin Msg
       2021-01-25 15:46:38 000.000000 Normal boot stages started
       2021-01-25 15:46:38 000.057444 Normal boot stages complete
-```
+</pre>
 
-The result is in the order we have requested the commands to be executed. The format is text-mode, as this is what we 
-requested using the `encoding=text` argument. Let's re-run without this argument:
+The result is in the order we have requested the commands to be executed. The format is text-mode, as this is what we requested using the `encoding=text` argument. Let's re-run without this argument:
 
 ```bash
+salt spine1 napalm.pyeapi_run_commands "show version" "show clock" "show boot stages log"
+```
+
+<pre>
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" "show clock" "show boot stages log"
 spine1:
     The minion function caused an exception: Traceback (most recent call last):
@@ -536,36 +606,41 @@ spine1:
         raise CommandError(code, msg, command_error=err, output=out)
     pyeapi.eapilib.CommandError: Error [1003]: CLI command 3 of 4 'show clock' failed: unconverted command
 ERROR: Minions returned with non-zero exit code
-```
+</pre>
 
-The execution has failed! Salt tells us that `Minions returned with non-zero exit code`, while the exception trace says 
-`CLI command 3 of 4 'show clock' failed: unconverted command`. To understand what happens, let's go back to our switch:
+The execution has failed! Salt tells us that `Minions returned with non-zero exit code`, while the exception trace says `CLI command 3 of 4 'show clock' failed: unconverted command`. To understand what happens, let's go back to our switch:
 
 ```bash
+show clock
+```
+
+<pre>
 spine1#show clock
 Tue Jan 26 19:00:56 2021
 Timezone: UTC
 Clock source: local
-```
+</pre>
 
 The syntax is correct, and returns as it should, however when adding `| json` it returns:
 
 ```
+spine1#show clock | json
+```
+
+<pre>
 spine1#show clock | json
 {
     "errors": [
         "This is an unconverted command"
     ]
 }
-```
+</pre>
 
-Similar to Juniper, not all the commands are available via the API, unfortunately. A workaround to this might be the 
-methodology presented in _Part-3_.
+Similar to Juniper, not all the commands are available via the API, unfortunately. A workaround to this might be the methodology presented in _Part-3_.
 
 ## Part-3: Executing commands over SSH via Netmiko
 
-We met Netmiko in a previous lab, when we run under the Netmiko Proxy Minion. One of the functions available for Netmiko 
-Minion was `netmiko.send_command`.
+We met Netmiko in a previous lab, when we run under the Netmiko Proxy Minion. One of the functions available for Netmiko Minion was `netmiko.send_command`.
 
 For NAPALM Minions, we can similarly executed commands via Netmiko, even though the underlying communication channel is 
 established over a separate channel. This is mostly useful on devices that don't provide an API, such as Cisco IOS, but 
