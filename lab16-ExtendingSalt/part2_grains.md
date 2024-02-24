@@ -360,17 +360,6 @@ So far, all the Grains functions from the previous examples were returning stati
 As a prime example, let's define a function that returns whether the Proxy Minion is running under a Docker container. 
 For this all we have to do is verify whether the file `/.dockerenv` exists:
 
-`/srv/salt/_grains/example.py`
-
-```
-import os
-
-def docker():
-    return {
-        'docker': os.path.exists('/.dockerenv')
-    }
-```
-
 Insert the **import os** at the top of /srv/salt/_grains/example.py
 
 ```bash
