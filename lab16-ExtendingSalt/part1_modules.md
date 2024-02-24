@@ -135,9 +135,9 @@ def true():
 The code would work, but this is not a good idea, as the name `true` is a reserved keyword in Python; by defining this function we would override that reserved keyword and may result in unexpected behaviour. A better approach is to define the function with a different name, such as `test_()` and tell Salt to re-map it to `example.first`. This can be done through a special instruction defined at the top of the file, `__func_alias__`, which maps the actual function name to the name we want Salt to register it:
 
 ```bash
-cat <<EOF > /srv/salt/_modules/example.py`
+cat <<EOF > /srv/salt/_modules/example.py
 __func_alias__ = {
-    'true_': 'true,
+    'true_': 'true'
 }
 
 def true_():
@@ -173,10 +173,6 @@ router1:
 
 Without the `__func_alias__` definition map, the function would still be available, but we'd have to run it as `example.true_`:
 
-```bash
-salt router1 example.true_
-```
-
 <pre>
 root@salt:~# salt router1 example.true_
 router1:
@@ -186,7 +182,7 @@ router1:
 There is another element of detail to keep in mind when defining Salt functions: **functions starting with underscore are never loaded**. Say we wanted to define our function as `_true()` instead of `true_()`, like this:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def _true():
     return True
@@ -274,7 +270,7 @@ Grains data associated with a specific Minion can be accessed through the `__gra
 Into the same `example.py` module let's define a simple function which only returns the value of the `__grains__` variable:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def grains():
     return __grains__
@@ -330,7 +326,7 @@ router1:
 Executing the same using the `--out=raw` outputter, we can notice that `__grains__` is nothing else than a Python dictionary, where the key is the Grain name, and the value is the Grain value - example: the value of the `host` Grain is `router1` for `router1`, etc. That said, in code, if we want to lookup for a specific value, we'd only need to do a simple Python dictionary lookup; let's define a Salt function `example.os_name` that returns the value of the `os` Grain:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def os_name():
     return __grains__['os']
@@ -378,7 +374,7 @@ leaf4:
 The function returns the OS name for every individual device. Using Grains is a great way to build business logic for a given function, depending on what platform it is run against. For example, the following function `hello()`:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def hello():
     if __grains__['os'] == 'junos':
@@ -440,7 +436,7 @@ In the same way we can use the Grains inside the Execution modules to model the 
 In the same way we access Grain data, we can also access Pillar data associated with a certain Minion. This is done, as you may expect now, using the `__pillar__` magic variable injected into the function context:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def pillar():
     return __pillar__
@@ -482,7 +478,7 @@ The data structure largely depends on what you put into the Pillar, so it's alwa
 The data structure again abides to the same rules, and we can return specific data from the Pillar:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def location():
     return 'I am in Rack {rack}, at {address}'.format(
@@ -536,7 +532,7 @@ Similar to the Grains, we can use Pillar data to model business logic into the E
 Along the same lines with `__grains__` and `__pillar__`, inside the execution modules we can also check the value of the configuration options, using the `__opts__` variable:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def opts():
     return __opts__
@@ -551,7 +547,7 @@ There is a more convenient way by using the `config.get` Execution function whic
 As you may have guessed, this is done through another special variable, which is `__salt__`. This variable is a plain dictionary whose keys are all the Salt functions loaded, and the values point to the memory address of the named function. This is simpler than it sounds, let's have an example:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def ping():
     return __salt__['test.ping']()
@@ -585,7 +581,7 @@ router1:
 In the same way we can invoke native Salt functions, such as `test.ping`, as well as functions defined into our own environment, for example `example.true` defined earlier:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def ex_true():
     return __salt__['example.true']()
@@ -687,7 +683,7 @@ The OS version is `17.2R1.13` and it is nested under a few levels of keys: `out`
 That said, we can define the following function, `junos_version()`:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def junos_version():
     ret = __salt__['napalm.junos_rpc']('get-software-information')
@@ -737,7 +733,7 @@ root@salt:~# salt spine1 napalm.pyeapi_run_commands 'show version' --out=raw
 The EOS version is under key named `version`, with a catch: the keys are nested under a list; as a reminder, to `napalm.pyeapi_run_commands` we can provide a list of commands to be executed, and therefore the output is a list of outputs for each command. That said, the output of `show version` is indexed at position 0 of this output. In code, this would look like:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def eos_version():
     ret = __salt__['napalm.pyeapi_run_commands']('show version')
@@ -813,7 +809,7 @@ core1:
 The `iosxr_version()` function would look like:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def iosxr_version():
     sh_ver = __salt__['napalm.netmiko_commands']('show version')[0]
@@ -849,7 +845,7 @@ core1:
 For IOS, the implementation would be very similar to the one proposed above for IOS-XR; the main difference would be the TextFSM template, as the output of `show version` is different. In that case, we'd probably be tempted to implement the `ios_version()` function as follows:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def ios_version():
     sh_ver = __salt__['napalm.netmiko_commands']('show version')[0]
@@ -931,7 +927,7 @@ for i in $(seq 1 4); do sed -i '$d' /srv/salt/_modules/example.py; done;
 Add the new function
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def ios_version():
     cli = __salt__['net.cli']('show version', textfsm_parse=True, textfsm_path='salt://textfsm/')
@@ -1004,7 +1000,7 @@ spine1:
 For this, we only have to remember the _Accessing Grains data_ section and using the `__grains__` variable to model business logic depending on various factors such as operating system or vendor:
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def version():
     if __grains__['os'] == 'junos':
@@ -1098,7 +1094,7 @@ for i in $(seq 1 7); do sed -i '$d' /srv/salt/_modules/example.py; done;
 Add the new function
 
 ```bash
-cat <<EOF >> /srv/salt/_modules/example.py`
+cat <<EOF >> /srv/salt/_modules/example.py
 
 def version():
     if __grains__['os'] == 'junos':
