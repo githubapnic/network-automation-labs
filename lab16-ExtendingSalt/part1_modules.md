@@ -216,7 +216,7 @@ Salt returns an error and non-zero return code. As a general rule, by convention
 ```bash
 cat <<EOF > /srv/salt/_modules/example.py
 __func_alias__ = {
-    'true_': 'true,
+    'true_': 'true'
 }
 
 def true_():
