@@ -298,12 +298,15 @@ Using this simple methodology, we can start as many Proxy Minions as `srv1` is a
 To have a clean environment, firstly we will stop the Proxy Minions currently running on `srv1`:
 
 ```bash
-root@salt:~# salt srv1 cmd.run 'pkill salt-proxy'
-srv1:
+salt srv1 cmd.run 'pkill salt-proxy'
 ```
 
-This simple command, simply executes `pkill salt-proxy` on `srv1`. Remote execution is one of Salt's superpowers, and we 
-see this here exactly.
+<pre>
+root@salt:~# salt srv1 cmd.run 'pkill salt-proxy'
+srv1:
+</pre>
+
+This simple command, simply executes `pkill salt-proxy` on `srv1`. Remote execution is one of Salt's superpowers, and we see this here exactly.
 
 Suppose we need the Proxies for our devices distributed across the available servers `srv1`, `srv2`, `srv3`, and `srv4`.
 There can be multiple ways to do so, for example:
@@ -317,9 +320,11 @@ For simplicity of this demonstration, let's distribute them by role, as describe
 
 In this case, the State SLS can be as simple as:
 
-`/srv/salt/states/pm_distributed.sls`
+```bash
+cat /srv/salt/states/pm_distributed.sls
+```
 
-```sls
+<pre>
 {%- load_yaml as mapping %}
 srv1: router
 srv2: core
@@ -334,23 +339,17 @@ Startup the Proxy for {{ device }}:
     - name: salt-proxy --proxyid {{ device }} -d
   {%- endif %}
 {%- endfor %}
+</pre>
+
+Let's have a look at this and unpack these details: `{%- load_yaml as mapping %}` defines a mapping between the server name and the roles of the Proxy Minions to start for each; the mapping is defined as YAML (hence `load_yaml`) - this is purely for readability, and the contents will be loaded into the `mapping` Jinja variable. The `load_yaml` structure above, in other words is the exact equivalent of defining a Python dictionary whose keys are the server names, and the values are the device roles: `mapping = {'srv1': 'router1', 'srv2': 'core', 'srv3': 'spine', 'srv4': 'leaf'}`.
+
+Immediately underneath, we find the same structure as in the previous State SLS `/srv/salt/states/pm_single.sls`, the `{%- for device in pillar.devices %}` is just like previously, with one minor distinction: the line `{%- if device.startswith(mapping[opts.id]) %}`. This line looks at every device in the loop (`router1`, `router2`, ..., ) and checks if the device name starts with the role associated for this server. The variable `mapping` is the one defined above, and `opts.id` provides the server name (i.e., `srv1`, `srv2`, ... ); therefore the construction `mapping[opts.id]` will give the value `router` when the State is executed on `srv1`, `core` when executed on `srv2`, and so on. This is how we can distribute the Proxy Minions by role across the available 4 servers. Let's check:
+
+```bash
+salt srv* state.show_sls pm_distributed
 ```
 
-Let's have a look at this and unpack these details: `{%- load_yaml as mapping %}` defines a mapping between the server 
-name and the roles of the Proxy Minions to start for each; the mapping is defined as YAML (hence `load_yaml`) - this is 
-purely for readability, and the contents will be loaded into the `mapping` Jinja variable. The `load_yaml` structure 
-above, in other words is the exact equivalent of defining a Python dictionary whose keys are the server names, and the 
-values are the device roles: `mapping = {'srv1': 'router1', 'srv2': 'core', 'srv3': 'spine', 'srv4': 'leaf'}`.
-
-Immediately underneath, we find the same structure as in the previous State SLS `/srv/salt/states/pm_single.sls`, the 
-`{%- for device in pillar.devices %}` is just like previously, with one minor distinction: the line `{%- if 
-device.startswith(mapping[opts.id]) %}`. This line looks at every device in the loop (`router1`, `router2`, ..., ) and 
-checks if the device name starts with the role associated for this server. The variable `mapping` is the one defined 
-above, and `opts.id` provides the server name (i.e., `srv1`, `srv2`, ... ); therefore the construction 
-`mapping[opts.id]` will give the value `router` when the State is executed on `srv1`, `core` when executed on `srv2`, 
-and so on. This is how we can distribute the Proxy Minions by role across the available 4 servers. Let's check:
-
-```
+<pre>
 root@salt:~# salt srv* state.show_sls pm_distributed
 srv4:
     ----------
@@ -553,11 +552,15 @@ srv2:
               order:
                   10001
 root@salt:~#
-```
+</pre>
 
 This confirms the State SLS is rendered as intended, so we can go ahead and apply:
 
+```bash
+salt srv* state.apply pm_distributed
 ```
+
+<pre>
 root@salt:~# salt srv* state.apply pm_distributed
 srv1:
 ----------
@@ -787,13 +790,15 @@ Failed:    0
 ------------
 Total states run:     4
 Total run time:   3.495 s
-root@salt:~#
-```
+</pre>
 
-After the Proxies are up and running, we can check the location where they run, by checking the value of the `nodename` 
-Grain:
+After the Proxies are up and running, we can check the location where they run, by checking the value of the `nodename` Grain:
 
 ```bash
+salt \* grains.get nodename
+```
+
+<pre>
 root@salt:~# salt \* grains.get nodename
 router1:
     srv1
@@ -827,17 +832,21 @@ srv4:
     srv4
 srv2:
     srv2
-```
+</pre>
 
 To cleanup the environment, stop the Proxy Minions on all the servers by executing:
 
 ```bash
+salt srv* cmd.run 'pkill salt-proxy'
+```
+
+<pre>
 root@salt:~# salt srv* cmd.run 'pkill salt-proxy'
 srv3:
 srv4:
 srv2:
 srv1:
-```
+</pre>
 
 ## Part-3: Proxy Minions as Docker containers
 
