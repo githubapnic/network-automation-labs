@@ -358,12 +358,23 @@ The execution time is small, as _salt-sproxy_ simply passes the command to the P
 
 ## Part-2: Event-driven automation using salt-sproxy
 
-By adding the `event: true` configuration option, while having a Salt Master running, we can ensure that _salt-sproxy_ 
-will place events on the bus as we execute commands. For example, running the simplest command possible, e.g., 
-`salt-sproxy spine1 test.ping`, there will be a number of events seen on the Salt bus. Open another terminal to watch 
-the Salt event bus (`salt-run state.event pretty=True`):
+By adding the `event: true` configuration option, while having a Salt Master running, we can ensure that _salt-sproxy_ will place events on the bus as we execute commands. For example, running the simplest command possible, e.g., `salt-sproxy spine1 test.ping`, there will be a number of events seen on the Salt bus. 
 
+Type the following to watch the Salt event bus (`salt-run state.event pretty=True`):
+
+```bash
+salt-run state.event pretty=True
 ```
+
+Open another terminal and type:
+
+```bash
+salt-sproxy spine1 test.ping
+```
+
+Return to the Salt event bus terminal window to review the output.
+
+<pre>
 proxy/runner/20210121173613864214/new	{
     "_stamp": "2021-01-21T17:36:13.865274",
     "arg": [],
@@ -386,78 +397,85 @@ proxy/runner/20210121173613864214/ret/spine1	{
     "return": true,
     "success": true
 }
-```
+</pre>
 
-The structure of these events respect exactly the one we've seen previously when executing commands via the `salt` CLI. 
-The only difference is the tag, which starts with `proxy/runner/` instead of `salt/job/`. Everything else remains the 
-same, so if you have Reactors configured to the normal Salt tags, all you have to do it to make sure they also match 
-`proxy/runner/*/new` and/or `proxy/runner/*/ret/*` pattern(s).
+The structure of these events respect exactly the one we've seen previously when executing commands via the `salt` CLI. The only difference is the tag, which starts with `proxy/runner/` instead of `salt/job/`. Everything else remains the same, so if you have Reactors configured to the normal Salt tags, all you have to do it to make sure they also match `proxy/runner/*/new` and/or `proxy/runner/*/ret/*` pattern(s).
 
-For example, previously, in _Lab 12_, we had the following configuration:
+For example, previously, in _Lab 11_, we had the following configuration:
 
-```yaml
+<pre>
 reactor:
   - 'salt/job/*/ret/*':
     - salt://reactor/test.sls
-```
+</pre>
 
-This has matched job returns. To make sure that the `salt://reactor/test.sls` Reactor is invoked for job returns when 
-executing through _salt-sproxy_, this configuration becomes:
+This has matched job returns. To make sure that the `salt://reactor/test.sls` Reactor is invoked for job returns when executing through _salt-sproxy_, this configuration becomes:
 
-```yaml
+<pre>
 reactor:
   - 'salt/job/*/ret/*':
     - salt://reactor/test.sls
   - 'proxy/runner/*/ret/*':
     - salt://reactor/test.sls
+</pre>
+
+With both Reactors in place, we can be sure that `salt://reactor/test.sls` is invoked in a mixed environment (i.e., with both running Proxy Minions, but also when managing through _salt-sproxy_ only). Everything else stays the same as always.
+
+Things are a little bit different inside the Reactor SLS. Let's look again at the Reactor SLS we've used to backup the configuration in response to a `CONFIGURATION_COMMIT_COMPLETED` notification from napalm-logs. As a refresher, the reaction is configured as:
+
+Return to the terminal window where you can type commands.
+
+```bash
+ grep "reactor:" -A 3 /etc/salt/master
 ```
 
-With both Reactors in place, we can be sure that `salt://reactor/test.sls` is invoked in a mixed environment (i.e., with 
-both running Proxy Minions, but also when managing through _salt-sproxy_ only). Everything else stays the same as 
-always.
-
-Things are a little bit different inside the Reactor SLS. Let's look again at the Reactor SLS we've used to backup the 
-configuration in response to a `CONFIGURATION_COMMIT_COMPLETED` notification from napalm-logs. As a refresher, the 
-reaction is configured as:
-
-```yaml
+<pre>
 reactor:
   - 'napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*':
     - salt://reactor/bkup.sls
-```
+</pre>
 
 The `salt://reactor/bkup.sls` was defined as:
 
-```yaml
+```bash
+cat /srv/salt/reactor/bkup.sls
+``` 
+
+<pre>
 Backup config:
   local.net.save_config:
     - tgt: {{ data.host }}
     - kwarg:
         source: running
         path: /tmp/{{ data.host }}.conf
+</pre>
+
+This Reactor SLS is using the `local` client. But, as our devices are managed through _salt-sproxy_ instead, the `local` client is unavailable, so this structure needs to be slightly changed to:
+
+```bash
+sed -i 's/local.net.save_config/runner.proxy.execute/' /srv/salt/reactor/bkup.sls
+cat /srv/salt/reactor/bkup.sls
 ```
 
-This Reactor SLS is using the `local` client. But, as our devices are managed through _salt-sproxy_ instead, the 
-`local` client is unavailable, so this structure needs to be slightly changed to:
-
-```yaml
+<pre>
 Backup config:
-  runner.proxy.execute:
+  <strong>runner.proxy.execute<strong>:
     - tgt: {{ data.host }}
     - kwarg:
         salt_function: net.save_config
         source: running
         path: /tmp/{{ data.host }}.conf
-```
+</pre>
 
-We have `runner.proxy.execute` instead of `local.net.save_config`, and the function to be invoked is specified under
-`kwarg`, as `salt_function: net.save_config`.
+We have `runner.proxy.execute` instead of `local.net.save_config`, and the function to be invoked is specified under `kwarg`, as `salt_function: net.save_config`.
 
-`runner.proxy.execute` instructs the Reactor to invoke the `proxy.execute` Runner, which is the actual core of 
-_salt-sproxy_. The `proxy` Runner is shipped as part of the _salt-sproxy_ package, so Salt needs to be made aware of 
-this, in order to find it. We can do so by running:
+`runner.proxy.execute` instructs the Reactor to invoke the `proxy.execute` Runner, which is the actual core of _salt-sproxy_. The `proxy` Runner is shipped as part of the _salt-sproxy_ package, so Salt needs to be made aware of this, in order to find it. We can do so by running:
 
 ```bash
+salt-run saltutil.sync_all
+```
+
+<pre>
 root@salt:~# salt-run saltutil.sync_all
 cache:
 clouds:
@@ -485,11 +503,15 @@ tokens:
 tops:
 utils:
 wheel:
-```
+</pre>
 
 With these changes, let's apply a configuration change on `router1` and then watch the Salt event bus:
 
 ```bash
+salt-sproxy router1 net.load_config text='set system name-server 1.1.1.1'
+```
+
+<pre>
 root@salt:~# salt-sproxy router1 net.load_config text='set system name-server 1.1.1.1'
 router1:
     ----------
@@ -504,11 +526,11 @@ router1:
     loaded_config:
     result:
         True
-```
+</pre>
 
 We will see the following sequence of events:
 
-```
+<pre>
 proxy/runner/20210121180946260516/new	{
     "_stamp": "2021-01-21T18:09:46.261540",
     "arg": [
@@ -666,19 +688,14 @@ proxy/runner/20210121180955964808/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
 In this, we notice:
 
-- `proxy/runner/20210121180946260516/new` the job creation event, when we requested _salt-sproxy_ to apply the 
-  configuration change.
-- `napalm/syslog/junos/CONFIGURATION_COMMIT_REQUESTED/router1` and 
-  `napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1` as the napalm-logs events - again, seen on the bus before 
-  Salt replies, which is a big plus.
+- `proxy/runner/20210121180946260516/new` the job creation event, when we requested _salt-sproxy_ to apply the configuration change.
+- `napalm/syslog/junos/CONFIGURATION_COMMIT_REQUESTED/router1` and `napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1` as the napalm-logs events - again, seen on the bus before   Salt replies, which is a big plus.
 - `proxy/runner/20210121180946260516/ret/router1` as the job return event, with the result printed on the command line.
-- `proxy/runner/20210121180955964808/new` and `proxy/runner/20210121180955964808/ret/router1`: the job creation and 
-  return events for the reaction to the napalm-logs notifications. They are similarly prefixes with the `proxy/runner/` 
-  tag, as they are equally managed through _salt-sproxy_.
+- `proxy/runner/20210121180955964808/new` and `proxy/runner/20210121180955964808/ret/router1`: the job creation and return events for the reaction to the napalm-logs notifications. They are similarly prefixes with the `proxy/runner/` tag, as they are equally managed through _salt-sproxy_.
 
 ## Part-3: Using the REST API with salt-sproxy
 
