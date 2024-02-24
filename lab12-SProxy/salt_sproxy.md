@@ -79,7 +79,7 @@ This simple YAML structure points out that we want to manage the device `router1
 By default, the Roster file is interpreted as SLS, and therefore we can benefit from all the advantages. Thanks to this, we can have `for` loops in order to have the file more condensed:
 
 ```bash
-grep "for i" -A 4 /etc/salt/roster
+grep "for i" -A 4 /etc/salt/roster | head -5
 ```
 
 <pre>
