@@ -1,33 +1,33 @@
 ![](images/apnic_logo.png)
 # LAB: Automating using Salt, without running Proxy Minions
 
-For this lab, as we want to showcase the usage of Salt but without having to run Proxy Minions for the network devices, 
-we will stop the Proxy Minions for most of the topology - the only ones running will be those for the `leaf` switches, 
-as typically those are the ones we interact with most of the time. In other word, the Proxy Minions for `leaf1`, 
-`leaf2`, `leaf3` and `leaf4` are running, but the rest of the devices will be managed through _salt-sproxy_.
+For this lab, as we want to showcase the usage of Salt but without having to run Proxy Minions for the network devices, we will stop the Proxy Minions for most of the topology - the only ones running will be those for the `leaf` switches, as typically those are the ones we interact with most of the time. In other word, the Proxy Minions for `leaf1`, `leaf2`, `leaf3` and `leaf4` are running, but the rest of the devices will be managed through _salt-sproxy_.
 
 _salt-sproxy_ is pre-installed, so we can start automating straight away.
 
 ## Part-1: Getting started with Salt SProxy
 
-First thing we need to decide when stating using _salt-sproxy_ is where we define the list of devices we want to manage. 
-In this lab, for simplicity, and avoid external dependencies, we will list the devices into a file. This is called the 
-_Roster_. In the Master configuration file we need to provide this information:
+First thing we need to decide when stating using _salt-sproxy_ is where we define the list of devices we want to manage. In this lab, for simplicity, and avoid external dependencies, we will list the devices into a file. This is called the _Roster_. In the Master configuration file we need to provide this information:
 
-`/etc/salt/master`
+```bash
+grep roster /etc/salt/master
+```
 
-```yaml
+<pre>
+root@salt:~# grep roster /etc/salt/master
 roster: file
 roster_file: /etc/salt/roster
-```
+</pre>
 
 This way, Salt will know that the Roster is defined as a file, and it is located at `/etc/salt/roster`.
 
 The Roster file has the following contents:
 
-`/etc/salt/roster`
+```bash
+cat /etc/salt/roster
+```
 
-```sls
+<pre>
 router1:
   grains:
     role: router
@@ -52,34 +52,39 @@ leaf{{ i }}:
   grains:
     role: leaf
 {%- endfor %}
-```
+</pre>
 
 For the beginning, let's analyze the first 3 lines:
 
-```yaml
+```bash
+head -3 /etc/salt/roster
+```
+
+<pre>
 router1:
   grains:
     role: router
+</pre>
+
+This simple YAML structure points out that we want to manage the device `router1`. Underneath its key, there's `grains`, where we can defined static Grains to be assigned to it. In this case, the `role` Grain has the value `router`. As in the usual Salt, these Grains can be used for targeting, or referenced in various Jinja / SLS templates.
+
+By default, the Roster file is interpreted as SLS, and therefore we can benefit from all the advantages. Thanks to this, we can have `for` loops in order to have the file more condensed:
+
+```bash
+grep "for i" -A 4 /etc/salt/roster
 ```
 
-This simple YAML structure points out that we want to manage the device `router1`. Underneath its key, there's `grains`, 
-where we can defined static Grains to be assigned to it. In this case, the `role` Grain has the value `router`. As in 
-the usual Salt, these Grains can be used for targeting, or referenced in various Jinja / SLS templates.
-
-By default, the Roster file is interpreted as SLS, and therefore we can benefit from all the advantages. Thanks to this, 
-we can have `for` loops in order to have the file more condensed:
-
-```sls
+<pre>
 {%- for i in range(1,5) %}
 spine{{ i }}:
   grains:
     role: spine
 {%- endfor %}
-```
+</pre>
 
 The block above will be rendered and interpreted as the following YAML structure:
 
-```yaml
+<pre>
 spine1:
   grains:
     role: spine
@@ -92,14 +97,13 @@ spine3:
 spine4:
   grains:
     role: spine
-```
+</pre>
 
-The advantage may not be immediately clear in this example, but if we were to have hundreds of spine switches, the `for` 
-loop remains the same.
+The advantage may not be immediately clear in this example, but if we were to have hundreds of spine switches, the `for` loop remains the same.
 
 In other words, for clarity, the Roster file is interpreted as:
 
-```yaml
+<pre>
 router1:
   grains:
     role: router
@@ -136,16 +140,17 @@ leaf3:
 leaf4:
   grains:
     role: leaf
+</pre>
+
+This is our entire topology.
+
+Everything else remains the same as previously. The authentication credentials are in the Pillar, as configured for the running Proxy Minions. As a reminder, they were configured like this:
+
+```bash
+cat /srv/salt/pillar/top.sls
 ```
 
-This is out entire topology.
-
-Everything else remains the same as previously. The authentication credentials are in the Pillar, as configured for the 
-running Proxy Minions. As a reminder, they were configured like this:
-
-`/srv/salt/pillar/top.sls`
-
-```yaml
+<pre>
 base:
   'router*':
     - junos
@@ -155,24 +160,30 @@ base:
     - eos
   'leaf*':
     - ios
+</pre>
+
+```bash
+cat /srv/salt/pillar/junos.sls
 ```
 
-`/srv/salt/pillar/junos.sls`
-
-```yaml
+<pre>
 proxy:
   proxytype: napalm
   driver: junos
   host: {{ opts.id }}
   username: apnic
   password: APNIC2021
-```
+</pre>
 
 All of these are equally available now, when running through salt-sproxy, without having Proxy Minions running.
 
 Running the following command, you can check what Minions are connected to this Master:
 
 ```bash
+salt-key -L
+```
+
+<pre>
 root@salt:~# salt-key -L
 Accepted Keys:
 core1
@@ -190,12 +201,30 @@ spine4
 Denied Keys:
 Unaccepted Keys:
 Rejected Keys:
+</pre>
+
+**Note**: There may be a python error, but the command completes succesfully
+
+<pre>
+  root@salt:~# salt-key -L
+/usr/local/lib/python3.6/site-packages/requests/__init__.py:91: RequestsDependencyWarning: urllib3 (1.26.18) or chardet (3.0.4) doesn't match a supported version!
+  RequestsDependencyWarning)
+</pre>
+
+This can be fixed by installing the requests module for python, using the following command:
+
+```bash
+pip3 install requests
 ```
 
 As we no longer need all of them, let's remove the key of the routers, cores and spines:
 
 ```bash
 salt-key -d router*
+```
+
+<pre>
+root@salt:~# salt-key -d router*
 The following keys are going to be deleted:
 Accepted Keys:
 router1
@@ -203,13 +232,17 @@ router2
 Proceed? [N/y] y
 Key for minion router1 deleted.
 Key for minion router2 deleted.
-```
+</pre>
 
 Same for `salt-key -d core*` and `salt-key -d spine*`.
 
 Only the keys for the leaf switches are still accepted now:
 
 ```bash
+salt-key -L
+```
+
+<pre>
 root@salt:~# salt-key -L
 Accepted Keys:
 leaf1
@@ -219,50 +252,53 @@ leaf4
 Denied Keys:
 Unaccepted Keys:
 Rejected Keys:
-```
+</pre>
 
-_Note_: this cleanup is not absolutely needed, and we're only doing it because we've previously had Proxy Minions 
-connected to this Master, that we no longer need. In a fresh _salt-sproxy_ environment, this extra step is not required.
+_Note_: this cleanup is not absolutely needed, and we're only doing it because we've previously had Proxy Minions connected to this Master, that we no longer need. In a fresh _salt-sproxy_ environment, this extra step is not required.
 
-At this point, we're sure that only leaf switches have Proxy Minions running, and can start managing everything else 
-through _salt-sproxy_:
+At this point, we're sure that only leaf switches have Proxy Minions running, and can start managing everything else through _salt-sproxy_:
 
 If we'd be running commands against the routers, cores or spines, we'd get the following error:
 
 ```bash
+salt router1 test.ping 2> /dev/null
+```
+
+<pre>
 root@salt:~# salt router1 test.ping
 No minions matched the target. No command was sent, no jid was assigned.
 ERROR: No return received
-```
+</pre>
 
 But we can execute using:
 
 ```bash
+salt-sproxy router1 test.ping
+```
+
+<pre>
 root@salt:~# salt-sproxy router1 test.ping
 router1:
     True
-```
+</pre>
 
-Notice that the execution takes longer than when using the `salt` command. To understand why, run the same command, in 
-debug mode:
+Notice that the execution takes longer than when using the `salt` command. To understand why, run the same command, in debug mode:
 
 ```bash
-root@salt:~# salt-sproxy router1 test.ping -l debug
-
-... snip ...
+salt-sproxy router1 test.ping -l debug
 ```
 
 What do you notice?
 
-It is expected, by design, that it takes longer, as when executing through `salt-sproxy` the connection is initiated 
-on demand. In opposition, when having running Proxy Minions, the connection is established only on startup, then the
-Minion maintains it and it only passe the commands and the results back and forth.
+It is expected, by design, that it takes longer, as when executing through `salt-sproxy` the connection is initiated on demand. In opposition, when having running Proxy Minions, the connection is established only on startup, then the Minion maintains it and it only passe the commands and the results back and forth.
 
-That also means that the execution time depends on the way _salt-sproxy_ connects to the device: `router1` is managed 
-via NETCONF, which is over an SSH channel, and therefore slower than, for example, a platform managed through HTTP 
-request, such as Arista EOS:
+That also means that the execution time depends on the way _salt-sproxy_ connects to the device: `router1` is managed via NETCONF, which is over an SSH channel, and therefore slower than, for example, a platform managed through HTTP request, such as Arista EOS:
 
 ```bash
+time salt-sproxy router1 test.ping
+```
+
+<pre>
 root@salt:~# time salt-sproxy router1 test.ping
 router1:
     True
@@ -270,7 +306,13 @@ router1:
 real	0m7.624s
 user	0m5.645s
 sys	0m0.756s
+</pre>
 
+```bash
+time salt-sproxy spine1 test.ping
+```
+
+<pre>
 root@salt:~# time salt-sproxy spine1 test.ping
 spine1:
     True
@@ -278,25 +320,25 @@ spine1:
 real	0m4.820s
 user	0m1.461s
 sys	0m0.263s
-```
+</pre>
 
-In general, everything we've done with Salt is available through _salt-sproxy_ as well. To prove this, execute a few 
-commands:
-
-```
-root@salt:~# salt-sproxy core* net.lldp
-
-... snip ...
-
-root@salt:~# salt-sproxy router* router.show 0.0.0.0/0
-
-... snip ...
-```
-
-But we also have the Proxy Minions for the leaf switches available. Thanks to the `use_existing_proxy: true` option 
-configured in `/etc/salt/master`, _salt-sproxy_ will also attempt to run commands on the running Proxy Minions:
+In general, everything we've done with Salt is available through _salt-sproxy_ as well. To prove this, execute a few commands:
 
 ```bash
+salt-sproxy core* net.lldp
+```
+
+```bash
+salt-sproxy router* router.show 0.0.0.0/0
+```
+
+But we also have the Proxy Minions for the leaf switches available. Thanks to the `use_existing_proxy: true` option configured in `/etc/salt/master`, _salt-sproxy_ will also attempt to run commands on the running Proxy Minions:
+
+```bash
+salt-sproxy -G role:leaf test.ping
+```
+
+<pre>
 root@salt:~# salt-sproxy -G role:leaf test.ping
 leaf2:
     True
@@ -310,10 +352,9 @@ leaf4:
 real	0m2.035s
 user	0m1.356s
 sys	0m0.131s
-```
+</pre>
 
-The execution time is small, as _salt-sproxy_ simply passes the command to the Proxy Minions, which are already 
-connected, so it doesn't spend much time for this.
+The execution time is small, as _salt-sproxy_ simply passes the command to the Proxy Minions, which are already connected, so it doesn't spend much time for this.
 
 ## Part-2: Event-driven automation using salt-sproxy
 
