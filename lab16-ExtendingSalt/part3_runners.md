@@ -116,7 +116,7 @@ We will explore these in the next sections.
 Another implication is the CLI syntax for executing Runners: as Runners are invoked on the Master side, we are not targeting other machines, and therefore the targeting parameter disappears:
 
 <pre>
-# salt-run <runner.function> [<argument>] [<options>]
+# salt-run &lt;runner.function&gt; [&lt;argument&gt;] [&lt;options&gt;]
 </pre>
 
 Notice that instead of the `salt` program, we're using `salt-run`, and there is no target (as the target is implicit -the very machine we're executing from). Just like the `salt` program, a Runner is invoked by referencing the Runner module named followed by a dot and the function name. Example:
