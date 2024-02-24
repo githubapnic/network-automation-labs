@@ -1,150 +1,202 @@
 ![](images/apnic_logo.png)
 # LAB: Invoking low-level API functions
 
-For this lab, we will have again all the Proxy Minions running, without any other external services. All the Minions are 
-running using NAPALM for the connection.
+For this lab, we will have again all the Proxy Minions running, without any other external services. All the Minions are running using NAPALM for the connection.
 
-Low-level API functions allow you to interact directly with the network device, and present you the data exactly in the 
-way the device returns it. We've seen previously functions such as `net.arp`, `net.lldp`, and others; under the hood, 
-these functions execute one or more low-level API calls, and eventually some data processing, in order to provide the 
-data in a vendor-agnostic format, easy to consume. But these low-level API calls differ from one platform to another. In 
-the next sections we will look into what Salt functions you can use per individual platform. In fact, we've already seen 
-some of those in the previous lab, but now, we'll look into them closely.
+Low-level API functions allow you to interact directly with the network device, and present you the data exactly in the way the device returns it. We've seen previously functions such as `net.arp`, `net.lldp`, and others; under the hood, these functions execute one or more low-level API calls, and eventually some data processing, in order to provide the data in a vendor-agnostic format, easy to consume. But these low-level API calls differ from one platform to another. In the next sections we will look into what Salt functions you can use per individual platform. In fact, we've already seen some of those in the previous lab, but now, we'll look into them closely.
+
+# LAB: Logging into the router
+There may be an issue with a conflict with the fingerprint used for previous labs. 
+
+<pre>
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that a host key has just been changed.
+The fingerprint for the ED25519 key sent by the remote host is
+SHA256:9+JSueZJQBYdLyT9L7QBsaTexOnWBtokH3i0TWb8CIc.
+Please contact your system administrator.
+Add correct host key in /home/apnic/.ssh/known_hosts to get rid of this message.
+Offending ECDSA key in /home/apnic/.ssh/known_hosts:56
+  remove with:
+  ssh-keygen -f "/home/apnic/.ssh/known_hosts" -R "router1"
+Host key for router1 has changed and you have requested strict checking.
+Host key verification failed.
+</pre>
+
+The easiest fix is to delete the old key from the known_hosts file.
+
+<pre>
+ssh-keygen -f "/home/apnic/.ssh/known_hosts" -R "router1"
+</pre>
+
+Otherwise, to bypass this check you can try this command:
+
+```bash
+ssh -o "StrictHostKeyChecking no" apnic@router1
+```
+
+**password** = APNIC2021
 
 ## Part-1: Executing RPC calls on Juniper devices
 
-RPC (Remote Procedure Call) is when a computer program causes a procedure (subroutine, or instruction) on another, 
-remote machine. When talking about RPC calls in the context of Juniper devices, we refer to making standardised 
-requests in order to execute show commands, or request various operations on the devices (such as reboot, software 
-upgrade, clear DHCP leases, etc.), or configuration management oriented operations.
+RPC (Remote Procedure Call) is when a computer program causes a procedure (subroutine, or instruction) on another, remote machine. When talking about RPC calls in the context of Juniper devices, we refer to making standardised requests in order to execute show commands, or request various operations on the devices (such as reboot, software upgrade, clear DHCP leases, etc.), or configuration management oriented operations.
 
 On Juniper, almost any CLI command has an RPC call equivalent. To see this, append `| display xml rpc` to your command. 
+
 Examples:
 
 ```
-apnic@router1> show version | display xml rpc
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <rpc>
-        <get-software-information>
-        </get-software-information>
-    </rpc>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
+show version | display xml rpc
 ```
 
-The RPC call for `show version` is `get-software-information` (under the `<rpc>` tag). In general, the RPC call for
-_show_ commands are prefixed by `get-`, and sometimes suffixed by `-information`. Other examples:
+<pre>
+apnic@router1&gt; show version | display xml rpc
+&lt;rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos"&gt;
+    &lt;rpc&gt;
+        &lt;get-software-information&gt;
+        &lt;/get-software-information&gt;
+    &lt;/rpc&gt;
+    &lt;cli&gt;
+        &lt;banner&gt;&lt;/banner&gt;
+    &lt;/cli&gt;
+&lt;/rpc-reply&gt;
+</pre>
+
+The RPC call for `show version` is `get-software-information` (under the `<rpc>` tag). In general, the RPC call for _show_ commands are prefixed by `get-`, and sometimes suffixed by `-information`. Other examples:
 
 ```
-apnic@router1> show lldp neighbors | display xml rpc
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <rpc>
-        <get-lldp-neighbors-information>
-        </get-lldp-neighbors-information>
-    </rpc>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
-
-apnic@router1> show chassis alarms | display xml rpc 
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <rpc>
-        <get-alarm-information>
-        </get-alarm-information>
-    </rpc>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
+show lldp neighbors | display xml rpc
 ```
+
+<pre>
+apnic@router1&gt; show lldp neighbors | display xml rpc
+&lt;rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos"&gt;
+    &lt;rpc&gt;
+        &lt;get-lldp-neighbors-information&gt;
+        &lt;/get-lldp-neighbors-information&gt;
+    &lt;/rpc&gt;
+    &lt;cli&gt;
+        &lt;banner&gt;&lt;/banner&gt;
+    &lt;/cli&gt;
+&lt;/rpc-reply&gt;
+</pre>
+
+```
+show chassis alarms | display xml rpc
+```
+
+<pre>
+apnic@router1&gt; show chassis alarms | display xml rpc 
+&lt;rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos"&gt;
+    &lt;rpc&gt;
+        &lt;get-alarm-information&gt;
+        &lt;/get-alarm-information&gt;
+    &lt;/rpc&gt;
+    &lt;cli&gt;
+        &lt;banner&gt;&lt;/banner&gt;
+    &lt;/cli&gt;
+&lt;/rpc-reply&gt;
+</pre>
 
 There are also commands that don't have an RPC call:
 
 ```
-apnic@router1> show ntp associations | display xml rpc
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <message>
-        xml rpc equivalent of this command is not available.
-    </message>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
+show ntp associations | display xml rpc
 ```
+
+<pre>
+apnic@router1&gt; show ntp associations | display xml rpc
+&lt;rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos"&gt;
+    &lt;message&gt;
+        xml rpc equivalent of this command is not available.
+    &lt;/message&gt;
+    &lt;cli&gt;
+        &lt;banner&gt;&lt;/banner&gt;
+    &lt;/cli&gt;
+&lt;/rpc-reply&gt;
+</pre>
 
 As it says under the `<message>` tag, the `show ntp associations` command doesn't have an RPC call associated with.
 
-The RPC calls are important, as when executed, they provide a standardised response. From the command line, we can also 
-visualise the RPC responses, by adding `| display xml` to the command:
+The RPC calls are important, as when executed, they provide a standardised response. From the command line, we can also visualise the RPC responses, by adding `| display xml` to the command:
 
 ```
-apnic@router1> show lldp neighbors | display xml
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <lldp-neighbors-information junos:style="brief">
-        <lldp-neighbor-information>
-            <lldp-local-port-id>ge-0/0/0</lldp-local-port-id>
-            <lldp-local-parent-interface-name>-</lldp-local-parent-interface-name>
-            <lldp-remote-chassis-id-subtype>Mac address</lldp-remote-chassis-id-subtype>
-            <lldp-remote-chassis-id>00:05:86:44:79:c0</lldp-remote-chassis-id>
-            <lldp-remote-port-id-subtype>Locally assigned</lldp-remote-port-id-subtype>
-            <lldp-remote-port-id>518</lldp-remote-port-id>
-            <lldp-remote-system-name>router2</lldp-remote-system-name>
-        </lldp-neighbor-information>
-        <lldp-neighbor-information>
-            <lldp-local-port-id>ge-0/0/2</lldp-local-port-id>
-            <lldp-local-parent-interface-name>-</lldp-local-parent-interface-name>
-            <lldp-remote-chassis-id-subtype>Mac address</lldp-remote-chassis-id-subtype>
-            <lldp-remote-chassis-id>02:07:e0:bd:0c:06</lldp-remote-chassis-id>
-            <lldp-remote-port-id-subtype>Interface name</lldp-remote-port-id-subtype>
-            <lldp-remote-port-id>Gi0/0/0/3</lldp-remote-port-id>
-            <lldp-remote-system-name>core2</lldp-remote-system-name>
-        </lldp-neighbor-information>
-        <lldp-neighbor-information>
-            <lldp-local-port-id>ge-0/0/1</lldp-local-port-id>
-            <lldp-local-parent-interface-name>-</lldp-local-parent-interface-name>
-            <lldp-remote-chassis-id-subtype>Mac address</lldp-remote-chassis-id-subtype>
-            <lldp-remote-chassis-id>02:28:b5:5a:a4:06</lldp-remote-chassis-id>
-            <lldp-remote-port-id-subtype>Interface name</lldp-remote-port-id-subtype>
-            <lldp-remote-port-id>Gi0/0/0/2</lldp-remote-port-id>
-            <lldp-remote-system-name>core1</lldp-remote-system-name>
-        </lldp-neighbor-information>
-    </lldp-neighbors-information>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
+show lldp neighbors | display xml
 ```
 
-This command is safe for show commands, however remember that it displays the output _after_ the command has been 
-executed:
+<pre>
+apnic@router1&gt; show lldp neighbors | display xml
+&lt;rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos"&gt;
+    &lt;lldp-neighbors-information junos:style="brief"&gt;
+        &lt;lldp-neighbor-information&gt;
+            &lt;lldp-local-port-id&gt;ge-0/0/0&lt;/lldp-local-port-id&gt;
+            &lt;lldp-local-parent-interface-name&gt;-&lt;/lldp-local-parent-interface-name&gt;
+            &lt;lldp-remote-chassis-id-subtype&gt;Mac address&lt;/lldp-remote-chassis-id-subtype&gt;
+            &lt;lldp-remote-chassis-id&gt;00:05:86:44:79:c0&lt;/lldp-remote-chassis-id&gt;
+            &lt;lldp-remote-port-id-subtype&gt;Locally assigned&lt;/lldp-remote-port-id-subtype&gt;
+            &lt;lldp-remote-port-id&gt;518&lt;/lldp-remote-port-id&gt;
+            &lt;lldp-remote-system-name&gt;router2&lt;/lldp-remote-system-name&gt;
+        &lt;/lldp-neighbor-information&gt;
+        &lt;lldp-neighbor-information&gt;
+            &lt;lldp-local-port-id&gt;ge-0/0/2&lt;/lldp-local-port-id&gt;
+            &lt;lldp-local-parent-interface-name&gt;-&lt;/lldp-local-parent-interface-name&gt;
+            &lt;lldp-remote-chassis-id-subtype&gt;Mac address&lt;/lldp-remote-chassis-id-subtype&gt;
+            &lt;lldp-remote-chassis-id&gt;02:07:e0:bd:0c:06&lt;/lldp-remote-chassis-id&gt;
+            &lt;lldp-remote-port-id-subtype&gt;Interface name&lt;/lldp-remote-port-id-subtype&gt;
+            &lt;lldp-remote-port-id&gt;Gi0/0/0/3&lt;/lldp-remote-port-id&gt;
+            &lt;lldp-remote-system-name&gt;core2&lt;/lldp-remote-system-name&gt;
+        &lt;/lldp-neighbor-information&gt;
+        &lt;lldp-neighbor-information&gt;
+            &lt;lldp-local-port-id&gt;ge-0/0/1&lt;/lldp-local-port-id&gt;
+            &lt;lldp-local-parent-interface-name&gt;-&lt;/lldp-local-parent-interface-name&gt;
+            &lt;lldp-remote-chassis-id-subtype&gt;Mac address&lt;/lldp-remote-chassis-id-subtype&gt;
+            &lt;lldp-remote-chassis-id&gt;02:28:b5:5a:a4:06&lt;/lldp-remote-chassis-id&gt;
+            &lt;lldp-remote-port-id-subtype&gt;Interface name&lt;/lldp-remote-port-id-subtype&gt;
+            &lt;lldp-remote-port-id&gt;Gi0/0/0/2&lt;/lldp-remote-port-id&gt;
+            &lt;lldp-remote-system-name&gt;core1&lt;/lldp-remote-system-name&gt;
+        &lt;/lldp-neighbor-information&gt;
+    &lt;/lldp-neighbors-information&gt;
+    &lt;cli&gt;
+        &lt;banner&gt;&lt;/banner&gt;
+    &lt;/cli&gt;
+&lt;/rpc-reply&gt;
+</pre>
+
+This command is safe for show commands, however remember that it displays the output _after_ the command has been executed:
 
 ```
-apnic@router1> request system software delete jservices-mobile | display xml
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <output>
+request system software delete jservices-mobile | display xml
+```
+
+<pre>
+apnic@router1&gt; request system software delete jservices-mobile | display xml
+&lt;rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos"&gt;
+    &lt;output&gt;
         /packages/db/jservices-mobile-x86-32-20170601.185252_builder_junos_172_r1
-    </output>
-    <package-result>0</package-result>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
-```
+    &lt;/output&gt;
+    &lt;package-result&gt;0&lt;/package-result&gt;
+    &lt;cli&gt;
+        &lt;banner&gt;&lt;/banner&gt;
+    &lt;/cli&gt;
+&lt;/rpc-reply&gt;
+</pre>
 
 For example, the XML output above has been returned _after_ the `jservices-mobile` has been removed.
 
-The data is returned in XML format, which is often difficult to work with. But the excellent `junos-eznc` library makes 
-our life easier to parse it, extract the information, and present it into a more human-readable and programmable format.
+The data is returned in XML format, which is often difficult to work with. But the excellent `junos-eznc` library makes our life easier to parse it, extract the information, and present it into a more human-readable and programmable format.
 
-When running under a Junos Proxy Minion, we only need to provide the RPC to the `junos.rpc` Salt function. For NAPALM 
-Proxy Minions we have access to this functionaliy as well, using the `napalm.junos_rpc` function with the same input 
-/ output as `junos.rpc`: using the `get-lldp-neighbors-information` RPC which corresponds to the `show lldp neighbors` 
-CLI command, we can run
+When running under a Junos Proxy Minion, we only need to provide the RPC to the `junos.rpc` Salt function. For NAPALM Proxy Minions we have access to this functionaliy as well, using the `napalm.junos_rpc` function with the same input/output as `junos.rpc`: using the `get-lldp-neighbors-information` RPC which corresponds to the `show lldp neighbors` CLI command, we can run
+
+Open a new termrinal window, to run the salt commands.
 
 ```bash
+salt router1 napalm.junos_rpc get-lldp-neighbors-information
+```
+
+<pre>
 root@salt:~# salt router1 napalm.junos_rpc get-lldp-neighbors-information
 router1:
     ----------
@@ -204,38 +256,43 @@ router1:
                       core1
     result:
         True
-```
+</pre>
 
-Compare the XML document seen on the command line for `show lldp neighors | display xml` with this one received via 
-Salt. It may help if you run with `--out=raw` to see the exact Python structure.
+Compare the XML document seen on the command line for `show lldp neighors | display xml` with this one received via Salt. It may help if you run with `--out=raw` to see the exact Python structure.
 
-Notice that in the XML document on the CLI, we had the `lldp-neighbor-information` tag multiple times. In the Python 
-document, as it is repetitive it becomes a list, each element of the list being a Python dictionary (i.e., a hash 
-mapping) with the `lldp-local-port-id`, `lldp-remote-chassis-id`, etc. elements.
+Notice that in the XML document on the CLI, we had the `lldp-neighbor-information` tag multiple times. In the Python document, as it is repetitive it becomes a list, each element of the list being a Python dictionary (i.e., a hash mapping) with the `lldp-local-port-id`, `lldp-remote-chassis-id`, etc. elements.
 
 The same pattern can be used for any other commands. For example `request`-type CLI calls:
 
+Return to the terminal window that is connected to router1.
+
 ```
-apnic@router1> request system software delete jservices-mobile | display xml rpc
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <rpc>
-        <request-package-delete>
-                <package-name>jservices-mobile</package-name>
-        </request-package-delete>
-    </rpc>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
+request system software delete jservices-mobile | display xml rpc
 ```
 
-In this case, the RPC is `request-package-delete`. But there's another element of importance here: underneath the 
-`<request-package-delete>` tag, there's another one for `<package-name>`, with the value `jservices-mobile` as this is 
-what we have requested.
+<pre>
+apnic@router1&gt; request system software delete jservices-mobile | display xml rpc
+&lt;rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos"&gt;
+    &lt;rpc&gt;
+        &lt;request-package-delete&gt;
+                &lt;package-name&gt;jservices-mobile&lt;/package-name&gt;
+        &lt;/request-package-delete&gt;
+    &lt;/rpc&gt;
+    &lt;cli&gt;
+        &lt;banner&gt;&lt;/banner&gt;
+    &lt;/cli&gt;
+&lt;/rpc-reply&gt;
+</pre>
 
-From Salt, this request can be translated as:
+In this case, the RPC is `request-package-delete`. But there's another element of importance here: underneath the `<request-package-delete>` tag, there's another one for `<package-name>`, with the value `jservices-mobile` as this is what we have requested.
+
+Return to the terminal window that is used for the salt commands. From Salt, this request can be translated as:
 
 ```bash
+salt router2 napalm.junos_rpc request-package-delete package-name=jservices-mobile
+```
+
+<pre>
 root@salt:~# salt router2 napalm.junos_rpc request-package-delete package-name=jservices-mobile
 router2:
     ----------
@@ -246,38 +303,44 @@ router2:
             /packages/db/jservices-mobile-x86-32-20170601.185252_builder_junos_172_r1
     result:
         True
+</pre>
+
+As previously, the RPC name comes as a positional argument, to the `napalm.junos_rpc` function, then the `package-name` as a keyword-value argument `package-name=jservices-mobile`.
+
+This can be extended to any other RPC call, as complex as we need it to be. For example, if we want to see the statistics for the `ge-0/0/2` interface, we'd run the `show interfaces ge-0/0/2 statistics detail` show command. Let's check its RPC structure:
+
+Return to the terminal window that is connected to router1.
+
+```
+show interfaces ge-0/0/2 statistics detail | display xml rpc
 ```
 
-As previously, the RPC name comes as a positional argument, to the `napalm.junos_rpc` function, then the `package-name` 
-as a keyword-value argument `package-name=jservices-mobile`.
-
-This can be extended to any other RPC call, as complex as we need it to be. For example, if we want to see the 
-statistics for the `ge-0/0/2` interface, we'd run the `show interfaces ge-0/0/2 statistics detail` show command. Let's 
-check its RPC structure:
-
-```
-apnic@router1> show interfaces ge-0/0/2 statistics detail | display xml rpc
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <rpc>
-        <get-interface-information>
-                <statistics/>
-                <detail/>
-                <interface-name>ge-0/0/2</interface-name>
-        </get-interface-information>
-    </rpc>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
-```
+<pre>
+apnic@router1&gt; show interfaces ge-0/0/2 statistics detail | display xml rpc
+&lt;rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos"&gt;
+    &lt;rpc&gt;
+        &lt;get-interface-information&gt;
+                &lt;statistics/&gt;
+                &lt;detail/&gt;
+                &lt;interface-name&gt;ge-0/0/2&lt;/interface-name&gt;
+        &lt;/get-interface-information&gt;
+    &lt;/rpc&gt;
+    &lt;cli&gt;
+        &lt;banner&gt;&lt;/banner&gt;
+    &lt;/cli&gt;
+&lt;/rpc-reply&gt;
+</pre>
 
 Similar to the previous example, underneath the RPC tag `<get-interface-information>`, there are a few other tags: 
-`<statistics/>`, `<detail/>`, and `<interface-name>ge-0/0/2</interface-name>`. While the latter, `interface-name` has 
-a specific value, `ge-0/0/2`, as this is the interface we're interogating for, the other two tags don't have any value -
-instead, they have an implicit logical value: True when set, False otherwise. For this reasoning, in Salt, we also 
-provide _boolean_ values:
+`<statistics/>`, `<detail/>`, and `<interface-name>ge-0/0/2</interface-name>`. While the latter, `interface-name` has a specific value, `ge-0/0/2`, as this is the interface we're interogating for, the other two tags don't have any value - instead, they have an implicit logical value: True when set, False otherwise. For this reasoning, in Salt, we also provide _boolean_ values:
+
+Return to the terminal window that is used for the salt commands. From Salt, this request can be translated as:
 
 ```
+salt router2 napalm.junos_rpc get-interface-information statistics=True detail=True interface-name=ge-0/0/2
+```
+
+<pre>
 root@salt:~# salt router2 napalm.junos_rpc get-interface-information statistics=True detail=True interface-name=ge-0/0/2
 router2:
     ----------
@@ -307,10 +370,9 @@ router2:
 
 ...
 ... snip ...
-```
+</pre>
 
-While the RPC calls are generally consistent across platforms, it may happen sometimes that some particular RPCs to 
-differ from one version to another, and / or sometimes from one model to another.
+While the RPC calls are generally consistent across platforms, it may happen sometimes that some particular RPCs to differ from one version to another, and / or sometimes from one model to another.
 
 
 ## Part-2: Executing RPC calls on Arista switches
