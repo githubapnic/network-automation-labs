@@ -944,7 +944,7 @@ The `net.cli "show version" textfsm_parse=True textfsm_path=salt://textfsm/` cal
 With this change, we can now call `ios_version()` across any Cisco platform:
 
 ```bash
-root@salt:~# salt -G vendor:Cisco example.ios_version
+salt -G vendor:Cisco example.ios_version
 ```
 
 <pre>
