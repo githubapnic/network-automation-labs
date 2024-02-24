@@ -806,19 +806,17 @@ While the downside of `napalm.netmiko_commands` is that it is executed on SSH co
 
 ## Part-4: Uploading files using SCP
 
-SCP (Secure Copy Protocol) is a means of securely transferring computer files between two hosts (either from local to 
-remote, or between two remote hosts). SCP uses SSH for data transfer, and uses the same authentication mechanisms. For 
-this reasoning, from this perspective, it makes it excellent to be used through Salt, as we already have all the 
-authentication details available. As well as we are able to execute commands via Netmiko, over SSH, Salt provides us 
-with the tooling for uploading or downloading files to & from the network devices using SCP.
+SCP (Secure Copy Protocol) is a means of securely transferring computer files between two hosts (either from local to remote, or between two remote hosts). SCP uses SSH for data transfer, and uses the same authentication mechanisms. For this reasoning, from this perspective, it makes it excellent to be used through Salt, as we already have all the authentication details available. As well as we are able to execute commands via Netmiko, over SSH, Salt provides us with the tooling for uploading or downloading files to & from the network devices using SCP.
 
-For this, we can use the `napalm.scp_put` and `napalm.scp_get` functions, which already are aware of the authentication 
-credentials. All we have to provide is the files locations and eventually additional options that largely depend on 
-external factors, such as buffer size, socket timeout, or known hosts.
+For this, we can use the `napalm.scp_put` and `napalm.scp_get` functions, which already are aware of the authentication credentials. All we have to provide is the files locations and eventually additional options that largely depend on external factors, such as buffer size, socket timeout, or known hosts.
 
-For example, on `router`, there's a file `/var/log/inventory`; we can check the contents by running:
+Return to the terminal window that is connected to router1. For example, on `router`, there's a file `/var/log/inventory`; we can check the contents by running:
 
 ```
+file show /var/log/inventory
+```
+
+<pre>
 apnic@router1> file show /var/log/inventory
 Mar 28 18:45:54 CHASSISD release 17.2R1.13 built by builder on 2017-06-01 22:55:39 UTC
 Jan 27 12:55:25 CHASSISD release 17.2R1.13 built by builder on 2017-06-01 22:55:39 UTC
@@ -829,24 +827,29 @@ Jan 27 12:55:39 Routing Engine 0 - part number , serial number
 Jan 27 12:56:14 FPC 0 CPU - part number RIOT, serial number BUILTIN
 Jan 27 12:56:46 FPC 0 PIC 0 - part number , serial number
 Jan 27 12:56:46 FPC 0 MIC 0 - part number , serial number
-```
+</pre>
 
-Using `napalm.scp_get` we can download this file:
+Return to the terminal window that is used for the salt commands. Using `napalm.scp_get` we can download this file:
 
 ```bash
+salt router1 napalm.scp_get /var/log/inventory /tmp/router1 auto_add_policy=True
+```
+
+<pre>
 root@salt:~# salt router1 napalm.scp_get /var/log/inventory /tmp/router1 auto_add_policy=True
 router1:
     None
-```
+</pre>
 
-Using this command, we copy the file `/var/log/inventory` from `router1`, to `/tmp/router`, which is the local path. The 
-`auto_add_policy=True` option is necessary as `router1` is not added to the `know_hosts` SSH file. This option is 
-disabled by default, for security reasons, as `napalm.scp_put` and `napalm.scp_get` allow you to upload / download files 
-from any reachable host which is a potential security threat.
+Using this command, we copy the file `/var/log/inventory` from `router1`, to `/tmp/router`, which is the local path. The `auto_add_policy=True` option is necessary as `router1` is not added to the `know_hosts` SSH file. This option is disabled by default, for security reasons, as `napalm.scp_put` and `napalm.scp_get` allow you to upload / download files from any reachable host which is a potential security threat.
 
 To verify that the file has been downloaded correctly, run:
 
 ```bash
+salt router1 file.read /tmp/router1
+```
+
+<pre>
 root@salt:~# salt router1 file.read /tmp/router1
 router1:
     Mar 28 18:45:54 CHASSISD release 17.2R1.13 built by builder on 2017-06-01 22:55:39 UTC
@@ -858,12 +861,15 @@ router1:
     Jan 27 12:56:14 FPC 0 CPU - part number RIOT, serial number BUILTIN
     Jan 27 12:56:46 FPC 0 PIC 0 - part number , serial number
     Jan 27 12:56:46 FPC 0 MIC 0 - part number , serial number
-```
+</pre>
 
-It works in the same way also with platforms that don't have UNIX filesystem, for example Cisco IOS. Let's type `dir 
-flash:` to see what we have on the flash of `leaf1` switch (on the command line, or through Salt):
+It works in the same way also with platforms that don't have UNIX filesystem, for example Cisco IOS. Let's type `dir flash:` to see what we have on the flash of `leaf1` switch (on the command line, or through Salt):
 
 ```bash
+salt leaf1 net.cli 'dir flash:'
+```
+
+<pre>
 root@salt:~# salt leaf1 net.cli 'dir flash:'
 leaf1:
     ----------
@@ -902,11 +908,15 @@ leaf1:
             7835619328 bytes total (6547709952 bytes free)
     result:
         True
-```
+</pre>
 
 One of the files under `flash:` is `virtual-instance.conf`, with this contents:
 
 ```bash
+salt leaf1 net.cli 'more flash:virtual-instance.conf'
+```
+
+<pre>
 root@salt:~# salt leaf1 net.cli 'more flash:virtual-instance.conf'
 leaf1:
     ----------
@@ -917,32 +927,49 @@ leaf1:
             rp 0 0 csr_mgmt /bootflash/iosxe-remote-mgmt.03.15.00.S.155-2.S-std.ova /bootflash
     result:
         True
-```
+</pre>
 
 With the following commands we can download it, then check the contents:
 
 ```bash
+salt leaf1 napalm.scp_get flash:virtual-instance.conf /tmp/leaf1 auto_add_policy=True
+```
+
+<pre>
 root@salt:~# salt leaf1 napalm.scp_get flash:virtual-instance.conf /tmp/leaf1 auto_add_policy=True
 leaf1:
     None
+</pre>
+
+```bash
+salt leaf1 file.read /tmp/leaf1
+```
+
+<pre>
 root@salt:~# salt leaf1 file.read /tmp/leaf1
 leaf1:
     rp 0 0 csr_mgmt /bootflash/iosxe-remote-mgmt.03.15.00.S.155-2.S-std.ova /bootflash
-```
+</pre>
 
-`napalm.scp_put` works in the exact same way, just that the files are transferred in the opposite direction (from Salt 
-to the network device). We've downloaded earlier the file `/tmp/router1`, on the `router1` Minion. We can upload it 
-back, to the `/var/tmp` directory on the `router1`:
+`napalm.scp_put` works in the exact same way, just that the files are transferred in the opposite direction (from Salt to the network device). We've downloaded earlier the file `/tmp/router1`, on the `router1` Minion. We can upload it back, to the `/var/tmp` directory on the `router1`:
 
 ```bash
+salt router1 napalm.scp_put /tmp/router1 /var/tmp/inventory auto_add_policy=True
+```
+
+<pre>
 root@salt:~# salt router1 napalm.scp_put /tmp/router1 /var/tmp/inventory auto_add_policy=True
 router1:
     None
-```
+</pre>
 
 And using the `net.cli` Salt function we can verify that it has been uploaded indeed:
 
 ```bash
+salt router1 net.cli 'file list /var/tmp/inventory'
+```
+
+<pre>
 root@salt:~# salt router1 net.cli 'file list /var/tmp/inventory'
 router1:
     ----------
@@ -953,6 +980,13 @@ router1:
             /var/tmp/inventory
     result:
         True
+</pre>
+
+```bash
+salt router1 net.cli 'file show /var/tmp/inventory'
+```
+
+<pre>
 root@salt:~# salt router1 net.cli 'file show /var/tmp/inventory'
 router1:
     ----------
@@ -971,21 +1005,27 @@ router1:
             Jan 27 12:56:46 FPC 0 MIC 0 - part number , serial number
     result:
         True
-```
+</pre>
 
-One of the greatest benefits of `napalm.scp_put` is that the source file can be referenced using the absolute path, or 
-using the usual URIs Salt can work with: `salt://`, `http(s)://`, `s3://`, `swift://`, etc. For example, let's upload 
-one of the files we've had in the previous examples, `salt://static/junos`:
+One of the greatest benefits of `napalm.scp_put` is that the source file can be referenced using the absolute path, or using the usual URIs Salt can work with: `salt://`, `http(s)://`, `s3://`, `swift://`, etc. For example, let's upload one of the files we've had in the previous examples, `salt://static/junos`:
 
 ```bash
+salt router1 napalm.scp_put salt://static/junos /var/home/apnic/ auto_add_policy=True
+```
+
+<pre>
 root@salt:~# salt router1 napalm.scp_put salt://static/junos /var/home/apnic/ auto_add_policy=True
 router1:
     None
-```
+</pre>
 
 The file has been uploaded to our home directory (for the `apnic` user):
 
 ```bash
+salt router1 net.cli 'file list /var/home/apnic'
+```
+
+<pre>
 root@salt:~# salt router1 net.cli 'file list /var/home/apnic'
 router1:
     ----------
@@ -997,6 +1037,13 @@ router1:
             junos
     result:
         True
+</pre>
+
+```bash
+salt router1 net.cli 'file show /var/home/apnic/junos'
+```
+
+<pre>
 root@salt:~# salt router1 net.cli 'file show /var/home/apnic/junos'
 router1:
     ----------
@@ -1007,10 +1054,9 @@ router1:
             set system ntp server 10.0.0.1
     result:
         True
-```
+</pre>
 
-While these two functions are simple enough to operate and understand, they can be extremely handy in various automation 
-contexts, e.g., upload system license file, load configuration, or download bulk logs, etc.
+While these two functions are simple enough to operate and understand, they can be extremely handy in various automation contexts, e.g., upload system license file, load configuration, or download bulk logs, etc.
 
 --
 **End of Lab**
