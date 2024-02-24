@@ -459,7 +459,7 @@ cat /srv/salt/reactor/bkup.sls
 
 <pre>
 Backup config:
-  <strong>runner.proxy.execute<strong>:
+  <strong>runner.proxy.execute</strong>:
     - tgt: {{ data.host }}
     - kwarg:
         salt_function: net.save_config
@@ -699,12 +699,14 @@ In this, we notice:
 
 ## Part-3: Using the REST API with salt-sproxy
 
-While for the event-driven methodologies there are some slight changes required, in order to make _salt-sproxy_ calls 
-through the Salt API. The only difference is that instead of starting the API using `salt-api`, we will do:
+While for the event-driven methodologies there are some slight changes required, in order to make _salt-sproxy_ calls through the Salt API. The only difference is that instead of starting the API using `salt-api`, we will do:
 
+```bash
+salt-sapi -l debug
 ```
-root@salt:~# salt-sapi -l debug
 
+<pre>
+root@salt:~# salt-sapi -l debug
 ...
 
 [INFO    ] [21/Jan/2021:18:32:18] ENGINE Listening for SIGTERM.
@@ -713,35 +715,44 @@ root@salt:~# salt-sapi -l debug
 [INFO    ] [21/Jan/2021:18:32:18] ENGINE Bus STARTING
 [INFO    ] [21/Jan/2021:18:32:18] ENGINE Serving on http://0.0.0.0:8080
 [INFO    ] [21/Jan/2021:18:32:18] ENGINE Bus STARTED
-```
+</pre>
 
 Open a separate terminal window where we'll be executing commands. For starters, querying the main page:
 
 ```bash
-root@salt:~# curl http://0.0.0.0:8080
-{"return": "Welcome", "clients": ["local", "local_async", "local_batch", "local_subset", "runner", "runner_async", "sproxy", "sproxy_async", "ssh", "wheel", "wheel_async"]}
+curl http://0.0.0.0:8080
 ```
 
-In addition to the what we've seen before, in _Lab 11_, there are two new clients available: `sproxy` and 
-`sproxy_async`. These are the ones we'll be using to make queries via _salt-sproxy_.
+<pre>
+root@salt:~# curl http://0.0.0.0:8080
+{"return": "Welcome", "clients": ["local", "local_async", "local_batch", "local_subset", "runner", "runner_async", "sproxy", "sproxy_async", "ssh", "wheel", "wheel_async"]}
+</pre>
+
+In addition to the what we've seen before, in _Lab 11_, there are two new clients available: `sproxy` and `sproxy_async`. These are the ones we'll be using to make queries via _salt-sproxy_.
 
 From the previous lab, again, we have executed the following request:
 
 ```bash
+curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=local -d tgt=router1 -d fun=test.ping
+```
+
+<pre>
 root@salt:~# curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=local -d tgt=router1 -d fun=test.ping
 {"return": [{"router1": true}]}
-```
+</pre>
 
-This used the `local` client. As mention above, in _Part-2_, the local client is not available for this operation, so we 
-switch to using `sproxy` instead:
+This used the `local` client. As mention above, in _Part-2_, the local client is not available for this operation, so we switch to using `sproxy` instead:
 
 ```bash
-root@salt:~# curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=sproxy -d tgt=router1 -d fun=test.ping
-{"return": [{"router1": true}]}
+curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=sproxy -d tgt=router1 -d fun=test.ping
 ```
 
-Besides the `client` argument nothing else changes, and the output has the same format as well. For the webhooks and 
-everything else through the Salt API, all stays the same as always.
+<pre>
+root@salt:~# curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=sproxy -d tgt=router1 -d fun=test.ping
+{"return": [{"router1": true}]}
+</pre>
+
+Besides the `client` argument nothing else changes, and the output has the same format as well. For the webhooks and everything else through the Salt API, all stays the same as always.
 
 ## Part-4: (Optional) Salt SProxy as a replacement for Salt SSH
 
