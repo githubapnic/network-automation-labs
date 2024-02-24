@@ -1032,30 +1032,44 @@ exit
 
 ## Part-4: Using NetBox as a Roster source for Salt SProxy
 
-NetBox can also be used as a data source to build the list of devices we want to manage. This is particularly useful for 
-systems such as Salt SProxy, where Salt needs to be told what devices it should manage. As a reminder, this is named the 
-_Roster_ interface.
+NetBox can also be used as a data source to build the list of devices we want to manage. This is particularly useful for systems such as Salt SProxy, where Salt needs to be told what devices it should manage. As a reminder, this is named the _Roster_ interface.
 
-We have previously had the Roster defined as an SLS file (`roster: file` and with 
-`roster_file: /etc/salt/roster` specifying the location of this SLS file). Changing to use a dynamic Roster, it only 
-takes the following:
+We have previously had the Roster defined as an SLS file (`roster: file` and with `roster_file: /etc/salt/roster` specifying the location of this SLS file). Changing to use a dynamic Roster, it only takes the following:
 
-`/etc/salt/master`
+```bash
+grep -A 2 "^netbox|roster\:" /etc/salt/master
+```
 
-```yaml
+Update the **roster: file** to use **netbox**
+
+```bash
+sed -i 's/roster\: file/roster\: netbox/' /etc/salt/master
+sed -i 's/roster_file/\# roster_file/' /etc/salt/master
+```
+
+Review the changes
+
+```bash
+grep -A 2 "^netbox|roster\:" /etc/salt/master
+```
+
+<pre>
 roster: netbox
 
 netbox:
   url: http://netbox:8001/
   token: 59f538de888a4347f70554efc19c649defb9c7da
-```
+</pre>
 
-The `roster` option now points to the `netbox` Roster; in addition to this, we also need to provide the URL and the 
-token so the Roster knows where to pull the data from.
+The `roster` option now points to the `netbox` Roster; in addition to this, we also need to provide the URL and the token so the Roster knows where to pull the data from.
 
 To verify it is working correctly, run:
 
 ```bash
+salt-sproxy \* --preview
+```
+
+<pre>
 root@salt:~# salt-sproxy \* --preview
 - core1
 - core2
@@ -1069,18 +1083,17 @@ root@salt:~# salt-sproxy \* --preview
 - spine2
 - spine3
 - spine4
-```
+</pre>
 
-This returns all the devices we have in NetBox. To confirm these are retrieved from NetBox indeed, we can use the debug 
-mode (`-l debug`):
+This returns all the devices we have in NetBox. To confirm these are retrieved from NetBox indeed, we can use the debug mode (`-l debug`):
 
 ```
-root@salt:~# salt-sproxy \* --preview -l debug
+salt-sproxy \* --preview -l debug
 ```
 
 In the debug logs, you should notice the following lines (within many others):
 
-```
+<pre>
 [DEBUG   ] Starting new HTTP connection (1): netbox:8001
 [DEBUG   ] http://netbox:8001 "GET /api/dcim/devices/ HTTP/1.1" 200 15702
 
@@ -1088,9 +1101,11 @@ In the debug logs, you should notice the following lines (within many others):
 
 [DEBUG   ] The target expression "*" (glob) matched the following:
 [DEBUG   ] ['core1', 'core2', 'leaf1', 'leaf2', 'leaf3', 'leaf4', 'router1', 'router2', 'spine1', 'spine2', 'spine3', 'spine4']
-```
+</pre>
 
 This shows that the list of devices is retrieved from NetBox as we wanted.
+
+Press **ctrl+c** to exit the debug mode.
 
 --
 **End of Lab**
