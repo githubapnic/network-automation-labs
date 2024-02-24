@@ -5,6 +5,12 @@ For this lab, we will have again all the Proxy Minions running, without any othe
 
 Low-level API functions allow you to interact directly with the network device, and present you the data exactly in the way the device returns it. We've seen previously functions such as `net.arp`, `net.lldp`, and others; under the hood, these functions execute one or more low-level API calls, and eventually some data processing, in order to provide the data in a vendor-agnostic format, easy to consume. But these low-level API calls differ from one platform to another. In the next sections we will look into what Salt functions you can use per individual platform. In fact, we've already seen some of those in the previous lab, but now, we'll look into them closely.
 
+First, lets make sure that we have all of our router configs loaded.
+
+```bash
+salt \* lab.restore -t 120
+```
+
 ### Logging into the router
 There may be an issue with a conflict with the fingerprint used for previous labs. 
 
