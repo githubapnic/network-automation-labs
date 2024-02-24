@@ -43,14 +43,17 @@ would place it under the `_modules`, if you want new Grains, define a Python mod
 
 In all the following parts we will have the same `file_roots` we've had in all the previous labs so far:
 
-`/etc/salt/master`
+```bash
+grep file_roots -A 3 /etc/salt/master
+```
 
-```yaml
+<pre>
 file_roots:
   base:
     - /srv/salt
     - /srv/salt/states
-```
+</pre>
+
 
 The extension modules will therefore be physically located as follows:
 
