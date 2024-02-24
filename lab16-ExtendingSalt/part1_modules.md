@@ -650,15 +650,15 @@ show version | display xml rpc
 
 <pre>
 apnic@router1> show version | display xml rpc
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <rpc>
-        <get-software-information>
-        </get-software-information>
-    </rpc>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
+&lt;rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos"&gt;
+    &lt;rpc&gt;
+        &lt;get-software-information&gt;
+        &lt;/get-software-information&gt;
+    &lt;/rpc&gt;
+    &lt;cli&gt;
+        &lt;banner&gt;&lt;/banner&gt;
+    &lt;/cli&gt;
+&lt;/rpc-reply&gt;
 </pre>
 
 Close the ssh session to router1
