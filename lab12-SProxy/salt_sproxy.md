@@ -822,6 +822,12 @@ Last login: Thu Jan 21 14:25:46 2021 from 172.22.0.3
 root@srv1:~#
 </pre>
 
+Exit the server by typing:
+
+```bash
+exit
+```
+
 In order for _salt-sproxy_ to have these credentials, let's put them into a Pillar file, referencing the `ssh` Proxy Module:
 
 ```bash
@@ -874,7 +880,7 @@ srv4: {}
 With these, we can start running commands against the servers managed through SSH:
 
 ```bash
-salt-sproxy srv* test.ping
+salt-sproxy srv* test.ping 2> /dev/null
 ```
 
 <pre>
