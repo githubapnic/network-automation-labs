@@ -10,7 +10,7 @@ _salt-sproxy_ is pre-installed, so we can start automating straight away.
 Confirm the configurations are correct on the routers
 
 ```bash
-salt-proxy router* lab.restore -t 120
+salt-sproxy router* lab.restore -t 120
 ```
 
 ## Part-1: Getting started with Salt SProxy
