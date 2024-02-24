@@ -511,8 +511,8 @@ group00_master
 
 Adding the following line to the master configuration file, `/etc/salt/master`:
 
-```yaml
-id: salt_master
+```bash
+echo "id: salt_master" >> /etc/salt/master
 ```
 
 This Master is not identified as `salt_master`, and the NetBox External Pillar would try to use this to pull the NetBox data:
