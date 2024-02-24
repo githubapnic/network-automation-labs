@@ -65,6 +65,11 @@ Every Salt module consists on one or more Python functions. When Salt loads the 
 
 One of the easiest native functions is `test.true` which only returns `True` - nothing else. To understand how this function is defined, let's craft our own, say `example.first`. That is, a function named `first()` into a module named `example.py`. As previously mentioned, the module is physically located under the `/srv/salt/_modules` directory:
 
+Back up the file first
+```bash
+cp /srv/salt/_modules/example.py ~/example.py.bak
+```
+
 ```bash
 cat <<EOF > /srv/salt/_modules/example.py
 def first():
