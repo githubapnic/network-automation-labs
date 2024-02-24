@@ -408,13 +408,15 @@ spine3:
 
 ### Accessing Pillar data in the Grains
 
-In the exact same way as with the Execution Modules, Pillar data associated with a specific Minion can be accessed from 
-the `__pillar__` magic variable.
+In the exact same way as with the Execution Modules, Pillar data associated with a specific Minion can be accessed from the `__pillar__` magic variable.
 
-From the previous labs, remember in the Pillar, among other data, we have a list of devices retrieved via the 
-`http_json` External Pillar:
+From the previous labs, remember in the Pillar, among other data, we have a list of devices retrieved via the `http_json` External Pillar:
 
 ```bash
+salt router1 pillar.get devices
+```
+
+<pre>
 root@salt:~# salt router1 pillar.get devices
 router1:
     ----------
@@ -431,29 +433,47 @@ router1:
         role:
             leaf
 ...
-```
+</pre>
 
 For programability reasons, it may be easier to visualise this data as a Python object instead:
 
 ```bash
+salt router1 pillar.get devices --out=raw
+```
+
+<pre>
 root@salt:~# salt router1 pillar.get devices --out=raw
 {'router1': {'router1': {'role': 'router'}, 'router2': {'role': 'router'}, 'core1': {'role': 'core'}, 'core2': {'role': 'core'}, 'spine1': {'role': 'spine'}, 'spine2': {'role': 'spine'}, 'spine3': {'role': 'spine'}, 'spine4': {'role': 'spine'}, 'leaf1': {'role': 'leaf'}, 'leaf2': {'role': 'leaf'}, 'leaf3': {'role': 'leaf'}, 'leaf4': {'role': 'leaf'}}}
-```
+</pre>
 
 As the command above shows, underneath the `devices` Pillar key, there's a dictionary whose keys are the device names. 
 From a Python function we can just return what's under that device-name key and register as Grains:
 
-`/srv/salt/_grains/example.py`
+Back up the file first
+```bash
+cp /srv/salt/_grains/example.py ~/example.py.grains.bak
+```
 
-```python
+```bash
+cat <<EOF > /srv/salt/_grains/example.py
+
 def pillar():
     device_id = __opts__['id']
     return __pillar__.get('devices', {}).get(device_id)
+EOF
 ```
 
 The function above does just this, and after a sync, we can check that the `role` field is not present as a Grain:
 
 ```bash
+salt \* saltutil.sync_modules
+```
+
+```bash
+salt \* grains.get role
+```
+
+<pre>
 root@salt:~# salt \* grains.get role
 spine1:
     spine
@@ -479,10 +499,9 @@ leaf4:
     leaf
 leaf3:
     leaf
-```
+</pre>
 
-In this lab, we have covered the Grain modules essentials. Without diving into more advanced pure Python structured, we 
-can now start crafting our own Grains, as the business logic requires.
+In this lab, we have covered the Grain modules essentials. Without diving into more advanced pure Python structured, we can now start crafting our own Grains, as the business logic requires.
 
 --
 **End of Lab**
