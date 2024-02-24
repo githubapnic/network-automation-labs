@@ -214,7 +214,7 @@ router1:
 Salt returns an error and non-zero return code. As a general rule, by convention, functions starting with an underscore are considered "private" functions and therefore not loaded. They can however be used as helpers to be called by other functions, for example:
 
 ```bash
-cat <<EOF > /srv/salt/_modules/example.py`
+cat <<EOF > /srv/salt/_modules/example.py
 __func_alias__ = {
     'true_': 'true,
 }
