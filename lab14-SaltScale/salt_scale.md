@@ -8,13 +8,11 @@ As a reminder, Proxy Minions are simple processes that only have two requirement
 1. Be able to contact the Salt Master.
 2. Capable to establish the connection with the remote network device.
 
-That said, Proxy Minion can be as distributed as you need, without any limitations in this regard. Known deployments 
-include:
+That said, Proxy Minion can be as distributed as you need, without any limitations in this regard. Known deployments include:
 
 - All the Proxy Minions running on a single server.
 - Proxies distributed across multiple servers.
-- Proxies running under Docker containers. The Docker containers may potentially be orchestrated by Kubernetes or 
-  something similar.
+- Proxies running under Docker containers. The Docker containers may potentially be orchestrated by Kubernetes or something similar.
 - Proxies deployed on cloud providers (if you don't want to manage the infrastructure yourself).
 - No Proxies, using Salt SProxy.
 
@@ -24,12 +22,13 @@ For the following labs, we have 4 (four) servers available. These are: `srv1`, `
 
 ## Part-1: Proxy Minions running on a single server
 
-In order to have the Proxy Minions managed automatically, we firstly need to have a "database" of the totality of 
-devices we want to manage. Let's defined them into a Pillar file, for example:
+In order to have the Proxy Minions managed automatically, we firstly need to have a "database" of the totality of devices we want to manage. Let's defined them into a Pillar file, for example:
 
-`/srv/salt/pillar/proxies.sls`
+```bash
+cat /srv/salt/pillar/proxies.sls
+```
 
-```yaml
+<pre>
 devices:
   - router1
   - router2
@@ -43,13 +42,15 @@ devices:
   - leaf2
   - leaf3
   - leaf4
-```
+</pre>
 
 In order to have the list o devices available to all the servers, let's include it into the Top File:
 
-`/srv/salt/pillar/top.sls`
+```bash
+cat /srv/salt/pillar/top.sls
+```
 
-```yaml
+<pre>
 base:
   'router*':
     - junos
@@ -62,11 +63,15 @@ base:
   'srv*':
     - ssh
     - proxies
-```
+</pre>
 
 With this, the list of devices is available on all the servers, and we can verify this by running:
 
 ```bash
+salt srv* pillar.get devices
+```
+
+<pre>
 root@salt:~# salt srv* pillar.get devices
 srv1:
     - router1
@@ -87,28 +92,28 @@ srv3:
 ...
 ... snip ...
 ...
-```
+</pre>
 
 
 Having this list available, a State SLS would be sufficient to start the all Proxy Minions:
 
-`/srv/salt/states/pm_single.sls`
+```bash
+cat /srv/salt/states/pm_single.sls
+```
 
-```yaml
+<pre>
 {%- for device in pillar.devices %}
 Startup the Proxy for {{ device }}:
   cmd.run:
     - name: salt-proxy --proxyid {{ device }} -d
 {%- endfor %}
-```
+</pre>
 
-This small State SLS file, we can ensure we manage as many Proxy Minion services as we require; this SLS would be the 
-exact same whether we only manage 1 device or hundreds. This is thanks to the `{%- for device in pillar.devices %}` loop 
-which goes through the entire list of devices and generates States for each and every device in the list.
+This small State SLS file, we can ensure we manage as many Proxy Minion services as we require; this SLS would be the exact same whether we only manage 1 device or hundreds. This is thanks to the `{%- for device in pillar.devices %}` loop which goes through the entire list of devices and generates States for each and every device in the list.
 
 In other words, the SLS could be translated to the following (for our list of devices):
 
-```yaml
+<pre>
 Startup the Proxy for router1:
   cmd.run:
     - name: salt-proxy --proxyid router1 -d
@@ -116,14 +121,17 @@ Startup the Proxy for router2:
   cmd.run:
     - name: salt-proxy --proxyid router2 -d
 ...
-```
+</pre>
 
-The States reference the `cmd.run` function, which simply execute the named command. In this case, the command starts 
-the Proxy Minion process and puts it in background (the `-d` option).
+The States reference the `cmd.run` function, which simply execute the named command. In this case, the command starts the Proxy Minion process and puts it in background (the `-d` option).
 
 Using the handy `state.show_sls` function we can visualize what this SLS generates:
 
 ```bash
+salt srv1 state.show_sls pm_single
+```
+
+<pre>
 root@salt:~# salt srv1 state.show_sls pm_single
 srv1:
     ----------
@@ -178,11 +186,15 @@ srv1:
 ...
 ... snip ...
 ....
-```
+</pre>
 
 As this looks satisfactory, we can do a dry run:
 
 ```bash
+salt srv1 state.apply pm_single test=True
+```
+
+<pre>
 root@salt:~# salt srv1 state.apply pm_single test=True
 srv1:
 ----------
@@ -214,11 +226,15 @@ srv1:
      Changes:
 ...
 ... snip ...
-```
+</pre>
 
 This looks good, and we can go ahead and run the state to actually start the Proxy Minions:
 
 ```bash
+salt srv1 state.apply pm_single
+```
+
+<pre>
 root@salt:~# salt srv1 state.apply pm_single
 srv1:
 ----------
@@ -273,22 +289,24 @@ srv1:
 ...
 ... snip ...
 ...
-```
+</pre>
 
-Using this simple methodology, we can start as many Proxy Minions as `srv1` is able to handle. If we need more, we can 
-start distributing them across multiple servers, as we'll see in the next section.
+Using this simple methodology, we can start as many Proxy Minions as `srv1` is able to handle. If we need more, we can start distributing them across multiple servers, as we'll see in the next section.
 
 ## Part-2: Proxy Minions distributed across multiple servers
 
 To have a clean environment, firstly we will stop the Proxy Minions currently running on `srv1`:
 
 ```bash
-root@salt:~# salt srv1 cmd.run 'pkill salt-proxy'
-srv1:
+salt srv1 cmd.run 'pkill salt-proxy'
 ```
 
-This simple command, simply executes `pkill salt-proxy` on `srv1`. Remote execution is one of Salt's superpowers, and we 
-see this here exactly.
+<pre>
+root@salt:~# salt srv1 cmd.run 'pkill salt-proxy'
+srv1:
+</pre>
+
+This simple command, simply executes `pkill salt-proxy` on `srv1`. Remote execution is one of Salt's superpowers, and we see this here exactly.
 
 Suppose we need the Proxies for our devices distributed across the available servers `srv1`, `srv2`, `srv3`, and `srv4`.
 There can be multiple ways to do so, for example:
@@ -302,9 +320,11 @@ For simplicity of this demonstration, let's distribute them by role, as describe
 
 In this case, the State SLS can be as simple as:
 
-`/srv/salt/states/pm_distributed.sls`
+```bash
+cat /srv/salt/states/pm_distributed.sls
+```
 
-```sls
+<pre>
 {%- load_yaml as mapping %}
 srv1: router
 srv2: core
@@ -319,23 +339,17 @@ Startup the Proxy for {{ device }}:
     - name: salt-proxy --proxyid {{ device }} -d
   {%- endif %}
 {%- endfor %}
+</pre>
+
+Let's have a look at this and unpack these details: `{%- load_yaml as mapping %}` defines a mapping between the server name and the roles of the Proxy Minions to start for each; the mapping is defined as YAML (hence `load_yaml`) - this is purely for readability, and the contents will be loaded into the `mapping` Jinja variable. The `load_yaml` structure above, in other words is the exact equivalent of defining a Python dictionary whose keys are the server names, and the values are the device roles: `mapping = {'srv1': 'router1', 'srv2': 'core', 'srv3': 'spine', 'srv4': 'leaf'}`.
+
+Immediately underneath, we find the same structure as in the previous State SLS `/srv/salt/states/pm_single.sls`, the `{%- for device in pillar.devices %}` is just like previously, with one minor distinction: the line `{%- if device.startswith(mapping[opts.id]) %}`. This line looks at every device in the loop (`router1`, `router2`, ..., ) and checks if the device name starts with the role associated for this server. The variable `mapping` is the one defined above, and `opts.id` provides the server name (i.e., `srv1`, `srv2`, ... ); therefore the construction `mapping[opts.id]` will give the value `router` when the State is executed on `srv1`, `core` when executed on `srv2`, and so on. This is how we can distribute the Proxy Minions by role across the available 4 servers. Let's check:
+
+```bash
+salt srv* state.show_sls pm_distributed
 ```
 
-Let's have a look at this and unpack these details: `{%- load_yaml as mapping %}` defines a mapping between the server 
-name and the roles of the Proxy Minions to start for each; the mapping is defined as YAML (hence `load_yaml`) - this is 
-purely for readability, and the contents will be loaded into the `mapping` Jinja variable. The `load_yaml` structure 
-above, in other words is the exact equivalent of defining a Python dictionary whose keys are the server names, and the 
-values are the device roles: `mapping = {'srv1': 'router1', 'srv2': 'core', 'srv3': 'spine', 'srv4': 'leaf'}`.
-
-Immediately underneath, we find the same structure as in the previous State SLS `/srv/salt/states/pm_single.sls`, the 
-`{%- for device in pillar.devices %}` is just like previously, with one minor distinction: the line `{%- if 
-device.startswith(mapping[opts.id]) %}`. This line looks at every device in the loop (`router1`, `router2`, ..., ) and 
-checks if the device name starts with the role associated for this server. The variable `mapping` is the one defined 
-above, and `opts.id` provides the server name (i.e., `srv1`, `srv2`, ... ); therefore the construction 
-`mapping[opts.id]` will give the value `router` when the State is executed on `srv1`, `core` when executed on `srv2`, 
-and so on. This is how we can distribute the Proxy Minions by role across the available 4 servers. Let's check:
-
-```
+<pre>
 root@salt:~# salt srv* state.show_sls pm_distributed
 srv4:
     ----------
@@ -537,12 +551,15 @@ srv2:
               ----------
               order:
                   10001
-root@salt:~#
-```
+</pre>
 
 This confirms the State SLS is rendered as intended, so we can go ahead and apply:
 
+```bash
+salt srv* state.apply pm_distributed
 ```
+
+<pre>
 root@salt:~# salt srv* state.apply pm_distributed
 srv1:
 ----------
@@ -772,13 +789,15 @@ Failed:    0
 ------------
 Total states run:     4
 Total run time:   3.495 s
-root@salt:~#
-```
+</pre>
 
-After the Proxies are up and running, we can check the location where they run, by checking the value of the `nodename` 
-Grain:
+After the Proxies are up and running, we can check the location where they run, by checking the value of the `nodename` Grain:
 
 ```bash
+salt \* grains.get nodename
+```
+
+<pre>
 root@salt:~# salt \* grains.get nodename
 router1:
     srv1
@@ -812,42 +831,37 @@ srv4:
     srv4
 srv2:
     srv2
-```
+</pre>
 
 To cleanup the environment, stop the Proxy Minions on all the servers by executing:
 
 ```bash
+salt srv* cmd.run 'pkill salt-proxy'
+```
+
+<pre>
 root@salt:~# salt srv* cmd.run 'pkill salt-proxy'
 srv3:
 srv4:
 srv2:
 srv1:
-```
+</pre>
 
 ## Part-3: Proxy Minions as Docker containers
 
-Without aiming to dive into what containers are, we should clarify at least that a container is a standard unit of
-software that packages up code and all its dependencies so the application runs quickly and reliably from one computing
-environment to another. A Docker container image is a lightweight, standalone, executable package of software that
-includes everything needed to run an application: code, runtime, system tools, system libraries and settings.
+**NOTE: this section is for reference only and you are not required to complete any tasks**
 
-Docker containers allow us to run applications such as Proxy Minions, one Proxy per container. Containers, just as the 
-single processes or servers as we've seen in the previous paragraphs can run on a single or multiple machines, or, if 
-you use a container orchestrator such as Kubernetes, it will manage this for you, so you don't need to worry about the 
-container runs effectively (on which exact machine) -- you only instruct Kubernetes to start the application, and 
-Kubernetes will start it up where it has resources for it.
+Without aiming to dive into what containers are, we should clarify at least that a container is a standard unit of software that packages up code and all its dependencies so the application runs quickly and reliably from one computing environment to another. A Docker container image is a lightweight, standalone, executable package of software that includes everything needed to run an application: code, runtime, system tools, system libraries and settings.
 
-Kubernetes is well beyond our current scope, however, just simple Docker we can present. In fact, in the previous (and 
-upcoming) lab, when the Proxy Minions were available and pre-started to use, they were nothing else than Docker 
-containers.
+Docker containers allow us to run applications such as Proxy Minions, one Proxy per container. Containers, just as the single processes or servers as we've seen in the previous paragraphs can run on a single or multiple machines, or, if you use a container orchestrator such as Kubernetes, it will manage this for you, so you don't need to worry about the container runs effectively (on which exact machine) -- you only instruct Kubernetes to start the application, and Kubernetes will start it up where it has resources for it.
 
-Docker containers can be managed via YAML configuration files, through `docker-compose`. `docker-compose` is a tool for 
-defining and running multi-container Docker applications. For out labs scope specifically, the configuration is 
-relatively simple:
+Kubernetes is well beyond our current scope, however, just simple Docker we can present. In fact, in the previous (and upcoming) lab, when the Proxy Minions were available and pre-started to use, they were nothing else than Docker containers.
 
-`docker-compose.yml`
+Docker containers can be managed via YAML configuration files, through `docker-compose`. `docker-compose` is a tool for defining and running multi-container Docker applications. For out labs scope specifically, the configuration is relatively simple:
 
-```yaml
+Here is an example of the **docker-compose.yml** that is used to create the systems used for this workshop.
+
+<pre>
   salt-router1:
     image: docker.mirucha.me/salt-proxy:2021.1.11
     container_name: salt-router1
@@ -896,14 +910,17 @@ relatively simple:
     networks:
       lab:
         ipv4_address: 172.22.0.13
-```
+</pre>
 
-The `salt-router1` Docker container corresponds to the `router1` device, `salt-core1` to `core1` and so on. Each Docker 
-container has assigned a static IP address, and they all reference the same Docker image.
+The `salt-router1` Docker container corresponds to the `router1` device, `salt-core1` to `core1` and so on. Each Docker container has assigned a static IP address, and they all reference the same Docker image.
 
 Using _docker-compose_ we can start all of these containers:
 
-```bash
+<pre>
+  docker-compose -f docker-compose.yml up -d
+</pre>
+
+<pre>
 root@lab:~# docker-compose -f docker-compose.yml up -d
 Creating salt-leaf3 ...
 Creating salt-router1 ...
@@ -929,13 +946,11 @@ Creating salt-leaf1
 Creating salt-leaf4
 Creating salt-core2
 Creating salt-leaf4 ... done
-```
+</pre>
 
-These Docker containers are running within the same network, and they can access other devices as well as their Salt 
-Master. The same principle can be extended to a larger set of devices. Using a tool like Salt, trough Jinja template we 
-can generate the _docker-compose_ file to cover all our devices, for example:
+These Docker containers are running within the same network, and they can access other devices as well as their Salt Master. The same principle can be extended to a larger set of devices. Using a tool like Salt, trough Jinja template we can generate the _docker-compose_ file to cover all our devices, for example:
 
-```jinja
+<pre>
   {%- for device in pillar.devices %}
   salt-{{ device }}:
     image: docker.mirucha.me/salt-proxy:2021.1.11
@@ -950,18 +965,13 @@ can generate the _docker-compose_ file to cover all our devices, for example:
       lab:
         ipv4_address: 172.22.0.{{ 4 + loop.index }}
   {%- endfor %}
-```
+</pre>
 
-The Docker compose file has been reduced to just a few lines of Jinja, and it would stay the same for whatever number of 
-devices we want to manage (or are able to).
+The Docker compose file has been reduced to just a few lines of Jinja, and it would stay the same for whatever number of devices we want to manage (or are able to).
 
-In this lab we've seen a few of the most common possibilities for managing large scale networks that imply a high number 
-of Proxy Minions.
+In this lab we've seen a few of the most common possibilities for managing large scale networks that imply a high number of Proxy Minions.
 
-Besides that, remember that not all the devices are worthy to have a Proxy Minion running: some, such as console 
-servers, or customer CPEs, etc., may need to be managed, but not sufficiently frequent to warrant a Proxy always running 
-for them. In cases like this, remember that you can always deploy Salt SProxy for those devices. Using Salt SProxy would 
-allow you to continuing to benefit from all Salt has to offer and more.
+Besides that, remember that not all the devices are worthy to have a Proxy Minion running: some, such as console servers, or customer CPEs, etc., may need to be managed, but not sufficiently frequent to warrant a Proxy always running for them. In cases like this, remember that you can always deploy Salt SProxy for those devices. Using Salt SProxy would allow you to continuing to benefit from all Salt has to offer and more.
 
 --
 **End of Lab**

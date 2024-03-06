@@ -43,14 +43,17 @@ would place it under the `_modules`, if you want new Grains, define a Python mod
 
 In all the following parts we will have the same `file_roots` we've had in all the previous labs so far:
 
-`/etc/salt/master`
+```bash
+grep file_roots -A 3 /etc/salt/master
+```
 
-```yaml
+<pre>
 file_roots:
   base:
     - /srv/salt
     - /srv/salt/states
-```
+</pre>
+
 
 The extension modules will therefore be physically located as follows:
 
@@ -76,34 +79,41 @@ There are no constraints, however there are two (logical) implications:
 Grains modules, in order to be loaded correctly, require one additional piece of information, at the top of the Python 
 module:
 
-`/srv/salt/_grains/example.py`
-
-```python
-__proxyenabled__ = ['*']
+Back up the file first
+```bash
+cp /srv/salt/_grains/example.py ~/example.py.grains.bak
 ```
 
-The `__proxyenabled__` variable tells Salt to load this Grains module _only_ when the Proxy Minions is one of the listed 
-ones; for simplicity, we can use `*` which means that the Grains module will be loaded for any Proxy Minion type.
-This can be very handy to designate what Grains of modules to be loaded, depending on the properties and the features 
-available for each Proxy Minion type.
+```bash
+cat <<EOF > /srv/salt/_grains/example.py
+__proxyenabled__ = ['*']
+EOF
+```
+
+The `__proxyenabled__` variable tells Salt to load this Grains module _only_ when the Proxy Minions is one of the listed ones; for simplicity, we can use `*` which means that the Grains module will be loaded for any Proxy Minion type.
+This can be very handy to designate what Grains of modules to be loaded, depending on the properties and the features available for each Proxy Minion type.
 
 ### The simplest Grain function
 
 As when crafting Execution Modules, the simplest way to get started is with a function that only returns a single value. 
 For example, a flag:
 
-`/srv/salt/_grains/example.py`
+```bash
+cat <<EOF >> /srv/salt/_grains/example.py
 
-```python
 def lab():
     return {'lab': True}
+EOF
 ```
 
 All this function does is returns a dictionary with a single key-value pair (the key is `lab`, and the value is `True`). 
-Returning this structure, Salt will register the value `lab` as a Grain, and `True` as its value. To check this, we need 
-to synchronize the new code on the Minions, by running the `saltutil.sync_grains` function:
+Returning this structure, Salt will register the value `lab` as a Grain, and `True` as its value. To check this, we need to synchronize the new code on the Minions, by running the `saltutil.sync_grains` function:
 
 ```bash
+salt \* saltutil.sync_grains
+```
+
+<pre>
 root@salt:~# salt \* saltutil.sync_grains
 leaf4:
     - grains.example
@@ -129,11 +139,15 @@ core2:
     - grains.example
 leaf1:
     - grains.example
-```
+</pre>
 
 And now, let's check the value of the `lab` Grain:
 
 ```bash
+salt \* grains.get lab
+```
+
+<pre>
 root@salt:~# salt \* grains.get lab
 spine2:
     True
@@ -159,11 +173,15 @@ core1:
     True
 router1:
     True
-```
+</pre>
 
 This Grain can now be used for targeting and many other use-cases:
 
 ```bash
+salt -G lab:True --preview
+```
+
+<pre>
 root@salt:~# salt -G lab:True --preview
 - router1
 - spine1
@@ -177,50 +195,89 @@ root@salt:~# salt -G lab:True --preview
 - leaf3
 - router2
 - leaf1
-```
+</pre>
 
 ### Same function, multiple Grains
 
-A common misconception around the Grains modules is that every function can only return one single value / Grain. This 
-is false, every key in the returned dictionary will be registered as a Grain. Let's consider the following example:
+A common misconception around the Grains modules is that every function can only return one single value / Grain. This is false, every key in the returned dictionary will be registered as a Grain. Let's consider the following example:
 
-`/srv/salt/_grains/example.py`
+Insert the **import random** at the top of /srv/salt/_grains/example.py
 
-```python
-import random
+```bash
+sed -i '1i \ ' /srv/salt/_grains/example.py
+sed -i '1i import random' /srv/salt/_grains/example.py
+```
+
+Add the function
+
+```bash
+cat <<EOF >> /srv/salt/_grains/example.py
 
 def extra_info():
     return {'type': 'training', 'location': ['virtual', 'everywhere'], 'random': random.randint(1,12)}
+EOF
 ```
 
-This function returns three key-value pairs; notice that the values can have any datatype we want - as long as it's 
-a Python native type:
+This function returns three key-value pairs; notice that the values can have any datatype we want - as long as it's a Python native type:
 
 - `type` is a string.
 - `location` is a list of strings.
 - `random` is an integer. For the sake of diversity, it is just a random number, without any particular significance.
 
-Synchronize the changes (`salt \* saltutil.sync_grains`) then we can see the new Grains:
+Synchronize the changes then we can see the new Grains:
 
 ```bash
+salt \* saltutil.sync_grains
+```
+
+```bash
+salt router1 grains.get type
+```
+
+<pre>
 root@salt:~# salt router1 grains.get type
 router1:
     training
+</pre>
+
+```bash
+salt spine1 grains.get location
+```
+
+<pre>
 root@salt:~# salt spine1 grains.get location
 spine1:
     - virtual
     - everywhere
+</pre>
+
+```bash
+salt core2 grains.get random
+```
+
+<pre>
 root@salt:~# salt core2 grains.get random
 core2:
     4
-```
+</pre>
 
 As always, we can use these Grains for targeting:
 
 ```bash
+salt -G random:4 --preview
+```
+
+<pre>
 root@salt:~# salt -G random:4 --preview
 - spine2
 - core2
+</pre>
+
+```bash
+salt -G location:virtual --preview
+```
+
+<pre>
 root@salt:~# salt -G location:virtual --preview
 - router1
 - leaf3
@@ -234,16 +291,15 @@ root@salt:~# salt -G location:virtual --preview
 - spine2
 - leaf4
 - leaf2
-```
+</pre>
 
 ### Multiple level Grains
 
-Grains not always have to be 1:1 key-value pairs; the value of a specific Grain can also be defined as a more complex 
-object:
+Grains not always have to be 1:1 key-value pairs; the value of a specific Grain can also be defined as a more complex object:
 
-`/srv/salt/_grains/example.py`
+```bash
+cat <<EOF >> /srv/salt/_grains/example.py
 
-```python
 def multi():
     return {
         'level1': {
@@ -252,9 +308,18 @@ def multi():
             }
         }
     }
+EOF
 ```
 
 This can be seen in (after sync):
+
+```bash
+salt \* saltutil.sync_grains
+```
+
+```bash
+salt router1 grains.get level1
+```
 
 ```bash
 root@salt:~# salt router1 grains.get level1
@@ -269,6 +334,10 @@ router1:
 Targeting on multiple levels, can be done by separating the levels by colon (`:`):
 
 ```bash
+salt -G level1:level2:level3:some-value --preview
+```
+
+<pre>
 root@salt:~# salt -G level1:level2:level3:some-value --preview
 - spine3
 - core1
@@ -282,33 +351,46 @@ root@salt:~# salt -G level1:level2:level3:some-value --preview
 - leaf3
 - leaf1
 - core2
-```
+</pre>
 
 ### Dynamic Grains functions
 
-So far, all the Grains functions from the previous examples were returning statical information. But the most important 
-side of writing Grains functions is that they can return dynamic data instead.
+So far, all the Grains functions from the previous examples were returning statical information. But the most important side of writing Grains functions is that they can return dynamic data instead.
 
 As a prime example, let's define a function that returns whether the Proxy Minion is running under a Docker container. 
 For this all we have to do is verify whether the file `/.dockerenv` exists:
 
-`/srv/salt/_grains/example.py`
+Insert the **import os** at the top of /srv/salt/_grains/example.py
 
+```bash
+sed -i '1i import os' /srv/salt/_grains/example.py
 ```
-import os
+
+Add the function
+
+```bash
+cat <<EOF >> /srv/salt/_grains/example.py
 
 def docker():
     return {
         'docker': os.path.exists('/.dockerenv')
     }
+EOF
 ```
 
-This simple function returns the `docker` Grain, with the value from the Python standard library `os.path.exists` which 
-return `True` if the named file exists and `False` otherwise.
+This simple function returns the `docker` Grain, with the value from the Python standard library `os.path.exists` which return `True` if the named file exists and `False` otherwise.
 
 After synchronizing the Grain module, we can find out that all our Proxy Minions are running in Docker containers:
 
 ```bash
+salt \* saltutil.sync_grains
+```
+
+```bash
+salt \* grains.get docker
+```
+
+<pre>
 root@salt:~# salt \* grains.get docker
 spine4:
     True
@@ -334,33 +416,45 @@ leaf4:
     True
 leaf2:
     True
-```
+</pre>
 
 ### Accessing configuration options in the Grains
 
-Just as with the Execution Modules, we are able to access the Minion configuration data, through the `__opts__` 
-variable.
+Just as with the Execution Modules, we are able to access the Minion configuration data, through the `__opts__` variable.
 
 One of the most interesting options is `id` which is nothing else than the Minion ID, for example:
 
 ```bash
+salt router1 config.get id
+```
+
+<pre>
 root@salt:~# salt router1 config.get id
 router1:
     router1
-```
+</pre>
 
 We can access this value by looking up under the `id` index in `__opts__`:
 
-`/srv/salt/_grains/example.py`
+```bash
+cat <<EOF >> /srv/salt/_grains/example.py
 
-```python
 def opts():
     return {'device_name': __opts__['id']}
+EOF
 ```
 
 The new Grain `device_name` returns the Minion ID value for each:
 
 ```bash
+salt \* saltutil.sync_grains
+```
+
+```bash
+salt \* grains.get device_name
+```
+
+<pre>
 root@salt:~# salt \* grains.get device_name
 leaf2:
     leaf2
@@ -386,15 +480,17 @@ leaf4:
     leaf4
 router2:
     router2
-```
+</pre>
 
-While this Grain is not particularly useful for CLI targeting, it can be very handy in various other contexts such as 
-templates, SLS files etc.
+While this Grain is not particularly useful for CLI targeting, it can be very handy in various other contexts such as templates, SLS files etc.
 
-In production, you won't need to define this Grain like this, as there is the `id` Grain you can use - but now you know 
-what it runs under the hood:
+In production, you won't need to define this Grain like this, as there is the `id` Grain you can use - but now you know what it runs under the hood:
 
 ```bash
+salt \* grains.get id
+```
+
+<pre>
 root@salt:~# salt \* grains.get id
 router1:
     router1
@@ -404,17 +500,19 @@ spine3:
     spine3
 
 ...
-```
+</pre>
 
 ### Accessing Pillar data in the Grains
 
-In the exact same way as with the Execution Modules, Pillar data associated with a specific Minion can be accessed from 
-the `__pillar__` magic variable.
+In the exact same way as with the Execution Modules, Pillar data associated with a specific Minion can be accessed from the `__pillar__` magic variable.
 
-From the previous labs, remember in the Pillar, among other data, we have a list of devices retrieved via the 
-`http_json` External Pillar:
+From the previous labs, remember in the Pillar, among other data, we have a list of devices retrieved via the `http_json` External Pillar:
 
 ```bash
+salt router1 pillar.get devices
+```
+
+<pre>
 root@salt:~# salt router1 pillar.get devices
 router1:
     ----------
@@ -431,29 +529,42 @@ router1:
         role:
             leaf
 ...
-```
+</pre>
 
 For programability reasons, it may be easier to visualise this data as a Python object instead:
 
 ```bash
+salt router1 pillar.get devices --out=raw
+```
+
+<pre>
 root@salt:~# salt router1 pillar.get devices --out=raw
 {'router1': {'router1': {'role': 'router'}, 'router2': {'role': 'router'}, 'core1': {'role': 'core'}, 'core2': {'role': 'core'}, 'spine1': {'role': 'spine'}, 'spine2': {'role': 'spine'}, 'spine3': {'role': 'spine'}, 'spine4': {'role': 'spine'}, 'leaf1': {'role': 'leaf'}, 'leaf2': {'role': 'leaf'}, 'leaf3': {'role': 'leaf'}, 'leaf4': {'role': 'leaf'}}}
-```
+</pre>
 
 As the command above shows, underneath the `devices` Pillar key, there's a dictionary whose keys are the device names. 
 From a Python function we can just return what's under that device-name key and register as Grains:
 
-`/srv/salt/_grains/example.py`
+```bash
+cat <<EOF >> /srv/salt/_grains/example.py
 
-```python
 def pillar():
     device_id = __opts__['id']
     return __pillar__.get('devices', {}).get(device_id)
+EOF
 ```
 
 The function above does just this, and after a sync, we can check that the `role` field is not present as a Grain:
 
 ```bash
+salt \* saltutil.sync_modules
+```
+
+```bash
+salt \* grains.get role
+```
+
+<pre>
 root@salt:~# salt \* grains.get role
 spine1:
     spine
@@ -479,10 +590,9 @@ leaf4:
     leaf
 leaf3:
     leaf
-```
+</pre>
 
-In this lab, we have covered the Grain modules essentials. Without diving into more advanced pure Python structured, we 
-can now start crafting our own Grains, as the business logic requires.
+In this lab, we have covered the Grain modules essentials. Without diving into more advanced pure Python structured, we can now start crafting our own Grains, as the business logic requires.
 
 --
 **End of Lab**
