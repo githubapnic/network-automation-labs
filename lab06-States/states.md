@@ -1,31 +1,35 @@
 ![](images/apnic_logo.png)
 # LAB: Salt States: Advanced Configuration Management
 
-In this lab we will continue the exercise from _Lab 5_ and continue from there with the configuration management 
-capabilities of Junos and NAPALM through the State system. As of present, Netmiko doesn't provide a State module to 
-manage the configuration, however the function we've seen earlier, `netmiko.send_config` can be accessed through the 
-`module.run` State function (see https://docs.saltstack.com/en/master/ref/states/all/salt.states.module.html for further 
-details on this particular topic).
+In this lab we will continue the exercise from _Lab 5_ and continue from there with the configuration management capabilities of Junos and NAPALM through the State system. As of present, Netmiko doesn't provide a State module to manage the configuration, however the function we've seen earlier, `netmiko.send_config` can be accessed through the `module.run` State function (see https://docs.saltstack.com/en/master/ref/states/all/salt.states.module.html for further details on this particular topic).
 
 ## Part-1: The Junos State Module
 
-The documentation for this State Module is available at 
-https://docs.saltstack.com/en/master/ref/states/all/salt.states.junos.html.
+The documentation for this State Module is available at [https://docs.saltstack.com/en/master/ref/states/all/salt.states.junos.html](https://docs.saltstack.com/en/master/ref/states/all/salt.states.junos.html).
 
-As the previous lab concluded with using the Junos module, the `/srv/salt/pillar/junos.sls` Pillar file should still 
-have the following content:
+As the previous lab concluded with using the Junos module, the `/srv/salt/pillar/junos.sls` Pillar file should still have the following content:
 
-```yaml
+```bash
+cat /srv/salt/pillar/junos.sls
+```
+
+<pre>
 proxy:
   proxytype: junos
   host: {{ opts.id }}
   username: apnic
   password: APNIC2021
-```
+</pre>
 
 Similarly, the Proxy Minions should also be started up:
 
 ```bash
+ps -aux | grep -v defunct | grep proxy
+```
+
+If the router1 and router2 Proxy Minions are not running start them with the following commands
+
+<pre>
 root@salt:~# salt-proxy --proxyid router1 -d
 root@salt:~# salt-proxy --proxyid router2 -d
 root@salt:~#
@@ -34,28 +38,33 @@ router2:
     True
 router1:
     True
-```
+</pre>
 
-Now, under the `/srv/salt/states` directory we can place our first State SLS file, e.g., `hostname.sls`, where we can 
-put the State declarations, for example:
+Now, under the `/srv/salt/states` directory we can place our first State SLS file, e.g., `hostname.sls`, where we can put the State declarations, for example:
 
-```sls
+```bash
+cat <<EOF > /srv/salt/states/hostname.sls
 Configure hostname:
   junos.install_config:
     - name: salt://static/junos
     - format: set
+EOF
 ```
+
+<pre>
+Configure hostname:
+  junos.install_config:
+    - name: salt://static/junos
+    - format: set
+</pre>
 
 The State name is _Configure hostname_, and it invokes the `junos.install_config` State function.
 
-**Important**: The State function `junos.install_config` coincidentally has the same naming as the Execution Function 
-we've used in _Lab 5_, in this particular case. This isn't always the case, and you should always refer to the 
-documentation to make sure.
+**Important**: The State function `junos.install_config` coincidentally has the same naming as the Execution Function we've used in _Lab 5_, in this particular case. This isn't always the case, and you should always refer to the documentation to make sure.
 
-The arguments `name` is the configuration file path and `format` is the same as we've used previously. As a reminder,
-we've previously executed:
+The arguments `name` is the configuration file path and `format` is the same as we've used previously. As a reminder, we've previously executed:
 
-```bash
+<pre>
 root@salt:~# salt router* junos.install_config salt://static/junos format=set
 router1:
     ----------
@@ -63,11 +72,15 @@ router1:
         Successfully loaded and committed!
     out:
         True
-```
+</pre>
 
 Through the State system now, we can execute with the same effect:
 
 ```bash
+salt router1 state.apply hostname
+```
+
+<pre>
 root@salt:~# salt router1 state.apply hostname
 router1:
 ----------
@@ -92,22 +105,20 @@ Failed:    0
 ------------
 Total states run:     1
 Total run time:   1.523 s
-```
+</pre>
 
 This has a number of advantages over the CLI usage:
 
-- You don't need to remember the syntax of the CLI function, but only configure it one in the SLS file. Instead, you 
-  only need to know the name of the State to invoke to deploy the desired configuration bit.
+- You don't need to remember the syntax of the CLI function, but only configure it one in the SLS file. Instead, you only need to know the name of the State to invoke to deploy the desired configuration bit.
 - The syntax of the CLI function can change from one Salt release to another.
 - The output is more human friendly and provides additional details.
 
-The most important aspect however is that through the State system, you can chain multiple States and build complex 
-workflows. For example, let's update the state to save the configuration diff into a file. As with the 
-`junos.install_config` function, you can use the `diffs_file` argument:
+The most important aspect however is that through the State system, you can chain multiple States and build complex workflows. For example, let's update the state to save the configuration diff into a file. As with the `junos.install_config` function, you can use the `diffs_file` argument:
 
-`/srv/salt/states/hostname.sls`
+Update the /srv/salt/states/hostname.sls file with:
 
-```sls
+```bash
+cat <<EOF > /srv/salt/states/hostname.sls
 Configure hostname:
   junos.install_config:
     - name: salt://static/junos
@@ -119,17 +130,32 @@ Display diffs:
     - name: cat /tmp/diff
     - onsuccess:
       - junos: Configure hostname
+EOF
 ```
 
-Besides the _Configure hostname_, there's another State defined in the SLS file: _Display diffs_, which executes the 
-`cmd.run` State function: see https://docs.saltstack.com/en/latest/ref/states/all/salt.states.cmd.html for more details. 
-This State runs a simple shell command, `cat /tmp/diff`, in order to display the contents of the `/tmp/diff` file, where 
-the config diffs have been saved. This State however is executed _only_ when _Configure hostname_ is applied 
-successfully.
+<pre>
+Configure hostname:
+  junos.install_config:
+    - name: salt://static/junos
+    - format: set
+    - diffs_file: /tmp/diff
+
+Display diffs:
+  cmd.run:
+    - name: cat /tmp/diff
+    - onsuccess:
+      - junos: Configure hostname
+</pre>
+
+Besides the _Configure hostname_, there's another State defined in the SLS file: _Display diffs_, which executes the `cmd.run` State function: see [https://docs.saltstack.com/en/latest/ref/states/all/salt.states.cmd.html](https://docs.saltstack.com/en/latest/ref/states/all/salt.states.cmd.html) for more details. This State runs a simple shell command, `cat /tmp/diff`, in order to display the contents of the `/tmp/diff` file, where the config diffs have been saved. This State however is executed _only_ when _Configure hostname_ is applied successfully.
 
 Firstly let's rollback the changes to the previous state:
 
 ```bash
+salt router1 junos.rollback
+```
+
+<pre>
 root@salt:~# salt router1 junos.rollback
 router1:
     ----------
@@ -137,11 +163,15 @@ router1:
         Rollback successful
     out:
         True
-```
+</pre>
 
 Now, run the State:
 
 ```bash
+salt router1 state.apply hostname
+```
+
+<pre>
 root@salt:~# salt router1 state.apply hostname
 router1:
 ----------
@@ -187,62 +217,58 @@ Failed:    0
 ------------
 Total states run:     2
 Total run time:   1.361 s
+</pre>
+
+This way, just by running a command, we are able to execute a sequence of tasks. Let's take this further and execute the previous 3-step commit-confirm, diff check and commit from _Lab 5_. For this, say we put the expected diff into a file, say `/srv/salt/static/junos.diff` with this content:
+
+```bash
+cat /srv/salt/static/junos.diff
 ```
 
-This way, just by running a command, we are able to execute a sequence of tasks. Let's take this further and execute the 
-previous 3-step commit-confirm, diff check and commit from _Lab 5_. For this, say we put the expected diff into a file, 
-say `/srv/salt/static/junos.diff` with this content:
-
-```
+<pre>
 [edit system]
 +   ntp {
 +       server 10.0.0.1;
 +   }
-```
+</pre>
 
-For this, we will need a way to compare the two files. For this task, we can use the 
-[`file.managed`](https://docs.saltstack.com/en/latest/ref/states/all/salt.states.file.html#salt.states.file.managed) 
-State function, which is one of the most widely used for managing the contents of the 
-`/srv/salt/states/hostname.sls`
+For this, we will need a way to compare the two files. For this task, we can use the [`file.managed`](https://docs.saltstack.com/en/latest/ref/states/all/salt.states.file.html#salt.states.file.managed) State function, which is one of the most widely used for managing the contents of the `/srv/salt/states/hostname.sls`
 
-```sls
+<pre>
 Check diffs:
   file.managed:
     - name: /tmp/diff
     - source: salt://static/junos.diff
     - onsuccess:
       - junos: Configure hostname
-```
+</pre>
 
-This State would only be executed on successful configuration changes, and it would attempt to bring the file 
-`/tmp/diff` to have the contents from `/srv/salt/static/junos.diff`. If there are changes, then the diff isn't as we 
-expected it to be, so we shouldn't commit, but rather error and stop the execution. Using the `onchanges` requisite, we 
-can do this exactly like this:
+This State would only be executed on successful configuration changes, and it would attempt to bring the file `/tmp/diff` to have the contents from `/srv/salt/static/junos.diff`. If there are changes, then the diff isn't as we expected it to be, so we shouldn't commit, but rather error and stop the execution. Using the `onchanges` requisite, we can do this exactly like this:
 
-```sls
+<pre>
 Configuration differs:
   test.fail_without_changes:
     - onchanges:
       - file: Check diffs
-```
+</pre>
 
 The _Configuration differs_, which marks a failure, would be executed only when _Check diffs_ returns changes.
 
 And, finally, the _Commit config_ State:
 
-```sls
+<pre>
 Commit config:
   junos.commit:
     - require:
       - test: Configuration differs
-```
+</pre>
 
-This one, through the `require` keyword, would only be executed when _Configuration differs_ "succeeds" (or, better 
-worded it is not executed, as if it is executed, it is a failure).
+This one, through the `require` keyword, would only be executed when _Configuration differs_ "succeeds" (or, better worded it is not executed, as if it is executed, it is a failure).
 
 To sum it up, here is the complete `hostname.sls` State SLS:
 
-```sls
+
+<pre>
 Configure hostname:
   junos.install_config:
     - name: salt://static/junos
@@ -272,29 +298,148 @@ Commit config:
   junos.commit:
     - require:
       - test: Configuration differs
+</pre>
+
+Create the hostname.sls with these settings
+
+```bash
+cat <<EOF > /srv/salt/states/hostname.sls
+Configure hostname:
+  junos.install_config:
+    - name: salt://static/junos
+    - format: set
+    - diffs_file: /tmp/diff
+    - confirm: 1
+
+Display diffs:
+  cmd.run:
+    - name: cat /tmp/diff
+    - onsuccess:
+      - junos: Configure hostname
+
+Check diffs:
+  file.managed:
+    - name: /tmp/diff
+    - source: salt://static/junos.diff
+    - onsuccess:
+      - junos: Configure hostname
+
+Configuration differs:
+  test.fail_without_changes:
+    - onchanges:
+      - file: /tmp/diff
+
+Commit config:
+  junos.commit:
+    - require:
+      - test: Configuration differs
+EOF
 ```
 
-This is one of the greatest powers of the State system: building complex workflows. There are other important aspects 
-such as parallelization and execution queueing, but that is beyond the current scope.
+Run the state apply command again
+
+```bash
+salt router1 state.apply hostname
+```
+
+<pre>
+root@salt:~# salt router1 state.apply hostname
+router1:
+----------
+          ID: Configure hostname
+    Function: junos.install_config
+        Name: salt://static/junos
+      Result: True
+     Comment:
+     Started: 08:59:07.527369
+    Duration: 482.411 ms
+     Changes:
+              ----------
+              message:
+                  Configuration already applied!
+              out:
+                  True
+----------
+          ID: Display diffs
+    Function: cmd.run
+        Name: cat /tmp/diff
+      Result: True
+     Comment: Command "cat /tmp/diff" run
+     Started: 08:59:08.010675
+    Duration: 11.349 ms
+     Changes:
+              ----------
+              pid:
+                  134269
+              retcode:
+                  0
+              stderr:
+              stdout:
+----------
+          ID: Check diffs
+    Function: file.managed
+        Name: /tmp/diff
+      Result: True
+     Comment: File /tmp/diff updated
+     Started: 08:59:08.027769
+    Duration: 36.298 ms
+     Changes:
+              ----------
+              diff:
+                  ---
+                  +++
+                  @@ -0,0 +1,5 @@
+                  +
+                  +[edit system]
+                  ++   ntp {
+                  ++       server 10.0.0.1;
+                  ++   }
+----------
+          ID: Configuration differs
+    Function: test.fail_without_changes
+      Result: False
+     Comment: Failure!
+     Started: 08:59:08.065952
+    Duration: 1.421 ms
+     Changes:
+----------
+          ID: Commit config
+    Function: junos.commit
+      Result: False
+     Comment: One or more requisite failed: hostname.Configuration differs
+     Started: 08:59:08.067712
+    Duration: 0.003 ms
+     Changes:
+
+Summary for router1
+------------
+Succeeded: 3 (changed=3)
+Failed:    2
+------------
+Total states run:     5
+Total run time: 531.482 ms
+</pre>
+
+This is one of the greatest powers of the State system: building complex workflows. There are other important aspects such as parallelization and execution queueing, but that is beyond the current scope.
 
 
 ## Part-2: The NetConfig State module
 
-The _NetConfig_ State module is based on NAPALM's capabilities explored in _Lab 5_, and therefore inherits all the 
-features and simplicity. For instance, instead of having a series of states just for checking the diff, we can just 
-execute the state in dry-run mode, by simply passing in the `test=True` flag on the command line.
+The _NetConfig_ State module is based on NAPALM's capabilities explored in _Lab 5_, and therefore inherits all the features and simplicity. For instance, instead of having a series of states just for checking the diff, we can just execute the state in dry-run mode, by simply passing in the `test=True` flag on the command line.
 
 For simplicity, let's stop the running Proxy Minions:
 
 ```bash
-root@salt:~# pkill salt-proxy
-root@salt:~#
+pkill salt-proxy
 ```
 
-In the meantime, the Proxy Minions for all the devices will be started up as Docker containers, and you should be ready 
-to use them:
+In the meantime, the Proxy Minions for all the devices will be started up as Docker containers, and you should be ready to use them:
 
 ```bash
+salt \* test.ping
+```
+
+<pre>
 root@salt:~# salt \* test.ping
 leaf3:
     True
@@ -320,33 +465,69 @@ router1:
     True
 router2:
     True
-```
+</pre>
 
-Let's open the `hostname.sls` State SLS and ensure the contents are:
+Update the /srv/salt/states/hostname.sls to use the jinja template:
 
-`/srv/salt/states/hostname.sls`
 
-```sls
+```bash
+cat <<EOF > /srv/salt/states/hostname.sls
 Configure hostname:
   netconfig.managed:
     - template_name: salt://templates/hostname.jinja
+EOF
 ```
+
+<pre>
+Configure hostname:
+  netconfig.managed:
+    - template_name: salt://templates/hostname.jinja
+</pre>
 
 The State is referencing the `salt://templates/hostname.jinja`, which has been defined earlier in _Lab 5_:
 
-`/srv/salt/templates/hostname.jinja`
+```bash
+cat /srv/salt/templates/hostname.jinja
+```
 
-```jinja
+<pre>
 {%- if grains.os == 'junos' %}
 set system host-name {{ opts.id }}-{{ grains.vendor }}
 {%- else %}
 hostname {{ opts.id }}-{{ grains.vendor }}
 {%- endif %}
+</pre>
+
+Ensure the proxytype is set to napalm and the driver is correct for the various vendors
+
+```bash
+grep -in napalm -A 1 /srv/salt/pillar/*.sls
 ```
+
+<pre>
+root@salt:~# grep -in napalm -A 1 /srv/salt/pillar/*.sls
+/srv/salt/pillar/eos.sls:2:  proxytype: napalm
+/srv/salt/pillar/eos.sls-3-  driver: eos
+--
+/srv/salt/pillar/ios.sls:2:  proxytype: napalm
+/srv/salt/pillar/ios.sls-3-  driver: ios
+--
+/srv/salt/pillar/iosxr.sls:2:  proxytype: napalm
+/srv/salt/pillar/iosxr.sls-3-  driver: iosxr
+--
+/srv/salt/pillar/junos.sls:2:  proxytype: napalm
+/srv/salt/pillar/junos.sls-3-  driver: junos
+</pre>
+
+**Note**: Please inform the instructor if you do not see this output.
 
 This is all required for now, and we can then execute a dry-run to check the diffs:
 
 ```bash
+salt \* state.apply hostname test=True
+```
+
+<pre>
 root@salt:~# salt \* state.apply hostname test=True
 
 router1:
@@ -431,14 +612,15 @@ Failed:    0
 ------------
 Total states run:     1
 Total run time:   4.115 s
-```
+</pre>
 
-Notice the color scheme on the command line: the output is mostly yellow, due to the `test=True` usage to mark that this 
-is a dry-run and then changes have been reverted, the `unchanged=1` flag in the `Succeeded` section, as well as the
-_Configuration discarded._ message in the `Comment`.
-Now, if we drop the `test=True` flag and execute again, it will effectively apply the changes on the devices and return:
+Notice the color scheme on the command line: the output is mostly yellow, due to the `test=True` usage to mark that this is a dry-run and then changes have been reverted, the `unchanged=1` flag in the `Succeeded` section, as well as the _Configuration discarded._ message in the `Comment`. Now, if we drop the `test=True` flag and execute again, it will effectively apply the changes on the devices and return:
 
 ```bash
+salt \* state.apply hostname
+```
+
+<pre>
 root@salt:~# salt \* state.apply hostname
 router2:
 ----------
@@ -539,16 +721,17 @@ Failed:    0
 ------------
 Total states run:     1
 Total run time:  17.718 s
-```
+</pre>
 
-One interesting detail to notice is the _Total run time_ which depends on the platform being executed on and the 
-transport mechanism being used in order to speak to the network device (i.e., it's slower on Cisco and in general 
-devices that don't have a proper API, where the communication channel is established via SSH / screen scraping, and 
-faster on the others).
+One interesting detail to notice is the _Total run time_ which depends on the platform being executed on and the transport mechanism being used in order to speak to the network device (i.e., it's slower on Cisco and in general devices that don't have a proper API, where the communication channel is established via SSH / screen scraping, and faster on the others).
 
 Let's run again the same command:
 
 ```bash
+salt \* state.apply hostname
+```
+
+<pre>
 root@salt:~# salt \* state.apply hostname
 Executing job with jid 20210108135454878431
 -------------------------------------------
@@ -604,30 +787,42 @@ Failed:    0
 ------------
 Total states run:     1
 Total run time:   4.212 s
+</pre>
+
+The output is slightly different now, the state still succeeds, but without the `changed=1` flag previously seen. Also, the comment says _Already configured_.
+
+Let's make it more interesting and have the `hostname.sls` State save a backup whenever there are changes. For this, we will need our template to do something different, so let's strip the vendor part from the configured hostname, so the template should look just like this:
+
+```bash
+sed -i 's/\-{{ grains.vendor }}//g' /srv/salt/templates/hostname.jinja
+cat /srv/salt/templates/hostname.jinja
 ```
 
-The output is slightly different now, the state still succeeds, but without the `changed=1` flag previously seen. Also, 
-the comment says _Already configured_.
-
-Let's make it more interesting and have the `hostname.sls` State save a backup whenever there are changes. For this, 
-we will need our template to do something different, so let's strip the vendor part from the configured hostname, so the 
-template should look just like this:
-
-`/srv/salt/templates/hostname.jinja`
-
-```jinja
+<pre>
 {%- if grains.os == 'junos' %}
 set system host-name {{ opts.id }}
 {%- else %}
 hostname {{ opts.id }}
 {%- endif %}
-```
+</pre>
 
 Now, let's update the `hostname.sls`, and add another state to backup the configuration:
 
-`/srv/salt/states/hostname.sls`
+```bash
+cat <<EOF >> /srv/salt/states/hostname.sls
 
-```sls
+Backup config:
+  netconfig.saved:
+    - name: /srv/salt/bkups/{{ grains.id }}.conf
+    - source: running
+    - makedirs: true
+    - onchanges:
+      - netconfig: Configure hostname
+EOF
+```
+
+
+<pre>
 Configure hostname:
   netconfig.managed:
     - template_name: salt://templates/hostname.jinja
@@ -639,15 +834,17 @@ Backup config:
     - makedirs: true
     - onchanges:
       - netconfig: Configure hostname
-```
+</pre>
 
-The latter State, named _Backup config_ saves the running configuration of each device, into a file under the 
-`/srv/salt/bkups/` directory, whose naming depends on the Minion ID (`grains.id`) - but _only_ when the _Configure 
-hostname_ State renders changes, thanks to the `onchanges` keyword.
+The latter State, named _Backup config_ saves the running configuration of each device, into a file under the `/srv/salt/bkups/` directory, whose naming depends on the Minion ID (`grains.id`) - but _only_ when the _Configure hostname_ State renders changes, thanks to the `onchanges` keyword.
 
 Running the state:
 
 ```bash
+salt \* state.apply hostname
+```
+
+<pre>
 root@salt:~# salt \* state.apply hostname
 router2:
 ----------
@@ -683,13 +880,17 @@ Failed:    0
 ------------
 Total states run:     2
 Total run time:   2.054 s
-```
+</pre>
 
 Notice that there are two states being executed on each device.
 
 Running the state again, it will produce no action:
 
+```bash
+salt \* state.apply hostname
 ```
+
+<pre>
 root@salt:~# salt \* state.apply hostname
 router1:
 ----------
@@ -717,17 +918,19 @@ Failed:    0
 ------------
 Total states run:     2
 Total run time:   1.361 s
-```
+</pre>
 
 ## Part-3: Generating ACL configuration using Capirca
 
-[`Capirca`](https://github.com/google/capirca) is an open-source Python library and tool, which generates ACL 
-configuration based on abstracted data (i.e., the input data is non vendor-specific).
+[`Capirca`](https://github.com/google/capirca) is an open-source Python library and tool, which generates ACL configuration based on abstracted data (i.e., the input data is non vendor-specific).
 
-For instance, the following command generates the Arista-specific configuration for an ACL filter named _filter-name_,
-which allows traffic from `172.17.0.0/16` to `192.168.0.0/16`:
+For instance, the following command generates the Arista-specific configuration for an ACL filter named _filter-name_, which allows traffic from `172.17.0.0/16` to `192.168.0.0/16`:
 
 ```bash
+salt router1 capirca.get_term_config arista filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
+```
+
+<pre>
 root@salt:~# salt router1 capirca.get_term_config arista filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
 router1:
     ! $Date: 2021/01/08 $
@@ -739,12 +942,15 @@ router1:
      permit ip 172.17.0.0/16 192.168.0.0/24
     
     exit
-```
+</pre>
 
-With the exact same input, just updating the platform name to _juniper_, it would provide the configuration for 
-a Juniper device:
+With the exact same input, just updating the platform name to _juniper_, it would provide the configuration for a Juniper device:
 
 ```bash
+salt router1 capirca.get_term_config juniper filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
+```
+
+<pre>
 root@salt:~# salt router1 capirca.get_term_config juniper filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
 router1:
     firewall {
@@ -770,18 +976,17 @@ router1:
             }
         }
     }
+</pre>
+
+An interesting nuance to understand is that while NAPALM provides abstraction when retrieving data, Capirca provides it by generating vendor-specific configuration given pure data.
+
+These functions, as any other Salt execution function, can be executed through the State system and the output loaded into the device. But there's an even simpler way, using the _NetACL_ State module which integrates nicely with the NAPALM Proxy Minions. Consider the following State SLS:
+
+```bash
+cat /srv/salt/states/acl.sls
 ```
 
-An interesting nuance to understand is that while NAPALM provides abstraction when retrieving data, Capirca provides it 
-by generating vendor-specific configuration given pure data.
-
-These functions, as any other Salt execution function, can be executed through the State system and the output loaded 
-into the device. But there's an even simpler way, using the _NetACL_ State module which integrates nicely with the 
-NAPALM Proxy Minions. Consider the following State SLS:
-
-`/srv/salt/states/acl.sls`
-
-```sls
+<pre>
 Configure ACL:
   netacl.filter:
     - filter_name: filter-name
@@ -790,14 +995,17 @@ Configure ACL:
           source_address: 172.17.0.0/16
           destination_address: 192.168.0.0/24
           action: accept
-```
+</pre>
 
-The State configuration is the equivalent of the CLI executed above. Notice that the platform name isn't explicitly 
-specified, as it implies to use the platform the States is being executed on.
+The State configuration is the equivalent of the CLI executed above. Notice that the platform name isn't explicitly specified, as it implies to use the platform the States is being executed on.
 
 Running the following command would deploy the ACL configuration:
 
 ```bash
+salt \* state.apply acl test=True
+```
+
+<pre>
 root@salt:~# salt \* state.apply acl test=True
 router1:
 ----------
@@ -935,11 +1143,9 @@ Failed:    0
 ------------
 Total states run:     1
 Total run time:  14.692 s
-```
+</pre>
 
-This shows how we can abstract away data, while having the configuration generated for each platform individually, 
-through the State system. Using these patterns, we are able to expand this and defined complex, cross-vendor 
-configuration management, without any limits.
+This shows how we can abstract away data, while having the configuration generated for each platform individually, through the State system. Using these patterns, we are able to expand this and defined complex, cross-vendor configuration management, without any limits.
 
 ---
 **End of Lab**

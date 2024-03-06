@@ -10,6 +10,10 @@ The main difference however is that the Salt Master is not started, and we will 
 Before anything else, let's firstly start the Salt Master (in debug mode):
 
 ```bash
+salt-master -l debug
+```
+
+<pre>
 root@salt:~# salt-master -l debug
 [DEBUG   ] Reading configuration from /etc/salt/master
 [DEBUG   ] Using cached minion ID from /etc/salt/minion_id: salt
@@ -17,14 +21,12 @@ root@salt:~# salt-master -l debug
 ...
 ... snip ...
 ...
-```
+</pre>
 
-As the Master is not started in daemon mode, it won't return the CLI, so let's leave it running. Open another terminal 
-window where we'll be watching the Salt event bus:
+As the Master is not started in daemon mode, it won't return the CLI, so let's leave it running. Open another terminal window where we'll be watching the Salt event bus:
 
 ```bash
-root@salt:~# salt-run state.event pretty=True
-
+salt-run state.event pretty=True
 ```
 
 Similarly, as seen before, this doesn't return the command line either, so let's open a third terminal window. The other 
@@ -34,14 +36,18 @@ Execute the following command:
 
 
 ```bash
+salt router1 test.ping
+```
+
+<pre>
 root@salt:~# salt router1 test.ping
 router1:
     True
-```
+</pre>
 
 In the Master logs, you will notice the following:
 
-```
+<pre>
 [DEBUG   ] Sending event: tag = 20210118133221334469; data = {'minions': ['router1'], '_stamp': '2021-01-18T13:32:21.335059'}
 [DEBUG   ] Sending event: tag = salt/job/20210118133221334469/new; data = {'jid': '20210118133221334469', 'tgt_type': 'glob', 'tgt': 'router1', 'user': 'root', 'fun': 'test.ping', 'arg': [], 'minions': ['router1'], 'missing': [], '_stamp': '2021-01-18T13:32:21.335317'}
 [DEBUG   ] Adding minions for job 20210118133221334469: ['router1']
@@ -49,11 +55,11 @@ In the Master logs, you will notice the following:
 [DEBUG   ] Published command details {'fun': 'test.ping', 'arg': [], 'tgt': 'router1', 'jid': '20210118133221334469', 'ret': '', 'tgt_type': 'glob', 'user': 'root'}
 [INFO    ] Got return from router1 for job 20210118133221334469
 [DEBUG   ] Sending event: tag = salt/job/20210118133221334469/ret/router1; data = {'cmd': '_return', 'id': 'router1', 'success': True, 'return': True, 'retcode': 0, 'jid': '20210118133221334469', 'fun': 'test.ping', 'fun_args': [], '_stamp': '2021-01-18T13:32:21.355350'}
-```
+</pre>
 
 These represent a more verbose version of the events from the Salt bus. You can check the event bus:
 
-```
+<pre>
 20210118133221334469	{
     "_stamp": "2021-01-18T13:32:21.335059",
     "minions": [
@@ -84,44 +90,80 @@ salt/job/20210118133221334469/ret/router1	{
     "return": true,
     "success": true
 }
-```
+</pre>
 
 Any of these events can be matched by the Salt Reactor and kick off jobs in response.
 
 Let's look at the _tag_ and the _data_ of the return event. The _tag_ has the following pattern: 
-`salt/job/<JID>/ret/<MINION>`. This can be translated to the following glob expression, which would match _any_ return 
-event (from any job, any Minion): `salt/job/*/ret/*`. We can therefore configure the Reactor (in the Master 
-configuration file):
+`salt/job/<JID>/ret/<MINION>`. This can be translated to the following glob expression, which would match _any_ return event (from any job, any Minion): `salt/job/*/ret/*`. We can therefore configure the Reactor (in the Master configuration file):
 
-`/etc/salt/master`
+```bash
+grep reactor -A 2 /etc/salt/master
+```
 
-```yaml
+<pre>
+root@salt:~# grep reactor -A 2 /etc/salt/master
+reactor:
+  - 'napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*':
+    - salt://reactor/bkup.sls
+</pre>
+
+Now add one of the following code blocks underneath the bkup.sls.
+
+<pre>
 reactor:
   - 'salt/job/*/ret/*':
     - /srv/salt/reactor/test.sls
-```
+</pre>
 
-This Reactor configuration, would invoke the `/srv/salt/reactor/test.sls` Reactor SLS file, on any return event. As the 
-Reactor file is under the Salt file system, this can also be written as:
+This Reactor configuration, would invoke the `/srv/salt/reactor/test.sls` Reactor SLS file, on any return event. As the Reactor file is under the Salt file system, this can also be written as:
 
-```yaml
+<pre>
 reactor:
   - 'salt/job/*/ret/*':
     - salt://reactor/test.sls
+</pre>
+
+```bash
+sed -i '/bkup/a \ \ \ \ \- salt\:\/\/reactor\/test.sls' /etc/salt/master
+sed -i "/test.sls/i \ \ \- \'salt\/job\/\*\/ret\/\*\'\:" /etc/salt/master
+grep "reactor:" -A 4 /etc/salt/master
 ```
+
+<pre>
+root@salt:~# grep "reactor:" -A 4 /etc/salt/master
+reactor:
+  - 'napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*':
+    - salt://reactor/bkup.sls
+  - 'salt/job/*/ret/*':
+    - salt://reactor/test.sls
+</pre>
 
 In `/srv/salt/reactor/test.sls` let's simply log an error when the Reactor is invoked:
 
-`/srv/salt/reactor/test.sls`
-
+```bash
+cat /srv/salt/reactor/test.sls
 ```
+
+<pre>
 {%- do salt.log.error('Hello world') %}
+</pre>
+
+**ctrl+c** to stop the Master, then restart it by running:
+
+```bash
+salt-master -l debug
 ```
 
-Ctrl-C to stop the Master, then restart it by running `salt-master -l debug`. Once the Master is settled, execute a Salt 
-command (anything), e.g., `salt router1 test.ping`. In the Master logs you'll notice the following sequence:
+Once the Master is settled, open a new terminal window and execute a Salt command (anything), e.g., 
 
+```bash
+salt router1 test.ping
 ```
+
+In the Master logs you'll notice the following sequence:
+
+<pre>
 [DEBUG   ] Sending event: tag = salt/job/20210118151211250355/ret/router1; data = {'cmd': '_return', 'id': 'router1', 'success': True, 'return': True, 'retcode': 0, 'jid': '20210118151211250355', 'fun': 'test.ping', 'fun_args': [], '_stamp': '2021-01-18T15:12:11.270550'}
 [DEBUG   ] Gathering reactors for tag salt/job/20210118151211250355/ret/router1
 [DEBUG   ] In saltenv 'base', looking at rel_path 'reactor/test.sls' to resolve 'salt://reactor/test.sls'
@@ -135,18 +177,14 @@ command (anything), e.g., `salt router1 test.ping`. In the Master logs you'll no
 {}
 [PROFILE ] Time (in seconds) to render '/var/cache/salt/master/files/base/reactor/test.sls' using 'yaml' renderer: 0.0002777576446533203
 [DEBUG   ] Gathering reactors for tag salt/auth
-```
+</pre>
 
-These lines say that after the `salt/job/20210118151211250355/ret/router1` event, Salt is looking if there are any 
-Reactors configured for this event. As there are, it's trying to locate `reactor/test.sls` under the Salt file system, 
-then render the SLS file. Notice the `[ERROR   ] Hello world` log line, which confirms that the Reactor is working well.
+These lines say that after the `salt/job/20210118151211250355/ret/router1` event, Salt is looking if there are any Reactors configured for this event. As there are, it's trying to locate `reactor/test.sls` under the Salt file system, then render the SLS file. Notice the `[ERROR   ] Hello world` log line, which confirms that the Reactor is working well.
 
-Without stopping the Salt Master, we are able to update the Reactor SLS. Let's do more than just log. For example, 
-invoke a number of actions, e.g., execute two functions `test.echo` and `grains.items` on the Minion.
+Without stopping the Salt Master, we are able to update the Reactor SLS. Let's do more than just log. For example, invoke a number of actions, e.g., execute two functions `test.echo` and `grains.items` on the Minion.
 
-`/srv/salt/reactor/test.sls`
-
-```sls
+```bash
+cat <<EOF > /srv/salt/reactor/test.sls
 {%- if data.fun == 'test.ping' %}
 
 Echo:
@@ -160,16 +198,36 @@ Grains:
     - tgt: {{ data.id }}
 
 {%- endif %}
+EOF
 ```
 
-This reactor would kick off two jobs whenever `test.ping` is being executed. The `if data.fun == 'test.ping'` test is 
-important to avoid a Reaction loop: both `Echo` and `Grains` generate job events, and therefore return events, and 
-without checking the function name, this would result in a continuous cycle. `data.fun` refers to the `fun` field in the 
-event _data_.
+<pre>
+{%- if data.fun == 'test.ping' %}
 
-Executing `salt router1 test.ping`, besides the usual job events, we'd also notice the following:
+Echo:
+  local.test.echo:
+    - tgt: {{ data.id }}
+    - arg:
+      - "Hello, here are my Grains"
 
+Grains:
+  local.grains.items:
+    - tgt: {{ data.id }}
+
+{%- endif %}
+</pre>
+
+This reactor would kick off two jobs whenever `test.ping` is being executed. The `if data.fun == 'test.ping'` test is important to avoid a Reaction loop: both `Echo` and `Grains` generate job events, and therefore return events, and without checking the function name, this would result in a continuous cycle. `data.fun` refers to the `fun` field in the event _data_.
+
+Do a test ping
+
+```bash
+salt router1 test.ping
 ```
+
+Return to the terminal window that is running the Salt event Bus. Besides the usual job events, we'd also notice the following:
+
+<pre>
 20210118144807692394	{
     "_stamp": "2021-01-18T14:48:07.693101",
     "minions": [
@@ -179,9 +237,9 @@ Executing `salt router1 test.ping`, besides the usual job events, we'd also noti
 salt/job/20210118144807692394/new	{
     "_stamp": "2021-01-18T14:48:07.693351",
     "arg": [
-        "Hello, here are my Grains"
+       <strong>"Hello, here are my Grains"</strong>
     ],
-    "fun": "test.echo",
+    <strong>"fun": "test.echo" </strong>,
     "jid": "20210118144807692394",
     "minions": [
         "router1"
@@ -258,21 +316,21 @@ salt/job/20210118144807701874/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
-There are two separate jobs, one with the JID `20210118144807692394` and another one with `20210118144807701874` - one 
-for the _Hello_ job executing `test.echo` and the other one for the _Grains_ job respectively, executing `grains.items`,
-with the afferent job creation and return events.
+There are two separate jobs, one with the JID `20210118144807692394` and another one with `20210118144807701874` - one for the _Hello_ job executing `test.echo` and the other one for the _Grains_ job respectively, executing `grains.items`, with the afferent job creation and return events.
 
 ## Part-2: Backing up the device configuration on changes
 
-As we've seen in _Lab 7_ (_States_), we can build a chain of States that backup the configuration when executing the 
-State and there are changes. But what if we run one of the `net.load_config` / `net.load_template` functions? We can 
-build something similar, using the Reactor system which kicks off a job whenever either of those functions is invoked.
+As we've seen in _Lab 7_ (_States_), we can build a chain of States that backup the configuration when executing the State and there are changes. But what if we run one of the `net.load_config` / `net.load_template` functions? We can build something similar, using the Reactor system which kicks off a job whenever either of those functions is invoked.
 
 Let's have a look at the event data for the following:
 
 ```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True
+```
+
+<pre>
 root@salt:~# salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True
 router1:
     ----------
@@ -288,12 +346,12 @@ router1:
     loaded_config:
     result:
         True
-```
+</pre>
 
 
 The return event has the following structure:
 
-```
+<pre>
 salt/job/20210118170135487146/ret/router1	{
     "_stamp": "2021-01-18T17:01:36.028299",
     "cmd": "_return",
@@ -316,24 +374,20 @@ salt/job/20210118170135487146/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
 In this, we can notice a number of key elements that will help us identify:
 
 - `fun`: to ensure we're matching on the right Salt function.
-- `fun_args`: which is a list of arguments. We can index on the `test` key which corresponds to the flag pass in from 
-  the CLI. Using this flag, we can determine whether the user actually committed the configuration change, or only 
-  requested a dry-run.
+- `fun_args`: which is a list of arguments. We can index on the `test` key which corresponds to the flag pass in from the CLI. Using this flag, we can determine whether the user actually committed the configuration change, or only requested a dry-run.
 - `success`: boolean flag, tells us whether the Salt function run correctly.
-- `return`: has the structure we're seeing on the command line. Using the `result` key under `return`, we can check 
-  whether the config was applied successfully.
+- `return`: has the structure we're seeing on the command line. Using the `result` key under `return`, we can check whether the config was applied successfully.
 
 With these elements, we can build the Reactor as follows:
 
 
-`/srv/salt/reactor/test.sls`
-
-```yaml
+```bash
+cat <<EOF > /srv/salt/reactor/test.sls
 {%- if data.fun in ['net.load_config', 'net.load_template']
        and data.success
        and not data.fun_args[0].get('test', False)
@@ -347,19 +401,33 @@ Backup config:
         path: /tmp/{{ data.id }}.conf
 
 {%- endif %}
+EOF
 ```
+
+<pre>
+{%- if data.fun in ['net.load_config', 'net.load_template']
+       and data.success
+       and not data.fun_args[0].get('test', False)
+       and data.return.result %}
+
+Backup config:
+  local.net.save_config:
+    - tgt: {{ data.id }}
+    - kwarg:
+        source: running
+        path: /tmp/{{ data.id }}.conf
+
+{%- endif %}
+</pre>
 
 Notice that the condition is more complex now, and it evaluates the flags mentioned above:
 
-- `data.fun in ['net.load_config', 'net.load_template']` ensures the Reactor is executed only in response to those two 
-  functions.
+- `data.fun in ['net.load_config', 'net.load_template']` ensures the Reactor is executed only in response to those two functions.
 - `data.success`: only when the execution was successful.
 - `not data.fun_args[0].get('test', False)`: only when the function run _without_ `test=True`.
 - `data.return.result`: only when the configuration was applied correctly.
 
-When all of these conditions are met, the _Backup config_ Reactor would invoke the `net.save_config` Salt function on 
-the `data.id` Minion (i.e., in this case `router1`, as this is what the event _data_ points to). The function is invoked 
-with the following arguments:
+When all of these conditions are met, the _Backup config_ Reactor would invoke the `net.save_config` Salt function on the `data.id` Minion (i.e., in this case `router1`, as this is what the event _data_ points to). The function is invoked with the following arguments:
 
 - _source_: `running`, backup the running configuration.
 - _path_: the path on the local Minion where to save the configuration.
@@ -367,7 +435,11 @@ with the following arguments:
 
 Run `salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True` (dry-run), and watch the Master logs:
 
+```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True
 ```
+
+<pre>
 [DEBUG   ] Sending event: tag = salt/job/20210118172717592581/ret/router1; data = {'cmd': '_return', 'id': 'router1', 'success': True, 'return': {'result': True, 'comment': 'Configuration discarded.', 'already_configured': False, 'loaded_config': '', 'diff': '[edit system]\n+   ntp {\n+       server 10.0.0.1;\n+   }'}, 'retcode': 0, 'jid': '20210118172717592581', 'fun': 'net.load_config', 'fun_args': [{'text': 'set system ntp server 10.0.0.1', 'test': True}], '_stamp': '2021-01-18T17:27:18.118264'}
 [DEBUG   ] Gathering reactors for tag salt/job/20210118172717592581/ret/router1
 [DEBUG   ] Compiling reactions for tag salt/job/20210118172717592581/ret/router1
@@ -382,16 +454,17 @@ Run `salt router1 net.load_config text='set system ntp server 10.0.0.1' test=Tru
 [DEBUG   ] Results of YAML rendering:
 {}
 [PROFILE ] Time (in seconds) to render '/var/cache/salt/master/files/base/reactor/test.sls' using 'yaml' renderer: 0.0001933574676513672
+</pre>
+
+Notice the `Results of YAML rendering:` debug log. Rendering `/var/cache/salt/master/files/base/reactor/test.sls` (which is our `/srv/salt/reactor.test.sls` cached) resulted in `{}`. This is what we wanted, as the function has been executed with `test=True` so the Reactor shouldn't do anything.
+
+Running the same, but without _test=True_, `salt router1 net.load_config text='set system ntp server 10.0.0.1'`, we will notice that the logs are different now:
+
+```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.1'
 ```
 
-Notice the `Results of YAML rendering:` debug log. Rendering `/var/cache/salt/master/files/base/reactor/test.sls` (which 
-is our `/srv/salt/reactor.test.sls` cached) resulted in `{}`. This is what we wanted, as the function has been executed 
-with `test=True` so the Reactor shouldn't do anything.
-
-Running the same, but without _test=True_, `salt router1 net.load_config text='set system ntp server 10.0.0.1'`, we will 
-notice that the logs are different now:
-
-```
+<pre>
 [DEBUG   ] Sending event: tag = salt/job/20210118173045133722/ret/router1; data = {'cmd': '_return', 'id': 'router1', 'success': True, 'return': {'result': True, 'comment': '', 'already_configured': False, 'loaded_config': '', 'diff': '[edit system]\n+   ntp {\n+       server 10.0.0.1;\n+   }'}, 'retcode': 0, 'jid': '20210118173045133722', 'fun': 'net.load_config', 'fun_args': [{'text': 'set system ntp server 10.0.0.1'}], '_stamp': '2021-01-18T17:30:46.297320'}
 [DEBUG   ] Gathering reactors for tag salt/job/20210118173045133722/ret/router1
 [DEBUG   ] Compiling reactions for tag salt/job/20210118173045133722/ret/router1
@@ -413,20 +486,31 @@ Backup config:
 [DEBUG   ] Results of YAML rendering: 
 OrderedDict([('Backup config', OrderedDict([('local.net.save_config', [OrderedDict([('tgt', 'router1')]), OrderedDict([('kwarg', OrderedDict([('source', 'running'), ('path', '/tmp/router1.conf')]))])])]))])
 [PROFILE ] Time (in seconds) to render '/var/cache/salt/master/files/base/reactor/test.sls' using 'yaml' renderer: 0.0012824535369873047
+</pre>
+
+Rendering the Reactor SLS now generates a structure that would invoke `net.save_config` on `router`. This is the CLI equivalent of calling: `salt router1 net.save_config source=running path=/tmp/router1.conf`.
+
+Try to find the router1.conf file on the master.
+
+```bash
+ls -lash /tmp/*.conf
 ```
 
-Rendering the Reactor SLS now generates a structure that would invoke `net.save_config` on `router`. This is the CLI 
-equivalent of calling: `salt router1 net.save_config source=running path=/tmp/router1.conf`.
+**Note**: It is not found as it is actually stored on the local file system of the Minion. Use a salt command to view the file:
+
+```bash
+salt router1 file.read /tmp/router1.conf
+```
 
 A few line further down in the logs, you can also see:
 
-```
+<pre>
 [DEBUG   ] Sending event: tag = salt/job/20210118173046346179/ret/router1; data = {'cmd': '_return', 'id': 'router1', 'success': True, 'return': {'result': True, 'out': '/tmp/router1.conf', 'comment': 'running config saved to /tmp/router1.conf'}, 'retcode': 0, 'jid': '20210118173046346179', 'fun': 'net.save_config', 'fun_args': [{'source': 'running', 'path': '/tmp/router1.conf'}], '_stamp': '2021-01-18T17:30:46.401423'}
-```
+</pre>
 
 Or on the Salt event bus:
 
-```
+<pre>
 20210118173046346179	{
     "_stamp": "2021-01-18T17:30:46.346398",
     "minions": [
@@ -472,24 +556,17 @@ salt/job/20210118173046346179/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
-This shows that `net.save_config` has been executed immediately after we've applied a configuration by running 
-`net.load_config`. To confirm, execute `root@salt:~# salt router1 file.read /tmp/router1.conf` to display the 
-`/tmp/router1.conf` file which is where the configuration has been backed up.
+This shows that `net.save_config` has been executed immediately after we've applied a configuration by running `net.load_config`. To confirm, execute `root@salt:~# salt router1 file.read /tmp/router1.conf` to display the `/tmp/router1.conf` file which is where the configuration has been backed up.
 
 ## Part-3: Reacting to napalm-logs events
 
-While `net.load_config` and `net.load_template` are vendor-agnostic, and the methodology presented above can be used 
-uniformly for whatever platform, it still has one minor disadvantage: the `net.load_config` and `net.load_template` 
-function are available only for NAPALM Proxy Minions. On top of that, if someone performs a manual configuration change 
-(i.e., not via Salt, but using the router / switch CLI), we are not going to be able to catch it by doing this. This is 
-where the events imported from _napalm-logs_, using the `napalm_syslog` Engine may help.
+While `net.load_config` and `net.load_template` are vendor-agnostic, and the methodology presented above can be used uniformly for whatever platform, it still has one minor disadvantage: the `net.load_config` and `net.load_template` function are available only for NAPALM Proxy Minions. On top of that, if someone performs a manual configuration change (i.e., not via Salt, but using the router / switch CLI), we are not going to be able to catch it by doing this. This is where the events imported from _napalm-logs_, using the `napalm_syslog` Engine may help.
 
-Check the Salt event bus and scroll up. During the previous commit operation, there was an event telling us that there 
-was a commit operation on the device:
+Check the Salt event bus and scroll up. During the previous commit operation, there was an event telling us that there was a commit operation on the device:
 
-```
+<pre>
 napalm/syslog/junos/CONFIGURATION_COMMIT_REQUESTED/router1	{
     "_stamp": "2021-01-18T17:30:45.556427",
     "error": "CONFIGURATION_COMMIT_REQUESTED",
@@ -558,45 +635,47 @@ napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1	{
     },
     "yang_model": "NO_MODEL"
 }
+</pre>
+
+The _napalm-logs_ `CONFIGURATION_COMMIT_COMPLETED` notification type tells that there was a successful commit, and just above it, `CONFIGURATION_COMMIT_REQUESTED` tells us that user `apnic` has requested this commit. Using the Reactor system, we can make use of the `CONFIGURATION_COMMIT_COMPLETED` notifications and backup the config when this event is seen on the bus.
+
+The event tag is `napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1`, and as we want to be able to match `CONFIGURATION_COMMIT_COMPLETED`-type events from any platform and any device, the tag match becomes: 
+`napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*`. View the reactor configuration for the Master. 
+
+```bash
+grep "reactor:" -A 4 /etc/salt/master
 ```
 
-The _napalm-logs_ `CONFIGURATION_COMMIT_COMPLETED` notification type tells that there was a successful commit, and just 
-above it, `CONFIGURATION_COMMIT_REQUESTED` tells us that user `apnic` has requested this commit. Using the Reactor 
-system, we can make use of the `CONFIGURATION_COMMIT_COMPLETED` notifications and backup the config when this event is 
-seen on the bus.
+**Note**: The following code block should be included
 
-The event tag is `napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1`, and as we want to be able to match 
-`CONFIGURATION_COMMIT_COMPLETED`-type events from any platform and any device, the tag match becomes: 
-`napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*`. Let's configure this on the Master. Ctrl-C to stop the running 
-Master process, and update the `reactor` configuration as follows:
-
-`/etc/salt/master`:
-
-```yaml
+<pre>
 reactor:
   - 'napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*':
     - salt://reactor/bkup.sls
-```
+</pre>
 
-With this configuration Salt will call the `salt://reactor/bkup.sls` Reactor SLS on `CONFIGURATION_COMMIT_COMPLETED` 
-notifications received from _napalm-logs_.
+If it is not please update the Master. Press **ctrl+c** to stop the running Master process, and update the `reactor` configuration as follows:
+
+With this configuration Salt will call the `salt://reactor/bkup.sls` Reactor SLS on `CONFIGURATION_COMMIT_COMPLETED` notifications received from _napalm-logs_.
 
 Now start the Master in debug mode and let it run in the background: `root@salt:~# salt-master -l debug`.
 
-The Reactor SLS `/srv/salt/reactor/bkup.sls` is:
+The Reactor SLS is:
 
-```yaml
+```bash
+cat /srv/salt/reactor/bkup.sls
+```
+
+<pre>
 Backup config:
   local.net.save_config:
     - tgt: {{ data.host }}
     - kwarg:
         source: running
         path: /tmp/{{ data.host }}.conf
-```
+</pre>
 
-This is Reactor SLS we've used previously, but minus the conditions, as now we're sure that this reactor is invoked only 
-on successful commits. One particular detail has been changed: `data.id` becomes `data.host` as the _napalm-logs_ events 
-don't contain an `id` field, but `host`.
+This is Reactor SLS we've used previously, but minus the conditions, as now we're sure that this reactor is invoked only on successful commits. One particular detail has been changed: `data.id` becomes `data.host` as the _napalm-logs_ events don't contain an `id` field, but `host`.
 
 The following diagram illustrates the full design and the interaction between napalm-logs, Salt and the network devices:
 
@@ -604,7 +683,11 @@ The following diagram illustrates the full design and the interaction between na
 
 In the terminal window where we have the command line, run:
 
+```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.2'
 ```
+
+<pre>
 root@salt:~# salt router1 net.load_config text='set system ntp server 10.0.0.2'
 router1:
     ----------
@@ -617,13 +700,12 @@ router1:
     loaded_config:
     result:
         True
-```
+</pre>
 
 
-In the Master logs, we can notice some activity and the following logs which show that our `salt://reactor/bkup.sls` is 
-being invoked on the `CONFIGURATION_COMMIT_COMPLETED` _napalm-logs_ event:
+In the Master logs, we can notice some activity and the following logs which show that our `salt://reactor/bkup.sls` is being invoked on the `CONFIGURATION_COMMIT_COMPLETED` _napalm-logs_ event:
 
-```
+<pre>
 [DEBUG   ] Sending event: tag = napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1; data = {'error': 'CONFIGURATION_COMMIT_COMPLETED', 'host': 'router1', 'ip': '172.22.1.1', 'timestamp': 1610992577, 'yang_message': {'system': {'operations': {'commit_complete': True}}}, 'message_details': {'date': 'Jan 18', 'time': '17:56:17', 'hostPrefix': None, 'host': 'router1', 'processName': 'mgd', 'processId': '33918', 'tag': 'UI_COMMIT_COMPLETED', 'pri': '188', 'message': 'commit complete', 'facility': 23, 'severity': 4}, 'yang_model': 'NO_MODEL', 'os': 'junos', 'facility': 23, 'severity': 4, '_stamp': '2021-01-18T17:56:32.127359'}
 [DEBUG   ] Closing IPCMessageSubscriber instance
 [DEBUG   ] Closing IPCMessageClient instance
@@ -646,11 +728,11 @@ Backup config:
 [DEBUG   ] Results of YAML rendering:
 OrderedDict([('Backup config', OrderedDict([('local.net.save_config', [OrderedDict([('tgt', 'router1')]), OrderedDict([('kwarg', OrderedDict([('source', 'running'), ('path', '/tmp/router1.conf')]))])])]))])
 [PROFILE ] Time (in seconds) to render '/var/cache/salt/master/files/base/reactor/bkup.sls' using 'yaml' renderer: 0.0013186931610107422
-```
+</pre>
 
 On the event bus the following sequence of events can be seen:
 
-```
+<pre>
 napalm/syslog/junos/CONFIGURATION_COMMIT_COMPLETED/router1	{
     "_stamp": "2021-01-18T17:56:32.127359",
     "error": "CONFIGURATION_COMMIT_COMPLETED",
@@ -748,14 +830,11 @@ salt/job/20210118175632135438/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
-Notice that `salt/job/20210118175632135438/new` event is actually being kicked off **before** even the Minion returns 
-(`salt/job/20210118175632135438/ret/router1` is the return event). This proves that backing up the configuration through 
-this methodology is more reliable as the events are being generated by the device itself. Similarly, if someone else 
-performs manual changes (outside of Salt), Salt is still aware of this and will backup the config for you:
+Notice that `salt/job/20210118175632135438/new` event is actually being kicked off **before** even the Minion returns (`salt/job/20210118175632135438/ret/router1` is the return event). This proves that backing up the configuration through this methodology is more reliable as the events are being generated by the device itself. Similarly, if someone else performs manual changes (outside of Salt), Salt is still aware of this and will backup the config for you:
 
-```
+<pre>
 napalm/syslog/junos/CONFIGURATION_COMMIT_REQUESTED/router1	{
     "_stamp": "2021-01-18T18:06:40.756902",
     "error": "CONFIGURATION_COMMIT_REQUESTED",
@@ -868,7 +947,7 @@ salt/job/20210118180641279826/ret/router1	{
     },
     "success": true
 }
-```
+</pre>
 
 ---
 **End of Lab**
