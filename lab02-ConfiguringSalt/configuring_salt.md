@@ -9,13 +9,6 @@ Once installed, the Salt Minion can be started as-is. We are however able to con
 
 The complete list of options are documented at [https://docs.saltstack.com/en/latest/ref/configuration/minion.html](https://docs.saltstack.com/en/latest/ref/configuration/minion.html).
 
-**Note** Each minion has a unique id and is stored in **/etc/salt/minion_id**
-
-Save this id as a variable for use later in this lab guide
-
-```bash
-minion_id=$(cat /etc/salt/minion_id)
-```
 
 Perhaps the most important configuration - that you need to provide - is the location of the Salt Master. This can be provided through the `master` configuration option. As our Master will be running locally, the following configuration
 would suffice for now:
@@ -45,12 +38,10 @@ root@group00:~# salt-minion -l debug
 At the end you will see the following messages repeatedly:
 
 <pre>
-[DEBUG   ] SaltReqTimeoutError, retrying. (1/7)
-[DEBUG   ] SaltReqTimeoutError, retrying. (2/7)
-[DEBUG   ] SaltReqTimeoutError, retrying. (3/7)
+salt.exceptions.SaltClientError: Attempt to authenticate with the salt master failed with timeout error
 </pre>
 
-and:
+or:
 
 <pre>
 [ERROR   ] Error while bringing up minion for multi-master. Is master at localhost responding?
@@ -61,6 +52,15 @@ These messages are normal, it means that the Minion is unable to connect to the 
 ```bash
 salt-minion -d
 ```
+
+**Note** Each minion has a unique id and is stored in **/etc/salt/minion_id**
+
+Save this id as a variable for use later in this lab guide
+
+```bash
+minion_id=$(cat /etc/salt/minion_id)
+```
+
 
 In the next section, we'll take care of the counter-part configuration, on the Master side, in order to ensure the Minion-Master communication is complete.
 
