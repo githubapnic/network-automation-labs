@@ -13,11 +13,6 @@ Logstash is an open source data collection engine with real-time pipelining capa
 
 Kibana is an open source frontend application that sits on top of the Elastic Stack, providing search and data visualization capabilities for data indexed in Elasticsearch.
 
-Before commencing the lab, lets make sure our router configs have loaded correctly
-
-```bash 
-salt \* lab.restore -t 120
-```
 ## Part-1: Exploring the Salt Event Bus
 
 For this part, we will need to open two (2) separate terminal windows: in one window we will be executing command, in the other one we will be watching the Salt event bus.

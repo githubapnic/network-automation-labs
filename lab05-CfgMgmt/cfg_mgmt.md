@@ -54,8 +54,8 @@ proxy:
   proxytype: napalm
   driver: junos
   host: {{ opts.id }}
-  username: apnic
-  password: APNIC2021
+  username: admin
+  password: admin@123
 </pre>
 
 Here, we find the structure and the credentials as configured in _Lab #3 (Configuring Proxy Minions)_. The `proxytype` points to `napalm` as expected, and the `driver` is `junos` as the SLS file is used to managing Junos devices.
@@ -535,8 +535,8 @@ proxy:
   proxytype: netmiko
   device_type: juniper_junos
   host: {{ opts.id }}
-  username: apnic
-  password: APNIC2021
+  username: admin
+  password: admin@123
 </pre>
 
 The `proxytype` should now point to `netmiko`, while the `device_type` should be `juniper_junos` as documented in [https://docs.saltstack.com/en/master/ref/proxy/all/salt.proxy.netmiko_px.html](https://docs.saltstack.com/en/master/ref/proxy/all/salt.proxy.netmiko_px.html), as this is what Netmiko expects.
@@ -570,6 +570,8 @@ sed -i '/args/d' /srv/salt/pillar/ios.sls
 
 
 With that said, we can then start the Proxy Minions for each, in the exact same way as previously:
+
+*_It is a good idea to test without the -d FIRST_*
 
 Start router1 (Junos)
 
@@ -765,8 +767,8 @@ cat /srv/salt/pillar/junos.sls
 proxy:
   proxytype: junos
   host: {{ opts.id }}
-  username: apnic
-  password: APNIC2021
+  username: admin
+  password: admin@123
 </pre>
 
 Afterwards, start the Proxy Minions for `router1` and `router2`, respectively:
@@ -803,7 +805,7 @@ salt -G junos_facts:model:VMX --preview
 ```
 
 <pre>
-root@salt:~# salt -G junos_facts:model:VMX --preview
+root@salt:~# salt -G junos_facts:model:EX9214 --preview
 - router1
 - router2
 </pre>

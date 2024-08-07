@@ -43,12 +43,6 @@ Replace groupXX with the allocated group.
 
 ## Part-1: Targeting using Minion ID
 
-First, lets make sure that we have all of our router configs loaded.
-
-```bash
-salt \* lab.restore -t 120
-```
-
 Execute commands against individual devices, using the device name / Minion ID:
 
 ```bash

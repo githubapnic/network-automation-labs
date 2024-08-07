@@ -32,10 +32,10 @@ pillar_roots:
 
 Under the `/srv/salt/pillar` directory we have the Pillar Top File, `top.sls`, which, for Proxy Minions must include a Pillar file with the connection details.
 
-From your assigned machine, you can log into the devices we have prepared for this course, using SSH, e.g., `ssh apnic@router1`. The password is `APNIC2021`. `router1` is a Junos device. Test you are able to successfully log in:
+From your assigned machine, you can log into the devices we have prepared for this course, using SSH, e.g., `ssh apnic@router1`. The password is `admin@123`. `router1` is a Junos device. Test you are able to successfully log in:
 
 ```bash
-ssh apnic@router1
+ssh admin@router1
 ```
 
 <pre>
@@ -48,7 +48,7 @@ Last login: Tue Jan  5 12:32:24 2021 from 10.0.0.2
 apnic> 
 </pre>
 
-(If it asks for the password for the SSH key, simply press `Return`/`Enter`, then log in using the `APNIC2021` password)
+(If it asks for the password for the SSH key, simply press `Return`/`Enter`, then log in using the `admin@123` password)
 
 This confirms the device is reachable and the credentials are correct.
 
@@ -60,8 +60,8 @@ proxy:
   proxytype: napalm
   driver: junos
   host: router1
-  username: apnic
-  password: APNIC2021
+  username: admin
+  password: admin@123
 EOF
 ```
 
@@ -158,8 +158,8 @@ cat /srv/salt/pillar/router1.sls
 proxy:
   proxytype: junos
   host: router1
-  username: apnic
-  password: APNIC2021
+  username: admin
+  password: admin@123
 </pre>
 
 Notice that the `proxytype` field has been changed from `napalm` to `junos`, and there's no `driver` field anymore as the Junos Proxy Module can only manage Juniper devices - unlike the NAPALM one which is able to manage many other platforms.
@@ -221,8 +221,8 @@ proxy:
   proxytype: netmiko
   device_type: juniper_junos
   host: router1
-  username: apnic
-  password: APNIC2021
+  username: admin
+  password: admin@123
 </pre>
 
 The `proxytype` field has been changed to `netmiko`, of course, while `device_type` is the field required by Netmiko in order to identify the platform. See https://docs.saltstack.com/en/3000/ref/proxy/all/salt.proxy.netmiko_px.html for more details and what other platforms are now available to use.
