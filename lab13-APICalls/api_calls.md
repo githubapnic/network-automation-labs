@@ -38,27 +38,17 @@ The RPC call for `show version` is `get-software-information` (under the `<rpc>`
 _show_ commands are prefixed by `get-`, and sometimes suffixed by `-information`. Other examples:
 
 ```
-apnic@router1> show lldp neighbors | display xml rpc
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
+apnic@router1>  show ospf neighbor | display xml rpc
+<rpc-reply xmlns:junos="http://xml.juniper.net/junos/23.2R1.14/junos">
     <rpc>
-        <get-lldp-neighbors-information>
-        </get-lldp-neighbors-information>
+        <get-ospf-neighbor-information>
+        </get-ospf-neighbor-information>
     </rpc>
     <cli>
         <banner></banner>
     </cli>
 </rpc-reply>
 
-apnic@router1> show chassis alarms | display xml rpc 
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <rpc>
-        <get-alarm-information>
-        </get-alarm-information>
-    </rpc>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
 ```
 
 There are also commands that don't have an RPC call:
@@ -81,37 +71,26 @@ The RPC calls are important, as when executed, they provide a standardised respo
 visualise the RPC responses, by adding `| display xml` to the command:
 
 ```
-apnic@router1> show lldp neighbors | display xml
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <lldp-neighbors-information junos:style="brief">
-        <lldp-neighbor-information>
-            <lldp-local-port-id>ge-0/0/0</lldp-local-port-id>
-            <lldp-local-parent-interface-name>-</lldp-local-parent-interface-name>
-            <lldp-remote-chassis-id-subtype>Mac address</lldp-remote-chassis-id-subtype>
-            <lldp-remote-chassis-id>00:05:86:44:79:c0</lldp-remote-chassis-id>
-            <lldp-remote-port-id-subtype>Locally assigned</lldp-remote-port-id-subtype>
-            <lldp-remote-port-id>518</lldp-remote-port-id>
-            <lldp-remote-system-name>router2</lldp-remote-system-name>
-        </lldp-neighbor-information>
-        <lldp-neighbor-information>
-            <lldp-local-port-id>ge-0/0/2</lldp-local-port-id>
-            <lldp-local-parent-interface-name>-</lldp-local-parent-interface-name>
-            <lldp-remote-chassis-id-subtype>Mac address</lldp-remote-chassis-id-subtype>
-            <lldp-remote-chassis-id>02:07:e0:bd:0c:06</lldp-remote-chassis-id>
-            <lldp-remote-port-id-subtype>Interface name</lldp-remote-port-id-subtype>
-            <lldp-remote-port-id>Gi0/0/0/3</lldp-remote-port-id>
-            <lldp-remote-system-name>core2</lldp-remote-system-name>
-        </lldp-neighbor-information>
-        <lldp-neighbor-information>
-            <lldp-local-port-id>ge-0/0/1</lldp-local-port-id>
-            <lldp-local-parent-interface-name>-</lldp-local-parent-interface-name>
-            <lldp-remote-chassis-id-subtype>Mac address</lldp-remote-chassis-id-subtype>
-            <lldp-remote-chassis-id>02:28:b5:5a:a4:06</lldp-remote-chassis-id>
-            <lldp-remote-port-id-subtype>Interface name</lldp-remote-port-id-subtype>
-            <lldp-remote-port-id>Gi0/0/0/2</lldp-remote-port-id>
-            <lldp-remote-system-name>core1</lldp-remote-system-name>
-        </lldp-neighbor-information>
-    </lldp-neighbors-information>
+apnic@router1> show ospf neighbor | display xml
+<rpc-reply xmlns:junos="http://xml.juniper.net/junos/23.2R1.14/junos">
+    <ospf-neighbor-information xmlns="http://xml.juniper.net/junos/23.2R0/junos-routing">
+        <ospf-neighbor>
+            <neighbor-address>10.1.12.1</neighbor-address>
+            <interface-name>ge-0/0/0.0</interface-name>
+            <ospf-neighbor-state>Full</ospf-neighbor-state>
+            <neighbor-id>10.4.1.2</neighbor-id>
+            <neighbor-priority>128</neighbor-priority>
+            <activity-timer>33</activity-timer>
+        </ospf-neighbor>
+        <ospf-neighbor>
+            <neighbor-address>10.12.12.1</neighbor-address>
+            <interface-name>ge-0/0/1.0</interface-name>
+            <ospf-neighbor-state>Full</ospf-neighbor-state>
+            <neighbor-id>10.4.2.2</neighbor-id>
+            <neighbor-priority>1</neighbor-priority>
+            <activity-timer>33</activity-timer>
+        </ospf-neighbor>
+    </ospf-neighbor-information>
     <cli>
         <banner></banner>
     </cli>
@@ -123,9 +102,10 @@ executed:
 
 ```
 apnic@router1> request system software delete jservices-mobile | display xml
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
+<rpc-reply xmlns:junos="http://xml.juniper.net/junos/23.2R1.14/junos">
     <output>
-        /packages/db/jservices-mobile-x86-32-20170601.185252_builder_junos_172_r1
+        Package jservices-mobile-x86-32-20230622.113721_builder_junos_232_r1 is deactivated
+        Deleting jservices-mobile-x86-32-20230622.113721_builder_junos_232_r1 ...
     </output>
     <package-result>0</package-result>
     <cli>
@@ -143,75 +123,57 @@ When running under a Junos Proxy Minion, we only need to provide the RPC to the 
 Proxy Minions we have access to this functionaliy as well, using the `napalm.junos_rpc` function with the same input 
 / output as `junos.rpc`: using the `get-lldp-neighbors-information` RPC which corresponds to the `show lldp neighbors` 
 CLI command, we can run
+```bash
+salt router1 napalm.junos_rpc get-ospf-neighbor-information
+```
+
 
 ```bash
-root@salt:~# salt router1 napalm.junos_rpc get-lldp-neighbors-information
-router1:
+root@salt:~#  salt router1 napalm.junos_rpc get-ospf-neighbor-information
+
     ----------
     comment:
     out:
         ----------
-        lldp-neighbors-information:
+        ospf-neighbor-information:
             ----------
-            lldp-neighbor-information:
+            ospf-neighbor:
                 |_
                   ----------
-                  lldp-local-parent-interface-name:
-                      -
-                  lldp-local-port-id:
-                      ge-0/0/0
-                  lldp-remote-chassis-id:
-                      00:05:86:44:79:c0
-                  lldp-remote-chassis-id-subtype:
-                      Mac address
-                  lldp-remote-port-id:
-                      518
-                  lldp-remote-port-id-subtype:
-                      Locally assigned
-                  lldp-remote-system-name:
-                      router2
+                  activity-timer:
+                      31
+                  interface-name:
+                      ge-0/0/0.0
+                  neighbor-address:
+                      10.1.12.1
+                  neighbor-id:
+                      10.4.1.2
+                  neighbor-priority:
+                      128
+                  ospf-neighbor-state:
+                      Full
                 |_
                   ----------
-                  lldp-local-parent-interface-name:
-                      -
-                  lldp-local-port-id:
-                      ge-0/0/2
-                  lldp-remote-chassis-id:
-                      02:07:e0:bd:0c:06
-                  lldp-remote-chassis-id-subtype:
-                      Mac address
-                  lldp-remote-port-id:
-                      Gi0/0/0/3
-                  lldp-remote-port-id-subtype:
-                      Interface name
-                  lldp-remote-system-name:
-                      core2
-                |_
-                  ----------
-                  lldp-local-parent-interface-name:
-                      -
-                  lldp-local-port-id:
-                      ge-0/0/1
-                  lldp-remote-chassis-id:
-                      02:28:b5:5a:a4:06
-                  lldp-remote-chassis-id-subtype:
-                      Mac address
-                  lldp-remote-port-id:
-                      Gi0/0/0/2
-                  lldp-remote-port-id-subtype:
-                      Interface name
-                  lldp-remote-system-name:
-                      core1
+                  activity-timer:
+                      31
+                  interface-name:
+                      ge-0/0/1.0
+                  neighbor-address:
+                      10.12.12.1
+                  neighbor-id:
+                      10.4.2.2
+                  neighbor-priority:
+                      1
+                  ospf-neighbor-state:
+                      Full
     result:
         True
+root@salt:~#
 ```
 
-Compare the XML document seen on the command line for `show lldp neighors | display xml` with this one received via 
+Compare the XML document seen on the command line for `show ospf neighbour | display xml` with this one received via 
 Salt. It may help if you run with `--out=raw` to see the exact Python structure.
 
-Notice that in the XML document on the CLI, we had the `lldp-neighbor-information` tag multiple times. In the Python 
-document, as it is repetitive it becomes a list, each element of the list being a Python dictionary (i.e., a hash 
-mapping) with the `lldp-local-port-id`, `lldp-remote-chassis-id`, etc. elements.
 
 The same pattern can be used for any other commands. For example `request`-type CLI calls:
 
@@ -234,6 +196,10 @@ In this case, the RPC is `request-package-delete`. But there's another element o
 what we have requested.
 
 From Salt, this request can be translated as:
+
+```bash
+salt router2 napalm.junos_rpc request-package-delete package-name=jservices-mobile
+```
 
 ```bash
 root@salt:~# salt router2 napalm.junos_rpc request-package-delete package-name=jservices-mobile
@@ -359,6 +325,9 @@ Using `| json`, the command provides the same details, just in structured JSON f
 and made available over HTTP requests.
 
 Through Salt, we can use the `napalm.pyeapi_run_commands` to execute this command:
+```bash
+salt spine1 napalm.pyeapi_run_commands "show version"
+```
 
 ```bash
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version"
@@ -391,6 +360,10 @@ spine1:
 
 By default, the function returns structured data, as provided by the eAPI. Alternatively, if we want the raw format, as 
 text, for human readable output, we only need to pass in the `encoding=text` argument:
+```bash
+salt spine1 napalm.pyeapi_run_commands "show version" encoding=text
+```
+
 
 ```bash
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" encoding=text
@@ -411,6 +384,9 @@ spine1:
 ```
 
 Re-run both commands with `--out=raw`:
+```bash
+salt spine1 napalm.pyeapi_run_commands "show version" encoding=text --out=raw
+```
 
 ```bash
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" --out=raw
@@ -421,6 +397,10 @@ root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" encoding=text
 
 Notice that in either case the output is a list, as `napalm.pyeapi_run_commands` is capable to run multiple commands at 
 once:
+```bash
+salt spine1 napalm.pyeapi_run_commands "show version" "show clock" "show boot stages log" encoding=text
+```
+
 
 ```bash
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" "show clock" "show boot stages log" encoding=text
@@ -449,6 +429,10 @@ spine1:
 
 The result is in the order we have requested the commands to be executed. The format is text-mode, as this is what we 
 requested using the `encoding=text` argument. Let's re-run without this argument:
+
+```bash
+salt spine1 napalm.pyeapi_run_commands "show version" "show clock" "show boot stages log"
+```
 
 ```bash
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" "show clock" "show boot stages log"
@@ -517,15 +501,24 @@ leaf2#show clock
 ```
 
 Execution this though Salt, using the `napalm.netmiko_commands` is as straightforward as:
+```bash
+salt leaf2 napalm.netmiko_commands "show clock"
+```
+
 
 ```bash
 root@salt:~# salt leaf2 napalm.netmiko_commands "show clock"
 leaf2:
-    - *19:16:25.385 UTC Tue Jan 26 2021
+    - *02:28:33.662 UTC Mon Aug 12 2024
 ```
 
 Similar to the `napalm.pyeapi_run_commands` function, `napalm.netmiko_commands` equally returns the output as a list, as 
 it accepts one or more commands to be executed:
+
+```bash
+salt leaf2 napalm.netmiko_commands "show clock" "show users"
+```
+
 
 ```bash
 root@salt:~# salt leaf2 napalm.netmiko_commands "show clock" "show users"
@@ -544,6 +537,10 @@ leaf2:
 There are no gotchas, as everything available on the command line, is also available though `napalm.netmiko_commands`, 
 on any platform. For example, let's run the same commands on one of the core switches, which is running Cisco IOS-XR, 
 and the two commands are equally available:
+
+```bash
+salt core1 napalm.netmiko_commands "show clock" "show users"
+```
 
 ```bash
 root@salt:~# salt core1 napalm.netmiko_commands "show clock" "show users"
@@ -587,7 +584,11 @@ apnic@router1> show system processes brief | display xml rpc
 
 If we want that output (as text), however, we can use `napalm.netmiko_commands` instead:
 
+```bash
+salt router1 napalm.netmiko_commands "show system processes brief"
 ```
+
+```bash
 root@salt:~# salt router1 napalm.netmiko_commands "show system processes brief"
 router1:
     -
@@ -606,7 +607,11 @@ handy to automate the execution of those commands!
 In a similar way, we've seen above that `show clock` is not available over the eAPI on Arista switches, as the command
 is not converted, and, again, `napalm.netmiko_commands` can be helpful in such cases:
 
+```bash
+salt spine1 napalm.netmiko_commands "show clock"
 ```
+
+```bash
 root@salt:~# salt spine1 napalm.netmiko_commands "show clock"
 spine1:
     - Tue Jan 26 19:31:47 2021
@@ -646,6 +651,9 @@ Jan 27 12:56:46 FPC 0 MIC 0 - part number , serial number
 ```
 
 Using `napalm.scp_get` we can download this file:
+```bash
+salt router1 napalm.scp_get /var/log/inventory /tmp/router1 auto_add_policy=True
+```
 
 ```bash
 root@salt:~# salt router1 napalm.scp_get /var/log/inventory /tmp/router1 auto_add_policy=True
@@ -659,6 +667,9 @@ disabled by default, for security reasons, as `napalm.scp_put` and `napalm.scp_g
 from any reachable host which is a potential security threat.
 
 To verify that the file has been downloaded correctly, run:
+```bash
+salt router1 file.read /tmp/router1
+```
 
 ```bash
 root@salt:~# salt router1 file.read /tmp/router1
@@ -676,6 +687,10 @@ router1:
 
 It works in the same way also with platforms that don't have UNIX filesystem, for example Cisco IOS. Let's type `dir 
 flash:` to see what we have on the flash of `leaf1` switch (on the command line, or through Salt):
+
+```bash
+salt leaf1 net.cli 'dir flash:'
+```
 
 ```bash
 root@salt:~# salt leaf1 net.cli 'dir flash:'
@@ -718,17 +733,36 @@ leaf1:
         True
 ```
 
-One of the files under `flash:` is `virtual-instance.conf`, with this contents:
+One of the files under `flash:` is `packages.conf`, with this contents:
+```bash
+salt leaf1 net.cli 'more flash:packages.conf'
+```
 
 ```bash
-root@salt:~# salt leaf1 net.cli 'more flash:virtual-instance.conf'
+root@salt:~# salt leaf1 net.cli 'more flash:packages.conf'
 leaf1:
     ----------
     comment:
     out:
         ----------
-        more flash:virtual-instance.conf:
-            rp 0 0 csr_mgmt /bootflash/iosxe-remote-mgmt.03.15.00.S.155-2.S-std.ova /bootflash
+         more flash:packages.conf:
+            #! /usr/binos/bin/packages_conf.sh
+
+            sha1sum: 46482bb61607b01d831ce9eb1298bef9ea137020
+            boot  rp 0 0   rp_boot       csr1000v-rpboot.16.12.04.SPA.pkg
+
+            iso   rp 0 0   rp_base       csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   rp 0 1   rp_base       csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   rp 0 0   rp_daemons    csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   rp 0 1   rp_daemons    csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   rp 0 0   rp_iosd       csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   rp 0 1   rp_iosd       csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   rp 0 0   rp_security   csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   rp 0 1   rp_security   csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   fp 0 0   fp            csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   fp 0 1   fp            csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   rp 0 0   rp_webui      csr1000v-mono-universalk9.16.12.04.SPA.pkg
+            iso   rp 0 1   rp_webui      csr1000v-mono-universalk9.16.12.04.SPA.pkg
     result:
         True
 ```
@@ -736,17 +770,44 @@ leaf1:
 With the following commands we can download it, then check the contents:
 
 ```bash
-root@salt:~# salt leaf1 napalm.scp_get flash:virtual-instance.conf /tmp/leaf1 auto_add_policy=True
+salt leaf1 napalm.scp_get flash:packages.conf /tmp/leaf1 auto_add_policy=True
+salt leaf1 file.read /tmp/leaf1
+
+```
+
+```bash
+root@salt:~# salt leaf1 napalm.scp_get flash:packages.conf /tmp/leaf1 auto_add_policy=True
 leaf1:
     None
 root@salt:~# salt leaf1 file.read /tmp/leaf1
 leaf1:
-    rp 0 0 csr_mgmt /bootflash/iosxe-remote-mgmt.03.15.00.S.155-2.S-std.ova /bootflash
+    #! /usr/binos/bin/packages_conf.sh
+
+    sha1sum: 46482bb61607b01d831ce9eb1298bef9ea137020
+    boot  rp 0 0   rp_boot       csr1000v-rpboot.16.12.04.SPA.pkg
+
+    iso   rp 0 0   rp_base       csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   rp 0 1   rp_base       csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   rp 0 0   rp_daemons    csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   rp 0 1   rp_daemons    csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   rp 0 0   rp_iosd       csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   rp 0 1   rp_iosd       csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   rp 0 0   rp_security   csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   rp 0 1   rp_security   csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   fp 0 0   fp            csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   fp 0 1   fp            csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   rp 0 0   rp_webui      csr1000v-mono-universalk9.16.12.04.SPA.pkg
+    iso   rp 0 1   rp_webui      csr1000v-mono-universalk9.16.12.04.SPA.pkg
+
 ```
 
 `napalm.scp_put` works in the exact same way, just that the files are transferred in the opposite direction (from Salt 
 to the network device). We've downloaded earlier the file `/tmp/router1`, on the `router1` Minion. We can upload it 
 back, to the `/var/tmp` directory on the `router1`:
+
+```bash
+salt router1 napalm.scp_put /tmp/router1 /var/tmp/inventory auto_add_policy=True
+```
 
 ```bash
 root@salt:~# salt router1 napalm.scp_put /tmp/router1 /var/tmp/inventory auto_add_policy=True
@@ -755,6 +816,11 @@ router1:
 ```
 
 And using the `net.cli` Salt function we can verify that it has been uploaded indeed:
+
+```bash
+ salt router1 net.cli 'file list /var/tmp/inventory'
+ salt router1 net.cli 'file show /var/tmp/inventory'
+ ```
 
 ```bash
 root@salt:~# salt router1 net.cli 'file list /var/tmp/inventory'
@@ -792,15 +858,24 @@ using the usual URIs Salt can work with: `salt://`, `http(s)://`, `s3://`, `swif
 one of the files we've had in the previous examples, `salt://static/junos`:
 
 ```bash
-root@salt:~# salt router1 napalm.scp_put salt://static/junos /var/home/apnic/ auto_add_policy=True
+salt router1 napalm.scp_put salt://static/junos /var/home/admin/ auto_add_policy=True
+```
+
+```bash
+root@salt:~# salt router1 napalm.scp_put salt://static/junos /var/home/admin/ auto_add_policy=True
 router1:
     None
 ```
 
-The file has been uploaded to our home directory (for the `apnic` user):
+The file has been uploaded to our home directory (for the `admin` user):
 
 ```bash
-root@salt:~# salt router1 net.cli 'file list /var/home/apnic'
+salt router1 net.cli 'file list /var/home/admin'
+salt router1 net.cli 'file show /var/home/apnic/junos'
+```
+
+```bash
+root@salt:~# salt router1 net.cli 'file list /var/home/admin'
 router1:
     ----------
     comment:
@@ -811,6 +886,7 @@ router1:
             junos
     result:
         True
+
 root@salt:~# salt router1 net.cli 'file show /var/home/apnic/junos'
 router1:
     ----------
