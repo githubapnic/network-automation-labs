@@ -36,7 +36,7 @@ router2:
     role: router
 core1:
   grains:
-    role: core
+    role: coreclear
 core2:
   grains:
     role: core
@@ -138,7 +138,7 @@ leaf4:
     role: leaf
 ```
 
-This is out entire topology.
+This is our entire topology.
 
 Everything else remains the same as previously. The authentication credentials are in the Pillar, as configured for the 
 running Proxy Minions. As a reminder, they were configured like this:
@@ -164,8 +164,8 @@ proxy:
   proxytype: napalm
   driver: junos
   host: {{ opts.id }}
-  username: apnic
-  password: APNIC2021
+  username: admin
+  password: admin@123
 ```
 
 All of these are equally available now, when running through salt-sproxy, without having Proxy Minions running.
@@ -228,6 +228,9 @@ At this point, we're sure that only leaf switches have Proxy Minions running, an
 through _salt-sproxy_:
 
 If we'd be running commands against the routers, cores or spines, we'd get the following error:
+```bash
+salt router1 test.ping
+```
 
 ```bash
 root@salt:~# salt router1 test.ping
@@ -236,6 +239,10 @@ ERROR: No return received
 ```
 
 But we can execute using:
+```bash
+salt-sproxy router1 test.ping
+```
+
 
 ```bash
 root@salt:~# salt-sproxy router1 test.ping
@@ -245,6 +252,10 @@ router1:
 
 Notice that the execution takes longer than when using the `salt` command. To understand why, run the same command, in 
 debug mode:
+
+```bash
+salt-sproxy router1 test.ping -l debug
+```
 
 ```bash
 root@salt:~# salt-sproxy router1 test.ping -l debug
@@ -261,6 +272,11 @@ Minion maintains it and it only passe the commands and the results back and fort
 That also means that the execution time depends on the way _salt-sproxy_ connects to the device: `router1` is managed 
 via NETCONF, which is over an SSH channel, and therefore slower than, for example, a platform managed through HTTP 
 request, such as Arista EOS:
+
+```bash
+time salt-sproxy router1 test.ping
+time salt-sproxy spine1 test.ping
+```
 
 ```bash
 root@salt:~# time salt-sproxy router1 test.ping
@@ -283,6 +299,10 @@ sys	0m0.263s
 In general, everything we've done with Salt is available through _salt-sproxy_ as well. To prove this, execute a few 
 commands:
 
+```bash
+salt-sproxy core* net.lldp
+```
+
 ```
 root@salt:~# salt-sproxy core* net.lldp
 
@@ -295,6 +315,10 @@ root@salt:~# salt-sproxy router* router.show 0.0.0.0/0
 
 But we also have the Proxy Minions for the leaf switches available. Thanks to the `use_existing_proxy: true` option 
 configured in `/etc/salt/master`, _salt-sproxy_ will also attempt to run commands on the running Proxy Minions:
+
+```bash
+salt-sproxy -G role:leaf test.ping
+```
 
 ```bash
 root@salt:~# salt-sproxy -G role:leaf test.ping
@@ -417,6 +441,10 @@ _salt-sproxy_. The `proxy` Runner is shipped as part of the _salt-sproxy_ packag
 this, in order to find it. We can do so by running:
 
 ```bash
+salt-run saltutil.sync_all
+```
+
+```bash
 root@salt:~# salt-run saltutil.sync_all
 cache:
 clouds:
@@ -447,6 +475,10 @@ wheel:
 ```
 
 With these changes, let's apply a configuration change on `router1` and then watch the Salt event bus:
+```bash
+salt-sproxy router1 net.load_config text='set system name-server 1.1.1.1'
+```
+
 
 ```bash
 root@salt:~# salt-sproxy router1 net.load_config text='set system name-server 1.1.1.1'
@@ -644,7 +676,12 @@ In this, we notice:
 While for the event-driven methodologies there are some slight changes required, in order to make _salt-sproxy_ calls 
 through the Salt API. The only difference is that instead of starting the API using `salt-api`, we will do:
 
+```bash
+salt-sapi -l debug
 ```
+
+
+```bash
 root@salt:~# salt-sapi -l debug
 
 ...
@@ -658,6 +695,9 @@ root@salt:~# salt-sapi -l debug
 ```
 
 Open a separate terminal window where we'll be executing commands. For starters, querying the main page:
+```bash
+curl http://0.0.0.0:8080
+```
 
 ```bash
 root@salt:~# curl http://0.0.0.0:8080
