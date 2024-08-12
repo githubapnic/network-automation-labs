@@ -45,7 +45,7 @@ devices:
   - leaf4
 ```
 
-In order to have the list o devices available to all the servers, let's include it into the Top File:
+In order to have the list of devices available to all the servers, let's include it into the Top File:
 
 `/srv/salt/pillar/top.sls`
 
@@ -65,6 +65,10 @@ base:
 ```
 
 With this, the list of devices is available on all the servers, and we can verify this by running:
+
+```bash
+salt srv* pillar.get devices
+```
 
 ```bash
 root@salt:~# salt srv* pillar.get devices
@@ -122,6 +126,10 @@ The States reference the `cmd.run` function, which simply execute the named comm
 the Proxy Minion process and puts it in background (the `-d` option).
 
 Using the handy `state.show_sls` function we can visualize what this SLS generates:
+
+```bash
+salt srv1 state.show_sls pm_single
+```
 
 ```bash
 root@salt:~# salt srv1 state.show_sls pm_single
@@ -183,6 +191,10 @@ srv1:
 As this looks satisfactory, we can do a dry run:
 
 ```bash
+salt srv1 state.apply pm_single test=True
+```
+
+```bash
 root@salt:~# salt srv1 state.apply pm_single test=True
 srv1:
 ----------
@@ -217,6 +229,10 @@ srv1:
 ```
 
 This looks good, and we can go ahead and run the state to actually start the Proxy Minions:
+
+```bash
+salt srv1 state.apply pm_single
+```
 
 ```bash
 root@salt:~# salt srv1 state.apply pm_single
@@ -283,6 +299,10 @@ start distributing them across multiple servers, as we'll see in the next sectio
 To have a clean environment, firstly we will stop the Proxy Minions currently running on `srv1`:
 
 ```bash
+salt srv1 cmd.run 'pkill salt-proxy'
+```
+
+```bash
 root@salt:~# salt srv1 cmd.run 'pkill salt-proxy'
 srv1:
 ```
@@ -334,6 +354,10 @@ checks if the device name starts with the role associated for this server. The v
 above, and `opts.id` provides the server name (i.e., `srv1`, `srv2`, ... ); therefore the construction 
 `mapping[opts.id]` will give the value `router` when the State is executed on `srv1`, `core` when executed on `srv2`, 
 and so on. This is how we can distribute the Proxy Minions by role across the available 4 servers. Let's check:
+
+```bash
+salt srv* state.show_sls pm_distributed
+```
 
 ```
 root@salt:~# salt srv* state.show_sls pm_distributed
@@ -541,6 +565,11 @@ root@salt:~#
 ```
 
 This confirms the State SLS is rendered as intended, so we can go ahead and apply:
+
+```bash
+salt srv* state.apply pm_distributed
+```
+
 
 ```
 root@salt:~# salt srv* state.apply pm_distributed
@@ -849,7 +878,7 @@ relatively simple:
 
 ```yaml
   salt-router1:
-    image: docker.mirucha.me/salt-proxy:2021.1.11
+    image: docker:5000/salt-proxy:2021.1.11
     container_name: salt-router1
     restart: unless-stopped
     hostname: salt-router1
@@ -861,7 +890,7 @@ relatively simple:
       lab:
         ipv4_address: 172.22.0.5
   salt-core1:
-    image: docker.mirucha.me/salt-proxy:2021.1.11
+    image: docker:5000/salt-proxy:2021.1.11
     container_name: salt-core1
     restart: unless-stopped
     hostname: salt-core1
@@ -873,7 +902,7 @@ relatively simple:
       lab:
         ipv4_address: 172.22.0.7
   salt-spine1:
-    image: docker.mirucha.me/salt-proxy:2021.1.11
+    image: docker:5000/salt-proxy:2021.1.11
     container_name: salt-spine1
     restart: unless-stopped
     hostname: salt-spine1
@@ -885,7 +914,7 @@ relatively simple:
       lab:
         ipv4_address: 172.22.0.9
   salt-leaf1:
-    image: docker.mirucha.me/salt-proxy:2021.1.11
+    image: docker:5000/salt-proxy:2021.1.11
     container_name: salt-leaf1
     restart: unless-stopped
     hostname: salt-leaf1
@@ -938,7 +967,7 @@ can generate the _docker-compose_ file to cover all our devices, for example:
 ```jinja
   {%- for device in pillar.devices %}
   salt-{{ device }}:
-    image: docker.mirucha.me/salt-proxy:2021.1.11
+    image: docker:5000/salt-proxy:2021.1.11
     container_name: salt-{{ device }}
     restart: unless-stopped
     hostname: salt-{{ device }}
