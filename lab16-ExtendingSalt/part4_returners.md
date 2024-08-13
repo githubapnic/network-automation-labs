@@ -111,6 +111,9 @@ Redis can operate with up to 16 databases, from 0 to 15. For this scenario, we a
 for Redis additionally require the `redis` Python package which is pre-installed everywhere in the lab.
 
 With all these requirements being met, we can go ahead and run:
+```bash
+salt router1 test.ping --return redis
+```
 
 ```bash
 root@salt:~# salt router1 test.ping --return redis
@@ -120,6 +123,9 @@ router1:
 
 From a command line perspective, nothing has changed, but we expect that the return has been forwarded to the Redis 
 server. Let's see what keys we have stored in Redis:
+```bash
+salt router1 redis.keys
+```
 
 ```bash
 root@salt:~# salt router1 redis.keys
@@ -131,6 +137,9 @@ router1:
 
 There are three keys. In order to see the content of each key, we also need to know the data type. The key which has the 
 job execution result is the key beginning with `ret:`:
+```bash
+salt router1 redis.key_type ret:20210215180740059045
+```
 
 ```bash
 root@salt:~# salt router1 redis.key_type ret:20210215180740059045
@@ -141,6 +150,9 @@ router1:
 The `redis.key_type` function tells us that `ret:20210215180740059045` is a _hash_. Therefore, we need to execute the 
 appropriate operation for hash types. This is `redis.hgetall` (i.e., _hash get all_) to return all the field of this 
 hash:
+```bash
+salt router1 redis.hgetall ret:20210215180740059045
+```
 
 ```bash
 root@salt:/# salt router1 redis.hgetall ret:20210215180740059045
@@ -154,6 +166,9 @@ This shows the job execution has been correctly stored, as we would expect.
 
 Knowing that the return is stored in Redis under a key named `ret:<JID>`, let's display the JID when executing the 
 following command:
+```bash
+salt \* test.ping --show-jid --return redis
+```
 
 ```bash
 root@salt:~# salt \* test.ping --show-jid --return redis
@@ -186,6 +201,10 @@ router2:
 
 The JID is `20210215184323092800` (on your machine it will certainly be a different JID, so replace it in the below 
 command), let's check what we have in Redis under the `ret:20210215184323092800`:
+
+```bash
+salt router1 redis.hgetall ret:20210215184323092800
+```
 
 ```bash
 root@salt:~# salt router1 redis.hgetall ret:20210215184323092800
@@ -294,6 +313,9 @@ router1:
 ```
 
 Before running, let's check the contents of the `/tmp` directory:
+```bash
+salt router1 cmd.run 'ls -la /tmp'
+```
 
 ```bash
 root@salt:~# salt router1 cmd.run 'ls -la /tmp'
@@ -304,6 +326,9 @@ router1:
 ```
 
 Executing without `--return example`, there's no change:
+```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True
+```
 
 ```bash
 root@salt:~# salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True
@@ -331,6 +356,10 @@ router1:
 And now, finally, let's run with `--return example`:
 
 ```bash
+salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True --return example
+```
+
+```bash
 root@salt:~# salt router1 net.load_config text='set system ntp server 10.0.0.1' test=True --return example
 router1:
     ----------
@@ -349,8 +378,10 @@ router1:
 ```
 
 Checking the contents of the `/tmp` directory, we see the file is there and can check its contents:
-
+```bash
+salt router1 cmd.run 'ls -la /tmp'
 ```
+```bash
 root@salt:~# salt router1 cmd.run 'ls -la /tmp'
 router1:
     total 12
@@ -359,6 +390,12 @@ router1:
     -rw-r--r-- 1 root root 1384 Feb 16 12:26 bkup
 root@salt:~#
 root@salt:~#
+```
+```bash
+salt router1 file.read /tmp/bkup
+```
+
+```bash
 root@salt:~# salt router1 file.read /tmp/bkup
 router1:
     ## Last commit: 2021-02-16 12:20:58 UTC by apnic

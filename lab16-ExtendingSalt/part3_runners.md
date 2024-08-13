@@ -141,11 +141,21 @@ the very machine we're executing from). Just like the `salt` program, a Runner i
 module named followed by a dot and the function name. Example:
 
 ```bash
+salt-run test.arg
+```
+
+```bash
 root@salt:~# salt-run test.arg
 args:
 kwargs:
     ----------
-root@salt:~# salt-run test.arg foo bar=baz
+```
+
+```bash
+salt-run test.arg foo salt-run bar=baz
+```
+```bash
+root@salt:~# salt-run test.arg foo salt-run bar=baz
 args:
     - foo
 kwargs:
@@ -165,6 +175,10 @@ to seeing the entire event Master-Minion interaction, as well as external events
 Another handy Runner is `survey.hash`. This one executes a function (provided by the user), and then groups the Minions 
 based on the output of that function. For example, if we'd like to group the devices based on the OS name, we'd use 
 `survey.hash`, requesting to inspect the output of `grains.get os`:
+
+```bash
+salt-run survey.hash \* grains.get os
+```
 
 ```bash
 root@salt:~# salt-run survey.hash \* grains.get os
@@ -223,6 +237,9 @@ def test():
 
 Just like with any extensible component, we now need to synchronize this newly defined piece of code - again, with the 
 difference that the code will be made available on the Master side, which means we'll use the `salt-run` command:
+```bash
+salt-run saltutil.sync_runners
+```
 
 ```bash
 root@salt:~# salt-run saltutil.sync_runners
@@ -230,6 +247,9 @@ root@salt:~# salt-run saltutil.sync_runners
 ```
 
 With the `example` Runner now being available on the Master, we can execute:
+```bash
+salt-run example.test
+```
 
 ```bash
 root@salt:~# salt-run example.test

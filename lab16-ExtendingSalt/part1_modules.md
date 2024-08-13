@@ -88,6 +88,10 @@ This is the entire content required for the `example.py` module.
 Now, in order to have the Minions aware of a change in this file, we execute:
 
 ```bash
+salt \* saltutil.sync_modules
+```
+
+```bash
 root@salt:~# salt \* saltutil.sync_modules
 spine4:
     - modules.example
@@ -120,6 +124,10 @@ re-fetch the new code from the Master. The output `modules.example` confirms tha
 and it now has it available to be executed:
 
 ```bash
+salt router1 example.first
+```
+
+```bash
 root@salt:~# salt router1 example.first
 router1:
     True
@@ -143,7 +151,7 @@ the name we want Salt to register it:
 
 ```python
 __func_alias__ = {
-    'true_': 'true,
+    'true_': 'true',
 }
 
 
@@ -154,7 +162,12 @@ def true_():
 
 Sync then we can run `example.true`:
 
+```bash
+salt router1 saltutil.sync_modules
+salt router1 example.true
 ```
+
+```bash
 root@salt:~# salt router1 saltutil.sync_modules
 router1:
     - modules.example
@@ -211,6 +224,14 @@ The function `first()` only invokes the helper function named `_help()`. In Salt
 `first()` will:
 
 ```bash
+salt router1 saltutil.sync_modules
+
+salt router1 example._help
+
+salt router1 example.first
+```
+
+```bash
 root@salt:~# salt router1 saltutil.sync_modules
 router1:
     - modules.example
@@ -240,6 +261,10 @@ def grains():
 ```
 
 Sync then call the new `example.grains` function:
+
+```bash
+salt router1 example.grains
+```
 
 ```bash
 root@salt:~# salt router1 saltutil.sync_modules
@@ -290,6 +315,10 @@ def os_name():
 Sync then run:
 
 ```bash
+salt \* example.os_name
+```
+
+```bash
 root@salt:~# salt \* example.os_name
 router2:
     junos
@@ -336,6 +365,10 @@ def hello():
 ```
 
 Depending on the `os` Grain, the function returns a different hello message:
+
+```bash
+salt \* example.hello
+```
 
 ```bash
 root@salt:~# salt \* example.hello
@@ -385,6 +418,11 @@ def pillar():
 
 Sync and execute:
 
+```
+salt router1 saltutil.sync_modules
+```
+
+
 ```bash
 root@salt:~# salt router1 saltutil.sync_modules
 router1:
@@ -420,6 +458,10 @@ def location():
 The `location()` function returns a text message providing the rack name and the address of the device:
 
 After sync, we can now run:
+
+```bash
+salt \* example.location
+```
 
 ```bash
 root@salt:~# salt \* example.location
@@ -484,6 +526,10 @@ def ping():
 Sync and execute:
 
 ```bash
+salt router1 example.ping
+```
+
+```bash
 root@salt:~# salt router1 saltutil.sync_modules
 router1:
     - modules.example
@@ -505,6 +551,10 @@ environment, for example `example.true` defined earlier:
 ```python
 def ex_true():
     return __salt__['example.true']()
+```
+
+```bash
+salt router1 example.ex_true
 ```
 
 ```bash
@@ -548,7 +598,7 @@ For example, let's craft a function that executes an RPC request to a Juniper de
 
 The RPC call in this case can be found by running `show version | display xml rpc` on the device CLI:
 
-```
+```xml
 apnic@router1> show version | display xml rpc
 <rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
     <rpc>
@@ -562,6 +612,10 @@ apnic@router1> show version | display xml rpc
 ```
 
 Through Salt, we can execute this RPC call using the `napalm.junos_rpc` function:
+
+```bash
+salt router1 napalm.junos_rpc get-software-information --out=raw
+```
 
 ```bash
 root@salt:~# salt router1 napalm.junos_rpc get-software-information --out=raw
@@ -595,9 +649,9 @@ router1:
     - modules.example
 root@salt:~# salt router* example.junos_version
 router2:
-    17.2R1.13
+    23.2R1.14
 router1:
-    17.2R1.13
+    23.2R1.14
 ```
 
 #### Arista
@@ -605,8 +659,13 @@ router1:
 For Arista switches, we can approach it in a similar way - using the `napalm.pyeapi_run_commands` function:
 
 ```bash
+salt spine1 napalm.pyeapi_run_commands 'show version' --out=raw
+```
+
+```bash
 root@salt:~# salt spine1 napalm.pyeapi_run_commands 'show version' --out=raw
-{'spine1': [{'modelName': 'vEOS', 'internalVersion': '4.18.1F-4591672.4181F', 'systemMacAddress': '52:54:00:c5:9f:da', 'serialNumber': '', 'memTotal': 1893316, 'bootupTimestamp': 1612791584.5, 'memFree': 751812, 'version': '4.18.1F', 'architecture': 'i386', 'isIntlVersion': False, 'internalBuildId': '6fcb426e-70a9-48b8-8958-54bb72ee28ed', 'hardwareRevision': ''}]}
+
+{'spine1': [{'mfgName': 'Arista', 'modelName': 'cEOSLab', 'hardwareRevision': '', 'serialNumber': 'E588A1C410C66B07870AE0E5AA6A742E', 'systemMacAddress': '00:1c:73:09:53:a7', 'hwMacAddress': '00:00:00:00:00:00', 'configMacAddress': '00:00:00:00:00:00', 'version': '4.30.3M-33434233.4303M (engineering build)', 'architecture': 'x86_64', 'internalVersion': '4.30.3M-33434233.4303M', 'internalBuildId': 'e3c0ed3e-117f-4e32-9902-c7316ef78ca2', 'imageFormatVersion': '1.0', 'imageOptimization': 'None', 'cEosToolsVersion': '(unknown)', 'kernelVersion': '5.15.0-1065-gcp', 'bootupTimestamp': 1723422234.700414, 'uptime': 16231.578438520432, 'memTotal': 65928940, 'memFree': 24767472, 'isIntlVersion': False}]}
 ```
 
 The EOS version is under key named `version`, with a catch: the keys are nested under a list; as a reminder, to 
@@ -637,14 +696,14 @@ spine2:
 spine1:
     - modules.example
 root@salt:~# salt spine* example.eos_version
-spine4:
-    4.18.1F
 spine1:
-    4.18.1F
-spine2:
-    4.18.1F
+    4.30.3M-33434233.4303M (engineering build)
 spine3:
-    4.18.1F
+    4.30.3M-33434233.4303M (engineering build)
+spine4:
+    4.30.3M-33434233.4303M (engineering build)
+spine2:
+    4.30.3M-33434233.4303M (engineering build)
 ```
 
 #### Cisco IOS-XR
@@ -659,23 +718,32 @@ we can use that function, again, to process the raw output from `show version`.
 Let's have a look at the `napalm.netmiko_commands` that we can use to gather the text output from `show version`:
 
 ```bash
+salt core1 napalm.netmiko_commands 'show version'
+```
+
+```bash
 root@salt:~# salt core1 napalm.netmiko_commands 'show version'
 core1:
     -
-      Tue Feb  9 14:13:02.350 UTC
+      Mon Aug 12 04:59:36.436 UTC
 
-      Cisco IOS XR Software, Version 6.0.0[Default]
-      Copyright (c) 2015 by Cisco Systems, Inc.
+      Cisco IOS XR Software, Version 6.0.1[Default]
+      Copyright (c) 2016 by Cisco Systems, Inc.
 
       ROM: GRUB, Version 1.99(0), DEV RELEASE
 
-      ios uptime is 7 minutes
-      System image file is "bootflash:disk0/xrvr-os-mbi-6.0.0/mbixrvr-rp.vm"
+      core1 uptime is 4 hours, 38 minutes
+      System image file is "bootflash:disk0/xrvr-os-mbi-6.0.1/mbixrvr-rp.vm"
 
-      cisco IOS XRv Series (AMD 686 F6M6S3) processor with 3145215K bytes of memory.
-      AMD 686 F6M6S3 processor at 2798MHz, Revision 2.174
+      cisco IOS XRv Series (Pentium Celeron Stepping 3) processor with 3145215K bytes of memory.
+      Pentium Celeron Stepping 3 processor at 2810MHz, Revision 2.174
       IOS XRv Chassis
 
+      7 GigabitEthernet
+      1 Management Ethernet
+      97070k bytes of non-volatile configuration memory.
+      866M bytes of hard disk.
+      2321392k bytes of disk0: (Sector size 512 bytes).
 ... snip ...
 ```
 
@@ -693,12 +761,16 @@ The output from `show version` executed through `napalm.netmiko_commands` is sto
 the `fsm` variable, from where we can return the version from under the `version` key:
 
 ```bash
+salt core1 example.iosxr_version
+```
+
+```bash
 root@salt:~# salt core1 saltutil.sync_modules
 core1:
     - modules.example
 root@salt:~# salt core1 example.iosxr_version
 core1:
-    6.0.0
+    6.0.1
 ```
 
 #### Cisco IOS
@@ -720,10 +792,13 @@ avoid redundant code (KISS - Keep It Simple and Stupid). With that in mind, let'
 using the _TextFSM index file_, we managed to execute the same command across both Cisco platforms, and the TextFSM 
 index detects the platforms and designates which template to use in order to extract the data:
 
+```bash
+salt -G vendor:Cisco net.cli "show version" textfsm_parse=True textfsm_path=salt://textfsm/
+```
 
 ```bash
 root@salt:~# salt -G vendor:Cisco net.cli "show version" textfsm_parse=True textfsm_path=salt://textfsm/
-leaf4:
+leaf2:
     ----------
     comment:
     out:
@@ -736,20 +811,20 @@ leaf4:
               hardware:
                   - CSR1000V
               hostname:
-                  csr1000v
+                  leaf2
               mac:
               reload_reason:
-                  <NULL>
+                  Reload Command
               rommon:
                   IOS-XE
               running_image:
                   packages.conf
               serial:
-                  - 9156AFITS3I
+                  - 9P1Q2T5XYOE
               uptime:
-                  1 hour, 44 minutes
+                  4 hours, 41 minutes
               version:
-                  15.5(2)S
+                  16.12.4
     result:
         True
 core2:
@@ -765,9 +840,9 @@ core2:
                   IOS XRv Series
               location:
               uptime:
-                  1 hour, 46 minutes
+                  4 hours, 39 minutes
               version:
-                  6.0.0
+                  6.0.1
     result:
         True
 
@@ -790,6 +865,10 @@ with the output stored into the variable named `cli`; the version is then extrac
 `version` keys - as this is the return structure from `net.cli`.
 
 With this change, we can now call `ios_version()` across any Cisco platform:
+
+```bash
+salt -G vendor:Cisco example.ios_version
+```
 
 ```bash
 root@salt:~# salt -G vendor:Cisco example.ios_version
@@ -819,31 +898,35 @@ That said, we want a Salt function, say `example.version` which returns the OS v
 don't have to run separate functions for specific platforms). More specifically, this is what we want to achieve:
 
 ```bash
+salt \* example.version
+```
+
+```bash
 root@salt:~# salt \* example.version
-router2:
-    17.2R1.13
-router1:
-    17.2R1.13
-spine2:
-    4.18.1F
 spine4:
-    4.18.1F
+    4.30.3M-33434233.4303M (engineering build)
 spine3:
-    4.18.1F
-core1:
-    6.0.0
-core2:
-    6.0.0
-leaf2:
-    15.5(2)S
-leaf1:
-    15.5(2)S
-leaf3:
-    15.5(2)S
-leaf4:
-    15.5(2)S
+    4.30.3M-33434233.4303M (engineering build)
 spine1:
-    4.18.1F
+    4.30.3M-33434233.4303M (engineering build)
+spine2:
+    4.30.3M-33434233.4303M (engineering build)
+leaf2:
+    16.12.4
+core2:
+    6.0.1
+core1:
+    6.0.1
+leaf4:
+    16.12.4
+leaf3:
+    16.12.4
+leaf1:
+    16.12.4
+router2:
+    23.2R1.14
+router1:
+    23.2R1.14
 ```
 
 For this, we only have to remember the _Accessing Grains data_ section and using the `__grains__` variable to model 
@@ -1114,6 +1197,10 @@ core1:
 ```
 
 Notice that in the output, all three files are loaded. But when executing, only the appropriate one will be invoked:
+
+```bash
+salt \* show.version
+```
 
 ```bash
 root@salt:~# salt \* show.version

@@ -134,6 +134,11 @@ leaf1:
 And now, let's check the value of the `lab` Grain:
 
 ```bash
+salt \* grains.get lab
+```
+
+
+```bash
 root@salt:~# salt \* grains.get lab
 spine2:
     True
@@ -162,6 +167,10 @@ router1:
 ```
 
 This Grain can now be used for targeting and many other use-cases:
+
+```bash
+salt -G lab:True --preview
+```
 
 ```bash
 root@salt:~# salt -G lab:True --preview
@@ -203,13 +212,29 @@ a Python native type:
 Synchronize the changes (`salt \* saltutil.sync_grains`) then we can see the new Grains:
 
 ```bash
+salt router1 grains.get type
+```
+
+```bash
 root@salt:~# salt router1 grains.get type
 router1:
     training
+```
+```bash
+salt spine1 grains.get location
+```
+```
 root@salt:~# salt spine1 grains.get location
 spine1:
     - virtual
     - everywhere
+```
+
+```bash
+salt core2 grains.get random
+```
+
+```bash
 root@salt:~# salt core2 grains.get random
 core2:
     4
@@ -218,9 +243,20 @@ core2:
 As always, we can use these Grains for targeting:
 
 ```bash
+salt -G random:4 --preview
+```
+
+```bash
 root@salt:~# salt -G random:4 --preview
 - spine2
 - core2
+```
+
+```bash
+salt -G location:virtual --preview
+```
+
+```bash
 root@salt:~# salt -G location:virtual --preview
 - router1
 - leaf3
@@ -257,6 +293,10 @@ def multi():
 This can be seen in (after sync):
 
 ```bash
+salt router1 grains.get level1
+```
+
+```bash
 root@salt:~# salt router1 grains.get level1
 router1:
     ----------
@@ -267,6 +307,10 @@ router1:
 ```
 
 Targeting on multiple levels, can be done by separating the levels by colon (`:`):
+
+```bash
+salt -G level1:level2:level3:some-value --preview
+```
 
 ```bash
 root@salt:~# salt -G level1:level2:level3:some-value --preview
@@ -309,6 +353,10 @@ return `True` if the named file exists and `False` otherwise.
 After synchronizing the Grain module, we can find out that all our Proxy Minions are running in Docker containers:
 
 ```bash
+salt \* grains.get docker
+```
+
+```bash
 root@salt:~# salt \* grains.get docker
 spine4:
     True
@@ -342,6 +390,9 @@ Just as with the Execution Modules, we are able to access the Minion configurati
 variable.
 
 One of the most interesting options is `id` which is nothing else than the Minion ID, for example:
+```bash
+salt router1 config.get id
+```
 
 ```bash
 root@salt:~# salt router1 config.get id
@@ -359,6 +410,9 @@ def opts():
 ```
 
 The new Grain `device_name` returns the Minion ID value for each:
+```bash
+salt \* grains.get device_name
+```
 
 ```bash
 root@salt:~# salt \* grains.get device_name
@@ -395,6 +449,10 @@ In production, you won't need to define this Grain like this, as there is the `i
 what it runs under the hood:
 
 ```bash
+salt \* grains.get id
+```
+
+```bash
 root@salt:~# salt \* grains.get id
 router1:
     router1
@@ -413,6 +471,10 @@ the `__pillar__` magic variable.
 
 From the previous labs, remember in the Pillar, among other data, we have a list of devices retrieved via the 
 `http_json` External Pillar:
+
+```bash
+salt router1 pillar.get devices
+```
 
 ```bash
 root@salt:~# salt router1 pillar.get devices
@@ -436,6 +498,10 @@ router1:
 For programability reasons, it may be easier to visualise this data as a Python object instead:
 
 ```bash
+salt router1 pillar.get devices --out=raw
+```
+
+```bash
 root@salt:~# salt router1 pillar.get devices --out=raw
 {'router1': {'router1': {'role': 'router'}, 'router2': {'role': 'router'}, 'core1': {'role': 'core'}, 'core2': {'role': 'core'}, 'spine1': {'role': 'spine'}, 'spine2': {'role': 'spine'}, 'spine3': {'role': 'spine'}, 'spine4': {'role': 'spine'}, 'leaf1': {'role': 'leaf'}, 'leaf2': {'role': 'leaf'}, 'leaf3': {'role': 'leaf'}, 'leaf4': {'role': 'leaf'}}}
 ```
@@ -452,6 +518,10 @@ def pillar():
 ```
 
 The function above does just this, and after a sync, we can check that the `role` field is not present as a Grain:
+
+```bash
+salt \* grains.get role
+```
 
 ```bash
 root@salt:~# salt \* grains.get role

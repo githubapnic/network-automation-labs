@@ -707,6 +707,10 @@ Using the `netbox` External Pillar model, the device and site details are availa
 under the `netbox` Pillar key:
 
 ```bash
+salt router1 pillar.get netbox
+```
+
+```bash
 root@salt:~# salt router1 pillar.get netbox
 router1:
     ----------
@@ -929,6 +933,10 @@ device itself, as well as site data. This can be used in various other Salt cont
 - Target the devices with the role `Router`:
 
 ```bash
+salt -I netbox:device_role:name:Router test.ping
+```
+
+```bash
 root@salt:~# salt -I netbox:device_role:name:Router test.ping
 router1:
     True
@@ -937,6 +945,9 @@ router2:
 ```
 
 - Devices in Rack `R9`:
+```bash
+salt -I netbox:rack:name:R9 test.ping
+```
 
 ```bash
 root@salt:~# salt -I netbox:rack:name:R9 test.ping
@@ -947,6 +958,10 @@ leaf2:
 ```
 
 Find out which device has a specific primary IP address:
+
+```bash
+salt -I netbox:primary_ip:address:172.17.3.1/32 --preview
+```
 
 ```bash
 root@salt:~# salt -I netbox:primary_ip:address:172.17.3.1/32 --preview
@@ -982,6 +997,10 @@ The NetBox data is referenced from the Pillar: `pillar.netbox.site.tenant.name` 
 the value by running `salt \* pillar.get netbox:site:tenant:name`).
 
 Now, deploy the changes:
+
+```bash
+salt \* net.load_template salt://templates/motd.jinja
+```
 
 ```bash
 root@salt:~# salt \* net.load_template salt://templates/motd.jinja

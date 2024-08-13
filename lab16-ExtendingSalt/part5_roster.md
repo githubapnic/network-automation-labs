@@ -115,6 +115,9 @@ All of these are defined in the `/etc/salt/roster` file as configured via the `r
 The `/etc/salt/roster` file is interpreted as SLS. Open it and remember its Jinja + YAML structure. As always in Salt, 
 these files are very powerful and they allow you to make them as dynamic as you want. For example, remove its contents 
 entirely:
+```bash
+rm /etc/salt/roster && touch /etc/salt/roster
+```
 
 ```bash
 root@salt:~# rm /etc/salt/roster && touch /etc/salt/roster
@@ -122,6 +125,9 @@ root@salt:~#
 ```
 
 Now, as there are no devices defined in the Roster file, salt-sproxy returns:
+```bash
+salt-sproxy \* --preview
+```
 
 ```bash
 root@salt:~# salt-sproxy \* --preview
@@ -134,6 +140,9 @@ We are going to use the HTTP API in order to populate the Roster SLS file, inste
 the powers of SLS rendering.
 
 Using the `http.query` Runner, execute the following request:
+```bash
+salt-run http.query http://http_api:8888
+```
 
 ```bash
 root@salt:~# salt-run http.query http://http_api:8888
@@ -144,6 +153,9 @@ body:
 `http://http_api:8888` is the HTTP API we've used in a previous lab, for the External Pillars.
 
 The data returned is JSON format, so we're able to un-serialize (decode) it:
+```bash
+salt-run http.query http://http_api:8888 decode=True --out=raw
+```
 
 ```bash
 root@salt:~# salt-run http.query http://http_api:8888 decode=True --out=raw
@@ -164,6 +176,9 @@ This is the entire Roster we need: it executes the HTTP request to `http://http_
 we can find under the `dict` and `devices` keys respectively.
 
 To confirm, we can execute:
+```bash
+salt-sproxy \* --preview
+```
 
 ```bash
 root@salt:~# salt-sproxy \* --preview
@@ -182,6 +197,9 @@ root@salt:~# salt-sproxy \* --preview
 ```
 
 Or, in debug mode:
+```bash
+salt-sproxy \* --preview -l debug
+```
 
 ```bash
 root@salt:~# salt-sproxy core* --preview -l debug
@@ -239,6 +257,9 @@ def targets(tgt, tgt_type='glob', **kwargs):
 ```
 
 As the Rosters are Master-specifics, we would need to use `salt-run` in order to synchronize the new code:
+```bash
+salt-run saltutil.sync_roster
+```
 
 ```bash
 root@salt:~# salt-run saltutil.sync_roster
@@ -254,6 +275,9 @@ roster: example
 ```
 
 After pointing _salt-sproxy_ to use the new `example` Roster, the following request would work:
+```bash
+salt-sproxy \* --preview
+```
 
 ```bash
 root@salt:~# salt-sproxy \* --preview
@@ -289,6 +313,9 @@ that, the logs also say that the `example.targets` Roster function is being exec
 Roster works OK so far.
 
 Let's try and run a different targeting expression, for example:
+```bash
+salt-sproxy core* --preview
+```
 
 ```bash
 root@salt:~# salt-sproxy core* --preview
@@ -331,10 +358,18 @@ def targets(tgt, tgt_type='glob', **kwargs):
 
 _salt-sproxy_ offers a set of features for implementing Rosters, and just before returning, we can invoke one of the 
 integrated target matching engines (for each target type). Resync, and then the targeting works as expected:
+```bash
+salt-run saltutil.sync_roster
+```
 
 ```bash
 root@salt:~# salt-run saltutil.sync_roster
 - roster.example
+```
+```bash
+salt-sproxy core* --preview
+```
+```bash
 root@salt:~# salt-sproxy core* --preview
 - core1
 - core2

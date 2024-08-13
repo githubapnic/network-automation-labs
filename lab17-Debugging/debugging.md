@@ -27,6 +27,9 @@ therefore mistakes can happen frequently - for example incorrect indentation: up
 ```
 
 Trying to start the Master it fails as:
+```bash
+salt-master -l debug
+```
 
 ```bash
 root@salt:~# salt-master -l debug
@@ -57,6 +60,9 @@ root@salt:~# salt-master -l debug
 ```
 
 Let it run in the foreground, and open a separate terminal window, where we start a Proxy Minion:
+```bash
+salt-proxy --proxyid router1 -l debug
+```
 
 ```bash
 root@salt:~# salt-proxy --proxyid router1 -l debug
@@ -79,6 +85,9 @@ The Proxy Minion is unable to start, as it's unable to pull the Pillar data.
 
 The first command to the rescue when you see the `No proxy key found in pillar or opts` error message is check the 
 output of the `salt-run pillar.show_pillar router1` command. A healthy output should look like:
+```bash
+salt-run pillar.show_pillar router1
+```
 
 ```bash
 root@salt:~# salt-run pillar.show_pillar router1
@@ -123,6 +132,9 @@ This is because Salt is unable to execute the HTTP request to http://http_api:88
 file) complains. The first step when encountering this sort of errors is checking whether the external services are 
 available. In this lab, both the HTTP API http://http_api:8888/ and the NetBox service have been turned off, and you can 
 verify this by running, e.g., 
+```bash
+curl http://http_api:8888/
+```
 
 ```bash
 root@salt:~# curl http://http_api:8888/
@@ -232,6 +244,9 @@ machine of the Master is reachable, but the Master itself not. To replicate this
 Master is running and stop it by Ctrl-C.
 
 Try to start the Proxy Minion for `router1`:
+```bash
+salt-proxy --proxyid router1 -l debug
+```
 
 ```bash
 root@salt:~# salt-proxy --proxyid router1 -l debug
@@ -262,6 +277,9 @@ accepting connections.
 
 Go back to the terminal where the Master is running, stop it by Ctrl-C, then re-start it by executing `salt-master -d`, 
 to have it run in background, returning the prompt:
+```bash
+salt-master -d
+```
 
 ```bash
 root@salt:~# salt-master -d
@@ -276,6 +294,9 @@ start again the Master by running `salt-master -l debug`.
 Now, edit `/srv/salt/pillar/junos.sls` and remove the line `proxytype: napalm`.
 
 Starting the Proxy Minion would lead to the following errors:
+```bash
+salt-proxy --proxyid router1 -l debug
+```
 
 ```bash
 root@salt:~# salt-proxy --proxyid router1 -l debug
@@ -314,6 +335,9 @@ would want to use.
 
 Re-add the `proxytype: napalm` line and remove `driver: junos`. Starting the Proxy Minion, we will see a different 
 error:
+```bash
+salt-proxy --proxyid router1 -l debug
+```
 
 ```bash
 root@salt:~# salt-proxy --proxyid router1 -l debug
@@ -359,6 +383,9 @@ The error comes from NAPALM this time, as the `driver` field is specific to the 
 self-explanatory.
 
 Re-add the `driver: junos` line and update the username to `username: fake`:
+```bash
+salt-proxy --proxyid router1 -l debug
+```
 
 ```bash
 root@salt:~# salt-proxy --proxyid router1 -l debug
@@ -425,6 +452,9 @@ _router1_. This message however largely depends on the communication channel bet
 platform-specific; for example, for Juniper it is using NETCONF, while for Arista it is using HTTP requests over the 
 Arista eAPI. To see the difference, make a similar change in the `/srv/salt/pillar/eos.sls` and start the Proxy Minion 
 for `spine1`:
+```bash
+salt-proxy --proxyid spine1 -l debug
+```
 
 ```bash
 root@salt:~# salt-proxy --proxyid spine1 -l debug
@@ -505,7 +535,9 @@ Such is the case with a group of functions from the `log` Execution Module: `log
 Update `/srv/salt/pillar/junos.sls` and re-configure `username: apnic` in order to have the correct authentication.
 
 Start the Proxy Minion for `router1` in daemon mode, to have it run in background, but logging at debug level:
-
+```bash
+salt-proxy -l debug --proxyid router1 -d
+```
 ```bash
 root@salt:~# salt-proxy -l debug --proxyid router1 -d
 [DEBUG   ] Reading configuration from /etc/salt/proxy
@@ -523,6 +555,9 @@ root@salt:~#
 ```
 
 Immediately after this, start watching the Proxy Minion logging file:
+```bash
+tail -f /var/log/salt/proxy
+```
 
 ```bash
 root@salt:~# tail -f /var/log/salt/proxy
@@ -562,6 +597,9 @@ Grains, and the value returned by the `system.get_system_date` Execution functio
 
 To render this SLS file, we can use the `slsutil.renderer` helper, which helps us preview the contents of an SLS file 
 after being interpreted:
+```bash
+salt router1 slsutil.renderer salt://debug.sls
+```
 
 ```bash
 root@salt:~# salt router1 slsutil.renderer salt://debug.sls
@@ -598,8 +636,15 @@ options for the Salt Minion; `__salt__` on the Master refers to the Runners, whi
 the Execution Modules and so on.
 
 ### ISalt Master
+To install you can use pip
+```
+pip install isalt
+```
 
 when we want to have the dunders for the Master side loaded, we can run:
+```bash
+isalt --master
+```
 
 ```bash
 root@salt:~# isalt --master
@@ -654,9 +699,12 @@ To enter in the Proxy Minion mode, we need to pass the `--proxy` CLI flag, as we
 device name) we want to load the data for; this is important as the values are highly dependent on the device we want to 
 load the variables for: not only that Grains and Pillars are highly dependent, but the Execution Modules may differ from 
 one device to another (if we configure it like that):
+```bash
+isalt -e /etc/salt/proxy --proxy --minion-id router1
+```
 
 ```bash
-root@salt:~# isalt --proxy --minion-id router1
+root@salt:~# isalt -e /etc/salt/proxy --proxy --minion-id router1
  __       _______.     ___       __      .___________.
 |  |     /       |    /   \     |  |     |           |
 |  |    |   (----`   /  ^  \    |  |     `---|  |----`
@@ -716,6 +764,9 @@ In [6]:
 For the previous command to work, the Salt key of `router1` must have been accepted previously, otherwise it will not 
 work. In that case, there are times when we'd probably like to execute Salt tasks without this overhead, and this is 
 exactly where Salt SProxy is able to help:
+```bash
+isalt --sproxy
+```
 
 ```bash
 root@salt:~# isalt --sproxy
@@ -739,7 +790,7 @@ In [1]:
 Starting ISalt with `--sproxy`, ISalt provides a feature, named `sproxy` which gives us access to directly invoke 
 commands:
 
-```
+```bash
 In [1]: sproxy('router*', salt_function='test.ping', static=True)
 Out[1]: {'router2': True, 'router1': True}
 
