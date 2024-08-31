@@ -123,7 +123,7 @@ ERROR: Minions returned with non-zero exit code
 Similarly, when the TextFSM template exists, but there's a coding error. Let's remove the first line from `/srv/salt/textfsm/eos_show_version.fsm` (the definition of the `MODEL` variable):
 
 ```bash
-sed -i 's/Value MODEL/d' /srv/salt/textfsm/eos_show_version.fsm
+sed -i '/Value MODEL/d' /srv/salt/textfsm/eos_show_version.fsm
 cat /srv/salt/textfsm/eos_show_version.fsm
 ```
 
