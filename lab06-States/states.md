@@ -815,7 +815,7 @@ Backup config:
   netconfig.saved:
     - name: /srv/salt/bkups/{{ grains.id }}.conf
     - source: running
-    - makedirs: true
+    - makedirs: True
     - onchanges:
       - netconfig: Configure hostname
 EOF
@@ -831,7 +831,7 @@ Backup config:
   netconfig.saved:
     - name: /srv/salt/bkups/{{ grains.id }}.conf
     - source: running
-    - makedirs: true
+    - makedirs: True
     - onchanges:
       - netconfig: Configure hostname
 </pre>
