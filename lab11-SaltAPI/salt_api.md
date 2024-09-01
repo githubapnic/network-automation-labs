@@ -321,10 +321,10 @@ router1:
 This generates a syslog message on router1. To view the message ssh into router1.
 
 ```bash
-ssh -o "StrictHostKeyChecking no" apnic@router1
+ssh -o "StrictHostKeyChecking no" admin@router1
 ```
 
-**password** = APNIC2021
+**password** = admin@123
 
 Show the log message
 
