@@ -1044,18 +1044,18 @@ spine2:
 To see the new banners, let's log into a couple of devices:
 
 ```bash
-root@salt:~# ssh apnic@router1
+root@salt:~# ssh admin@router1
 This device is property of APNIC
 Password:
 Last login: Thu Feb  4 18:29:16 2021 from 10.0.0.2
 --- JUNOS 17.2R1.13 Kernel 64-bit  JNPR-10.3-20170523.350481_build
 
 Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia
-apnic@router1>
+admin@router1>
 ```
 
 ```bash
-root@salt:~# ssh apnic@spine1
+root@salt:~# ssh admin@spine1
 "This device is property of APNIC"
 Password:
 "Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n"
