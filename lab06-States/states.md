@@ -17,8 +17,8 @@ cat /srv/salt/pillar/junos.sls
 proxy:
   proxytype: junos
   host: {{ opts.id }}
-  username: apnic
-  password: APNIC2021
+  username: admin
+  password: admin@123
 </pre>
 
 Similarly, the Proxy Minions should also be started up:
