@@ -317,7 +317,7 @@ Value SOURCE (\S+)
 Start
   ^${DAY_NAME}\s+${MONTH}\s+${DAY}\s+${TIME}\s+${YEAR}
   ^Timezone:\s+${TIMEZONE}
-  ^Clock source:\s+${SOURCE}
+  ^Clock source:\s+${SOURCE} -> Record
 </pre>
 
 Take a moment to understand each configuration bit from this template.
