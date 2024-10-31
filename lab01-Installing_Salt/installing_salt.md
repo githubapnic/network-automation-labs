@@ -68,14 +68,13 @@ As per above (from the `/etc/os-release` file), we will install Salt on a _Debia
 
 ```bash
 mkdir -p /etc/apt/keyrings
-curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/debian/10/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
+curl -fsSL https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public | sudo tee /etc/apt/keyrings/salt-archive-keyring.pgp
 ```
 
 2. Append the following to the `/etc/apt/sources.list.d/salt.list` file:
 
 ```bash
-echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.gpg arch=amd64] https://repo.saltproject.io/salt/py3/debian/10/amd64/latest buster main" | tee /etc/apt/sources.list.d/salt.list
-```
+curl -fsSL https://github.com/saltstack/salt-install-guide/releases/latest/download/salt.sources | sudo tee /etc/apt/sources.list.d/salt.sources
 
 3. Refresh the system package cache:
 
