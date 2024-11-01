@@ -78,12 +78,11 @@ curl -fsSL https://github.com/saltstack/salt-install-guide/releases/latest/downl
 ```
 
 3. Refresh the system package cache:
-
 ```bash
 apt-get update
 ```
 
-<pre>
+```
 root@group00:~# apt-get update
 Hit:1 http://deb.debian.org/debian buster InRelease
 Hit:2 http://deb.debian.org/debian-security buster/updates InRelease
@@ -93,7 +92,7 @@ Reading package lists... Done
 Building dependency tree
 Reading state information... Done
 All packages are up to date.
-</pre>
+```
 
 4. Install the Salt Master
 
