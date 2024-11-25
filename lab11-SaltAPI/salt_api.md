@@ -376,17 +376,17 @@ groups:
 
 The alert has a specific name, "Interface Down", and it is fired when Prometheus detects the condition from `expr`, which is `napalm_logs_interface_state == 0` (i.e., an interface is down). Using the `interface` and `host` labels, we are able to build a human-understandable message. For `ge-0/0/2` on `router1`, `Interface {{$labels.interface}} is down on {{$labels.host}}` becomes `Interface ge-0/0/2 is down on router1`. Together with this, adding two extra labels, `severity` and `service` - in general it is a good idea to have various labels to easily identify where and why the alert is coming from, and how severe it is.
 
-The configuration of this alert can be inspected visually, on the Prometheus web interface. Open your browser and go to http://group00.labs.apnictraining.net:9090/rules. Here you should see the alert being configured as:
+The configuration of this alert can be inspected visually, on the Prometheus web interface. Open your browser and go to http://npnog10-vm00.labs.apnictraining.net:9090/rules. Here you should see the alert being configured as:
 
 ![](images/prometheus_rules.png)
 
-If you hover the `expr`, and click on it, you will be redirected to http://group00.labs.apnictraining.net:9090/graph?g0.expr=napalm_logs_interface_state%20%3D%3D%200&g0.tab=0&g0.stacked=0&g0.range_input=1h where you can see the evolution of the metric. As the value of the metric matches the expression, the alert is set, and this can be seen under http://group00.labs.apnictraining.net:9090/alerts:
+If you hover the `expr`, and click on it, you will be redirected to http://npnog10-vm00.labs.apnictraining.net:9090/graph?g0.expr=napalm_logs_interface_state%20%3D%3D%200&g0.tab=0&g0.stacked=0&g0.range_input=1h where you can see the evolution of the metric. As the value of the metric matches the expression, the alert is set, and this can be seen under http://npnog10-vm00.labs.apnictraining.net:9090/alerts:
 
 ![](images/prometheus_alert_firing.png)
 
 Here we notice that Prometheus generates the alert for interface down, using the labels we expect.
 
-Here comes Alertmanager into play. Alertmanager is configured to aggregate the Prometheus alerts. Go to http://group00.labs.apnictraining.net:9093/#/alerts using your web browser. This is where you can find the alerts in Alertmanager. Notice that there's an alert currently firing, just like we've seen earlier in Prometheus.
+Here comes Alertmanager into play. Alertmanager is configured to aggregate the Prometheus alerts. Go to http://npnog10-vm00.labs.apnictraining.net:9093/#/alerts using your web browser. This is where you can find the alerts in Alertmanager. Notice that there's an alert currently firing, just like we've seen earlier in Prometheus.
 
 ![](images/alertmanager_alert.png)
 

@@ -460,7 +460,7 @@ We can also call the `pillar.items` Execution Function, through the `salt.cmd` R
 
 ```bash
 root@salt:~# salt-run salt.cmd pillar.items
-[ERROR   ] Unable to pull NetBox data for "group00_master"
+[ERROR   ] Unable to pull NetBox data for "npnog10-vm00_master"
 devices:
     ----------
     router1:
@@ -477,13 +477,13 @@ devices:
             core
 ```
 
-This returns the common Pillar data, and would also attempt to pull the Pillar data for the `group00_master`. What is 
-this `group00_master`. By default, Salt assigns an implicit ID for the Master, which is the machine hostname followed by 
+This returns the common Pillar data, and would also attempt to pull the Pillar data for the `npnog10-vm00_master`. What is 
+this `npnog10-vm00_master`. By default, Salt assigns an implicit ID for the Master, which is the machine hostname followed by 
 `_master`. This can be verified by running:
 
 ```bash
 root@salt:~# salt-run salt.cmd config.get id
-group00_master
+npnog10-vm00_master
 ```
 
 Adding the following line to the master configuration file, `/etc/salt/master`:

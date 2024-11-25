@@ -408,7 +408,7 @@ For example, looking at this line:
 `napalm_logs_listener_logs_ingested_total{address="0.0.0.0",listener_type="udp",port="514"} 30.0`: the metric name is `napalm_logs_listener_logs_ingested_total`, which has three labels: `address`, `listener_type`, `port`; the metric value is `30.0`. This is the instant value at one specific moment. A few seconds later, this value may be different (higher).
 Above each metric, there are two additional lines, `HELP` and `TYPE` which help you understand better the context and the type of the metric, if the naming is not explicit enough.
 
-Using your web browser, navigate to http://group00.labs.apnictraining.net:9443 (again, replace `group00` with the group you have been assigned). Check out the value of `napalm_logs_listener_logs_ingested_total`. Refresh the page, then check this value again. You will notice an increase. Along the time, one specific metric generates a list of such value. 
+Using your web browser, navigate to http://npnog10-vm00.labs.apnictraining.net:9443 (again, replace `npnog10-vm00` with the group you have been assigned). Check out the value of `napalm_logs_listener_logs_ingested_total`. Refresh the page, then check this value again. You will notice an increase. Along the time, one specific metric generates a list of such value. 
 Prometheus scrapes this page at specific intervals, then stores these values in a time series database (TSDB).
 
 In addition to the default napalm-logs metrics, by setting the flag `metrics_include_attributes: true`, there will be some more metrics available, e.g.,
@@ -467,7 +467,7 @@ scrape_configs:
     - targets: ['napalm-logs:9443']
 </pre>
 
-Our Prometheus instance only scrapes the napalm-logs metrics. Using a web browser, we can open Prometheus to visualise the metrics: http://group00.labs.apnictraining.net:9090
+Our Prometheus instance only scrapes the napalm-logs metrics. Using a web browser, we can open Prometheus to visualise the metrics: http://npnog10-vm00.labs.apnictraining.net:9090
 
 In the _Expression_ box, if you start typing `napalm_logs_`, an autocomplete list of choices will appear from which you can select the list of metrics Prometheus is aware of. For example, selecting `napalm_logs_device_published_messages_attrs_total`, you can watch the instant value of the metrics, or a plotted on a graph, which makes it easier to understand the evolution in time:
 
@@ -475,7 +475,7 @@ In the _Expression_ box, if you start typing `napalm_logs_`, an autocomplete lis
 
 ![](images/prometheus_metrics_graph.png)
 
-But there's a nicer way to plot the metrics, using Grafana. Open your web browser at http://group00.labs.apnictraining.net:3000. The username and password is `admin` / `admin`. If it asks to change the password, click _Skip_. In the left hand menu bar, go to _Configuration_ (the penultimate icon to the bottom, the wheel), and click on _Data Sources_. On the new page, click on _Add data source_. In here, hover _Prometheus_ and click _Select_. 
+But there's a nicer way to plot the metrics, using Grafana. Open your web browser at http://npnog10-vm00.labs.apnictraining.net:3000. The username and password is `admin` / `admin`. If it asks to change the password, click _Skip_. In the left hand menu bar, go to _Configuration_ (the penultimate icon to the bottom, the wheel), and click on _Data Sources_. On the new page, click on _Add data source_. In here, hover _Prometheus_ and click _Select_. 
 Simply complete the _URL_ field, under the _HTTP_ section, then click _Save & Test_:
 
 ![](images/grafana_configure_source.png)

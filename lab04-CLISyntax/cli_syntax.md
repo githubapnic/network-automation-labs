@@ -22,7 +22,7 @@ Please contact your system administrator.
 Add correct host key in /home/apnic/.ssh/known_hosts to get rid of this message.
 Offending ECDSA key in /home/apnic/.ssh/known_hosts:56
   remove with:
-  ssh-keygen -f "/home/apnic/.ssh/known_hosts" -R "groupXX.labs.apnictraining.net"
+  ssh-keygen -f "/home/apnic/.ssh/known_hosts" -R "npnog10-vmXX.labs.apnictraining.net"
 Host key for group105.labs.apnictraining.net has changed and you have requested strict checking.
 Host key verification failed.
 </pre>
@@ -30,16 +30,16 @@ Host key verification failed.
 The easiest fix is to delete the old key from the known_hosts file.
 
 <pre>
-ssh-keygen -f "/home/apnic/.ssh/known_hosts" -R "groupXX.labs.apnictraining.net"
+ssh-keygen -f "/home/apnic/.ssh/known_hosts" -R "npnog10-vmXX.labs.apnictraining.net"
 </pre>
 
 Otherwise, to bypass this check you can try this command:
 
 ```bash
-ssh -o "StrictHostKeyChecking no" -i salt-lab.key root@groupXX.labs.apnictraining.net
+ssh -o "StrictHostKeyChecking no" -i salt-lab.key root@npnog10-vmXX.labs.apnictraining.net
 ```
 
-Replace groupXX with the allocated group.
+Replace npnog10-vmXX with the allocated group.
 
 ## Part-1: Targeting using Minion ID
 

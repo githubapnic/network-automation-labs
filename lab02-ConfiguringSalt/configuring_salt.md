@@ -1,7 +1,7 @@
 ![](images/apnic_logo.png)
 # LAB: Configuring Salt
 
-**Note**: In the following examples below, we will use ``group00`` as our machine, but you will need to use the `groupXX` you have assigned.
+**Note**: In the following examples below, we will use ``npnog10-vm00`` as our machine, but you will need to use the `npnog10-vmXX` you have assigned.
 
 ## Part-1: Configuring the Salt Minion
 
@@ -24,7 +24,7 @@ salt-minion -l debug
 ```
 
 <pre>
-root@group00:~# salt-minion -l debug
+root@npnog10-vm00:~# salt-minion -l debug
 [DEBUG   ] Reading configuration from /etc/salt/minion
 [DEBUG   ] Including configuration from '/etc/salt/minion.d/_schedule.conf'
 [DEBUG   ] Reading configuration from /etc/salt/minion.d/_schedule.conf
@@ -78,14 +78,14 @@ Two of the most important configuration options are **pillar_roots** and **file_
 
 Before diving further into deeper configuration aspects, let's do a cold start. 
 
-Open a new terminal window and ssh to the groupXX server. Execute the following command to start the Salt Master in debug mode and let it run in the foreground:
+Open a new terminal window and ssh to the npnog10-vmXX server. Execute the following command to start the Salt Master in debug mode and let it run in the foreground:
 
 ```bash
 salt-master -l debug
 ```
 
 <pre>
-root@group00:~# salt-master -l debug
+root@npnog10-vm00:~# salt-master -l debug
 [DEBUG   ] Reading configuration from /etc/salt/master
 [DEBUG   ] Configuration file path: /etc/salt/master
 
@@ -97,12 +97,12 @@ root@group00:~# salt-master -l debug
 As a Salt Minion is trying to connect to this Master (the Minion started in `Part-1`), you should notice the following repetitive logs:
 
 <pre>
-[INFO    ] New public key for group00 placed in pending
-[DEBUG   ] Sending event: tag = salt/auth; data = {'id': 'group00', 'pub': '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5HwMbFdfOTH9VaV3So+o\npzQApxXDpJwlF7DrqnQXEuQdrBs4AEdt0KPVOK2qmDlxHOjqrqfVxtvdULkDa5T5\nA1BJPPQwJdg5DHVRz/OeWOS1/DkWyXCwvs2FWYzeodzZBI6beirjpJNIeAv4A2Hd\nN2f7YIQOJNjUwdzJKRLPKPV0PQxDALE33VvGWBQuPzhmPSMqFhpt9EZgaTyXm9oz\nkqEd+zfT+uhtYeAAcjlEStfT+gnt4ZAjCkas80YqsQOSx9Wk0O2PmqF2nUUkEZ6g\n6sC0Pjm5gmOR8No/WSBA8rejcENs3VIYCK5XBPIch9a/g14Lyy3BeP0A8cJEATD0\nfQIDAQAB\n-----END PUBLIC KEY-----', 'act': 'pend', '_stamp': '2021-01-04T16:56:02.004868', 'result': True}
-[INFO    ] Authentication request from group00
-[INFO    ] Authentication failed from host salt, the key is in pending and needs to be accepted with salt-key -a group00
-[DEBUG   ] Sending event: tag = salt/auth; data = {'id': 'group00', 'pub': '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5HwMbFdfOTH9VaV3So+o\npzQApxXDpJwlF7DrqnQXEuQdrBs4AEdt0KPVOK2qmDlxHOjqrqfVxtvdULkDa5T5\nA1BJPPQwJdg5DHVRz/OeWOS1/DkWyXCwvs2FWYzeodzZBI6beirjpJNIeAv4A2Hd\nN2f7YIQOJNjUwdzJKRLPKPV0PQxDALE33VvGWBQuPzhmPSMqFhpt9EZgaTyXm9oz\nkqEd+zfT+uhtYeAAcjlEStfT+gnt4ZAjCkas80YqsQOSx9Wk0O2PmqF2nUUkEZ6g\n6sC0Pjm5gmOR8No/WSBA8rejcENs3VIYCK5XBPIch9a/g14Lyy3BeP0A8cJEATD0\nfQIDAQAB\n-----END PUBLIC KEY-----', 'act': 'pend', '_stamp': '2021-01-04T16:56:12.019121', 'result': True}
-[INFO    ] Authentication request from group00
+[INFO    ] New public key for npnog10-vm00 placed in pending
+[DEBUG   ] Sending event: tag = salt/auth; data = {'id': 'npnog10-vm00', 'pub': '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5HwMbFdfOTH9VaV3So+o\npzQApxXDpJwlF7DrqnQXEuQdrBs4AEdt0KPVOK2qmDlxHOjqrqfVxtvdULkDa5T5\nA1BJPPQwJdg5DHVRz/OeWOS1/DkWyXCwvs2FWYzeodzZBI6beirjpJNIeAv4A2Hd\nN2f7YIQOJNjUwdzJKRLPKPV0PQxDALE33VvGWBQuPzhmPSMqFhpt9EZgaTyXm9oz\nkqEd+zfT+uhtYeAAcjlEStfT+gnt4ZAjCkas80YqsQOSx9Wk0O2PmqF2nUUkEZ6g\n6sC0Pjm5gmOR8No/WSBA8rejcENs3VIYCK5XBPIch9a/g14Lyy3BeP0A8cJEATD0\nfQIDAQAB\n-----END PUBLIC KEY-----', 'act': 'pend', '_stamp': '2021-01-04T16:56:02.004868', 'result': True}
+[INFO    ] Authentication request from npnog10-vm00
+[INFO    ] Authentication failed from host salt, the key is in pending and needs to be accepted with salt-key -a npnog10-vm00
+[DEBUG   ] Sending event: tag = salt/auth; data = {'id': 'npnog10-vm00', 'pub': '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5HwMbFdfOTH9VaV3So+o\npzQApxXDpJwlF7DrqnQXEuQdrBs4AEdt0KPVOK2qmDlxHOjqrqfVxtvdULkDa5T5\nA1BJPPQwJdg5DHVRz/OeWOS1/DkWyXCwvs2FWYzeodzZBI6beirjpJNIeAv4A2Hd\nN2f7YIQOJNjUwdzJKRLPKPV0PQxDALE33VvGWBQuPzhmPSMqFhpt9EZgaTyXm9oz\nkqEd+zfT+uhtYeAAcjlEStfT+gnt4ZAjCkas80YqsQOSx9Wk0O2PmqF2nUUkEZ6g\n6sC0Pjm5gmOR8No/WSBA8rejcENs3VIYCK5XBPIch9a/g14Lyy3BeP0A8cJEATD0\nfQIDAQAB\n-----END PUBLIC KEY-----', 'act': 'pend', '_stamp': '2021-01-04T16:56:12.019121', 'result': True}
+[INFO    ] Authentication request from npnog10-vm00
 </pre>
 
 As the logs state, in order to have the Minion connected to this Master, we must accept its key by running (Return to the open terminal window that is already logged into the server):
@@ -113,21 +113,21 @@ salt-key -L
 ```
 
 <pre>
-root@group00:~# salt-key -y -a group00
+root@npnog10-vm00:~# salt-key -y -a npnog10-vm00
 The following keys are going to be accepted:
 Unaccepted Keys:
-group00
-Key for minion group00 accepted.
+npnog10-vm00
+Key for minion npnog10-vm00 accepted.
 </pre>
 
 Switching to the terminal window where the Salt Master is still running, we can notice the following logs:
 
 <pre>
-[INFO    ] Authentication request from group00
-[INFO    ] Authentication accepted from group00
+[INFO    ] Authentication request from npnog10-vm00
+[INFO    ] Authentication accepted from npnog10-vm00
 [DEBUG   ] salt.crypt.get_rsa_pub_key: Loading public key
-[DEBUG   ] Sending event: tag = salt/auth; data = {'id': 'group00', 'pub': '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5HwMbFdfOTH9VaV3So+o\npzQApxXDpJwlF7DrqnQXEuQdrBs4AEdt0KPVOK2qmDlxHOjqrqfVxtvdULkDa5T5\nA1BJPPQwJdg5DHVRz/OeWOS1/DkWyXCwvs2FWYzeodzZBI6beirjpJNIeAv4A2Hd\nN2f7YIQOJNjUwdzJKRLPKPV0PQxDALE33VvGWBQuPzhmPSMqFhpt9EZgaTyXm9oz\nkqEd+zfT+uhtYeAAcjlEStfT+gnt4ZAjCkas80YqsQOSx9Wk0O2PmqF2nUUkEZ6g\n6sC0Pjm5gmOR8No/WSBA8rejcENs3VIYCK5XBPIch9a/g14Lyy3BeP0A8cJEATD0\nfQIDAQAB\n-----END PUBLIC KEY-----', 'act': 'accept', '_stamp': '2021-01-04T16:59:22.178228', 'result': True}
-[DEBUG   ] Sending event: tag = minion_start; data = {'id': 'group00', 'pretag': None, 'data': 'Minion group00 started at Mon Jan  4 16:59:22 2021', 'cmd': '_minion_event', 'tag': 'minion_start', '_stamp': '2021-01-04T16:59:22.500261'}
+[DEBUG   ] Sending event: tag = salt/auth; data = {'id': 'npnog10-vm00', 'pub': '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5HwMbFdfOTH9VaV3So+o\npzQApxXDpJwlF7DrqnQXEuQdrBs4AEdt0KPVOK2qmDlxHOjqrqfVxtvdULkDa5T5\nA1BJPPQwJdg5DHVRz/OeWOS1/DkWyXCwvs2FWYzeodzZBI6beirjpJNIeAv4A2Hd\nN2f7YIQOJNjUwdzJKRLPKPV0PQxDALE33VvGWBQuPzhmPSMqFhpt9EZgaTyXm9oz\nkqEd+zfT+uhtYeAAcjlEStfT+gnt4ZAjCkas80YqsQOSx9Wk0O2PmqF2nUUkEZ6g\n6sC0Pjm5gmOR8No/WSBA8rejcENs3VIYCK5XBPIch9a/g14Lyy3BeP0A8cJEATD0\nfQIDAQAB\n-----END PUBLIC KEY-----', 'act': 'accept', '_stamp': '2021-01-04T16:59:22.178228', 'result': True}
+[DEBUG   ] Sending event: tag = minion_start; data = {'id': 'npnog10-vm00', 'pretag': None, 'data': 'Minion npnog10-vm00 started at Mon Jan  4 16:59:22 2021', 'cmd': '_minion_event', 'tag': 'minion_start', '_stamp': '2021-01-04T16:59:22.500261'}
 </pre>
 
 **Only now, after the Master is running and the key has been accepted, we can see that the Minion is running and usable**
@@ -135,12 +135,12 @@ Switching to the terminal window where the Salt Master is still running, we can 
 To verify, return to the terminal window that is not running the debug session and execute a simple command:
 
 ```bash
-salt 'group*' test.ping
+salt 'npnog10*' test.ping
 ```
 
 <pre>
-root@group00:~# salt 'group*' test.ping
-group00:
+root@npnog10-vm00:~# salt 'npnog10*' test.ping
+npnog10-vm00:
     True
 </pre>
 
@@ -239,13 +239,13 @@ Example:
 base:
   '*':
     - common
-  'group*':
+  'npnog10*':
     - group_common
-  'group00':
-    - group00_data
+  'npnog10-vm00':
+    - npnog10-vm00_data
 </pre>
 
-This _Top File_ instructs Salt to assign the Pillar from the `common.sls` file (notice the `.sls` extension, whereas the `.sls` extension isn't explicitly provided in the _Top File_) to *any* Minion (though the shell-like glob matching through `*`), then `group_common.sls` to any Minion ID matching the `group*` expression (`group01`, `group02`, ...), and, finally, `group00_data.sls` only to the Minion with the exact ID `group00`.
+This _Top File_ instructs Salt to assign the Pillar from the `common.sls` file (notice the `.sls` extension, whereas the `.sls` extension isn't explicitly provided in the _Top File_) to *any* Minion (though the shell-like glob matching through `*`), then `group_common.sls` to any Minion ID matching the `npnog10*` expression (`npnog10-vm01`, `npnog10-vm02`, ...), and, finally, `npnog10-vm00_data.sls` only to the Minion with the exact ID `npnog10-vm00`.
 
 Create the **/srv/salt/pillar/top.sls** file
 
@@ -254,7 +254,7 @@ minion_id=$(cat /etc/salt/minion_id) && group_name=${minion_id%%.*} && cat <<EOF
 base:
   '*':
     - common
-  'group*':
+  'npnog10*':
     - group_common
   '${minion_id}':
     - ${group_name}_data
@@ -275,7 +275,7 @@ echo "common: true" > /srv/salt/pillar/common.sls
 echo "group_common: true" > /srv/salt/pillar/group_common.sls
 ```
 
-**/srv/salt/pillar/group00_data.sls**:
+**/srv/salt/pillar/npnog10-vm00_data.sls**:
 
 ```bash
 echo "group_common: false" > /srv/salt/pillar/${group_name}_data.sls
@@ -288,8 +288,8 @@ salt ${minion_id} pillar.items
 ```
 
 <pre>
-root@group00:~# salt group00 pillar.items
-group00:
+root@npnog10-vm00:~# salt npnog10-vm00 pillar.items
+npnog10-vm00:
     ----------
     common:
         True
@@ -297,7 +297,7 @@ group00:
         False
 </pre>
 
-Notice that the value of `group_common` is `False`, which is what we've configure in the `group00_data.sls` Pillar file, although we've also set it as `True` in the `group_common.sls` Pillar file. This is because the `group00_data.sls` is applied the latter (i.e., the _Top File_ is evaluated in the order it is defined).
+Notice that the value of `group_common` is `False`, which is what we've configure in the `npnog10-vm00_data.sls` Pillar file, although we've also set it as `True` in the `group_common.sls` Pillar file. This is because the `npnog10-vm00_data.sls` is applied the latter (i.e., the _Top File_ is evaluated in the order it is defined).
 
 **Remember to always define the assignments in the Top File in this order, from the least specific, to the most specific, which gives the flexibility to override data with the granularity you desire.**
 
@@ -341,12 +341,12 @@ echo "This is a dummy template." > /srv/salt/templates/example.jinja
 From the Minion, we are able to see the contents of this file, by executing a command, e.g.,
 
 ```bash
-salt group* cp.get_file_str salt://templates/example.jinja
+salt npnog10* cp.get_file_str salt://templates/example.jinja
 ```
 
 <pre>
-root@group00:~# salt group00 cp.get_file_str salt://templates/example.jinja
-group00:
+root@npnog10-vm00:~# salt npnog10-vm00 cp.get_file_str salt://templates/example.jinja
+npnog10-vm00:
     This is a dummy template.
 </pre>
 

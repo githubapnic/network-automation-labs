@@ -176,7 +176,7 @@ salt/job/20210112183105949782/ret/router1	{
 
 `salt/job/20210112182537674816/new` is the new job event, while `salt/job/20210112182537674816/ret/router2` and `salt/job/20210112182537674816/ret/router1` are the return events, all part of the Job ID (JID) `20210112182537674816`.
 
-So nothing has changed from this perspective. But behind the scenes, the `http_logstash` Engine, has also sent these events to Logstash. We can visualise this using Kibana, also part of the ELK stack. For this, we need to open a web browser and go to: **http://group00.labs.apnictraining.net:5601** (replace `group00` with the group you have been assigned).
+So nothing has changed from this perspective. But behind the scenes, the `http_logstash` Engine, has also sent these events to Logstash. We can visualise this using Kibana, also part of the ELK stack. For this, we need to open a web browser and go to: **http://npnog10-vm00.labs.apnictraining.net:5601** (replace `npnog10-vm00` with the group you have been assigned).
 
 Why look into Kibana when we are sending the messages to Logstash? Logstash only receives the logs then sends them to Elasticsearch to be indexed. The logs can then be visualised using Kibana.
 

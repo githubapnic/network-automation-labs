@@ -204,7 +204,7 @@ salt-sproxy \* --preview -l debug
 ```bash
 root@salt:~# salt-sproxy core* --preview -l debug
 [DEBUG   ] Reading configuration from /etc/salt/master
-[DEBUG   ] Using cached minion ID from /etc/salt/minion_id: group00
+[DEBUG   ] Using cached minion ID from /etc/salt/minion_id: npnog10-vm00
 
 ... snip ...
 

@@ -29,7 +29,7 @@ Vault, cloud sources (EC2, S3, Azure), HTTP APIs (in JSON or YAML format), or ot
 others.
 
 For this purpose, we will look into using the `http_json` External Pillar, which queries an API via HTTP, where the data 
-is available in JSON format. At http://group00.labs.apnictraining.net:8888/ there's an API running, and returning a list of 
+is available in JSON format. At http://npnog10-vm00.labs.apnictraining.net:8888/ there's an API running, and returning a list of 
 devices:
 
 ```json
@@ -90,7 +90,7 @@ ext_pillar:
 ```
 
 Notice that the URL referenced is http://http_api:8888/. The port is the same as you've accessed at 
-http://group00.labs.apnictraining.net:8888/ but a little bit different because internally the service is found at `http_api` 
+http://npnog10-vm00.labs.apnictraining.net:8888/ but a little bit different because internally the service is found at `http_api` 
 address.
 
 This is what it needs in order to enable the External Pillar to pull the data from our JSON API. To verify that it's 
@@ -150,7 +150,7 @@ router1:
             spine
 ```
 
-As expected, the data from http://group00.labs.apnictraining.net:8888/ (or http://http_api:8888) is there.
+As expected, the data from http://npnog10-vm00.labs.apnictraining.net:8888/ (or http://http_api:8888) is there.
 
 With this data, a server such as `srv[1..4]` as we've had in the previous labs would be able to start up the Proxy 
 Minion for the devices returned in that HTTP API.
@@ -172,7 +172,7 @@ infrastructure engineers. It encompasses the following aspects of network manage
 - Data circuits - Long-haul communications circuits and providers.
 - Secrets - Encrypted storage of sensitive credentials.
 
-At http://group00.labs.apnictraining.net:8050/ you can find an instance of NetBox running. Click on the top right button to 
+At http://npnog10-vm00.labs.apnictraining.net:8050/ you can find an instance of NetBox running. Click on the top right button to 
 _Log In_, using the following credentials: `apnic` / `APNIC2021`. This would allow us to visualise information as well 
 as updating. You should now have this view:
 
@@ -193,7 +193,7 @@ them. To see more details, we can click on the site name to open a full view pag
 Here we can visualise and edit all the details of the _Lab1_ site, such as Region, Tenant, Address, etc. On the right 
 hand side of the screen, there are also some data center information about this site, such as: devices, racks, rack 
 groups, and topology maps. The topology map is automatically generated based on the data we have provided in NetBox 
-(i.e., devices and cables): http://group00.labs.apnictraining.net:8050/api/extras/topology-maps/1/render/
+(i.e., devices and cables): http://npnog10-vm00.labs.apnictraining.net:8050/api/extras/topology-maps/1/render/
 
 ![](images/netbox_lab1_topology.png)
 
@@ -252,12 +252,12 @@ Here we see the IP addresses allocated to the `lo0` and `Loopback0` interfaces, 
 NetBox has **many** more components to be explored, we've only touched the surface so far. One other important element 
 is the API. NetBox comes with a read-write API that allows you to gather details and update or delete them 
 programatically. From the browser, you can see the API responses (for GET type HTTP requests), by appending `/api` to 
-the URL. The base API URL for `group00` is: http://group00.labs.apnictraining.net:8050/api/.
+the URL. The base API URL for `npnog10-vm00` is: http://npnog10-vm00.labs.apnictraining.net:8050/api/.
 
 To see what the API would respond to one specific element, we similarly have to just insert `/api` at the root of the 
 URL -- for example, if we were looking at the details of `router`, at 
-http://group00.labs.apnictraining.net:8050/dcim/devices/1/, the API response can be seen at 
-http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/:
+http://npnog10-vm00.labs.apnictraining.net:8050/dcim/devices/1/, the API response can be seen at 
+http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/1/:
 
 
 ```json
@@ -268,10 +268,10 @@ http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/:
     "display_name": "router1",
     "device_type": {
         "id": 1,
-        "url": "http://group00.labs.apnictraining.net:8050/api/dcim/device-types/1/",
+        "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/device-types/1/",
         "manufacturer": {
             "id": 5,
-            "url": "http://group00.labs.apnictraining.net:8050/api/dcim/manufacturers/5/",
+            "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/manufacturers/5/",
             "name": "Juniper",
             "slug": "juniper"
         },
@@ -281,19 +281,19 @@ http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/:
     },
     "device_role": {
         "id": 7,
-        "url": "http://group00.labs.apnictraining.net:8050/api/dcim/device-roles/7/",
+        "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/device-roles/7/",
         "name": "Router",
         "slug": "router"
     },
     "tenant": {
         "id": 1,
-        "url": "http://group00.labs.apnictraining.net:8050/api/tenancy/tenants/1/",
+        "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/tenancy/tenants/1/",
         "name": "APNIC",
         "slug": "apnic"
     },
     "platform": {
         "id": 3,
-        "url": "http://group00.labs.apnictraining.net:8050/api/dcim/platforms/3/",
+        "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/platforms/3/",
         "name": "Juniper Junos",
         "slug": "juniper-junos"
     },
@@ -301,13 +301,13 @@ http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/:
     "asset_tag": null,
     "site": {
         "id": 1,
-        "url": "http://group00.labs.apnictraining.net:8050/api/dcim/sites/1/",
+        "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/sites/1/",
         "name": "Lab1",
         "slug": "lab1"
     },
     "rack": {
         "id": 1,
-        "url": "http://group00.labs.apnictraining.net:8050/api/dcim/racks/1/",
+        "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/racks/1/",
         "name": "R1",
         "display_name": "R1"
     },
@@ -323,13 +323,13 @@ http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/:
     },
     "primary_ip": {
         "id": 2,
-        "url": "http://group00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/",
+        "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/",
         "family": 4,
         "address": "172.17.1.1/32"
     },
     "primary_ip4": {
         "id": 2,
-        "url": "http://group00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/",
+        "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/",
         "family": 4,
         "address": "172.17.1.1/32"
     },
@@ -351,13 +351,13 @@ http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/:
 From the command line, we can query as:
 
 ```
-root@salt:~# curl http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/
-{"id":1,"name":"router1","display_name":"router1","device_type":{"id":1,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/device-types/1/","manufacturer":{"id":5,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/manufacturers/5/","name":"Juniper","slug":"juniper"},"model":"vMX","slug":"vmx","display_name":"Juniper vMX"},"device_role":{"id":7,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/device-roles/7/","name":"Router","slug":"router"},"tenant":{"id":1,"url":"http://group00.labs.apnictraining.net:8050/api/tenancy/tenants/1/","name":"APNIC","slug":"apnic"},"platform":{"id":3,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/platforms/3/","name":"Juniper Junos","slug":"juniper-junos"},"serial":"VM601162CA2B","asset_tag":null,"site":{"id":1,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/sites/1/","name":"Lab1","slug":"lab1"},"rack":{"id":1,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/racks/1/","name":"R1","display_name":"R1"},"position":20,"face":{"value":0,"label":"Front"},"parent_device":null,"status":{"value":1,"label":"Active"},"primary_ip":{"id":2,"url":"http://group00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/","family":4,"address":"172.17.1.1/32"},"primary_ip4":{"id":2,"url":"http://group00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/","family":4,"address":"172.17.1.1/32"},"primary_ip6":null,"cluster":null,"virtual_chassis":null,"vc_position":null,"vc_priority":null,"comments":"","local_context_data":null,"tags":[],"custom_fields":{},"config_context":{},"created":"2019-08-12","last_updated":"2021-01-29T13:42:19.668741Z"}
+root@salt:~# curl http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/1/
+{"id":1,"name":"router1","display_name":"router1","device_type":{"id":1,"url":"http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/device-types/1/","manufacturer":{"id":5,"url":"http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/manufacturers/5/","name":"Juniper","slug":"juniper"},"model":"vMX","slug":"vmx","display_name":"Juniper vMX"},"device_role":{"id":7,"url":"http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/device-roles/7/","name":"Router","slug":"router"},"tenant":{"id":1,"url":"http://npnog10-vm00.labs.apnictraining.net:8050/api/tenancy/tenants/1/","name":"APNIC","slug":"apnic"},"platform":{"id":3,"url":"http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/platforms/3/","name":"Juniper Junos","slug":"juniper-junos"},"serial":"VM601162CA2B","asset_tag":null,"site":{"id":1,"url":"http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/sites/1/","name":"Lab1","slug":"lab1"},"rack":{"id":1,"url":"http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/racks/1/","name":"R1","display_name":"R1"},"position":20,"face":{"value":0,"label":"Front"},"parent_device":null,"status":{"value":1,"label":"Active"},"primary_ip":{"id":2,"url":"http://npnog10-vm00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/","family":4,"address":"172.17.1.1/32"},"primary_ip4":{"id":2,"url":"http://npnog10-vm00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/","family":4,"address":"172.17.1.1/32"},"primary_ip6":null,"cluster":null,"virtual_chassis":null,"vc_position":null,"vc_priority":null,"comments":"","local_context_data":null,"tags":[],"custom_fields":{},"config_context":{},"created":"2019-08-12","last_updated":"2021-01-29T13:42:19.668741Z"}
 ```
 
 Here we notice several details we've seen in the web interface. But the interfaces are missing. This is because the 
 interfaces are organised under a separate NetBox endpoint (however still under the DCIM app): 
-http://group00.labs.apnictraining.net:8050/api/dcim/interface-connections/?device=router1:
+http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interface-connections/?device=router1:
 
 ```json
 {
@@ -368,10 +368,10 @@ http://group00.labs.apnictraining.net:8050/api/dcim/interface-connections/?devic
         {
             "interface_a": {
                 "id": 4,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/4/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/4/",
                 "device": {
                     "id": 3,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/3/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/3/",
                     "name": "core1",
                     "display_name": "core1"
                 },
@@ -384,10 +384,10 @@ http://group00.labs.apnictraining.net:8050/api/dcim/interface-connections/?devic
             },
             "interface_b": {
                 "id": 263,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/263/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/263/",
                 "device": {
                     "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/1/",
                     "name": "router1",
                     "display_name": "router1"
                 },
@@ -406,10 +406,10 @@ http://group00.labs.apnictraining.net:8050/api/dcim/interface-connections/?devic
         {
             "interface_a": {
                 "id": 135,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/135/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/135/",
                 "device": {
                     "id": 4,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/4/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/4/",
                     "name": "core2",
                     "display_name": "core2"
                 },
@@ -422,10 +422,10 @@ http://group00.labs.apnictraining.net:8050/api/dcim/interface-connections/?devic
             },
             "interface_b": {
                 "id": 264,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/264/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/264/",
                 "device": {
                     "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/1/",
                     "name": "router1",
                     "display_name": "router1"
                 },
@@ -444,10 +444,10 @@ http://group00.labs.apnictraining.net:8050/api/dcim/interface-connections/?devic
         {
             "interface_a": {
                 "id": 262,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/262/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/262/",
                 "device": {
                     "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/1/",
                     "name": "router1",
                     "display_name": "router1"
                 },
@@ -460,10 +460,10 @@ http://group00.labs.apnictraining.net:8050/api/dcim/interface-connections/?devic
             },
             "interface_b": {
                 "id": 359,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/359/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/359/",
                 "device": {
                     "id": 2,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/2/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/2/",
                     "name": "router2",
                     "display_name": "router2"
                 },
@@ -485,7 +485,7 @@ http://group00.labs.apnictraining.net:8050/api/dcim/interface-connections/?devic
 
 This provides the interface details, and connections, but there's still some important information missing: IP 
 addresses. As we've seen previously, IP addresses belong to the IPAM app. The API URL (for the IP addresses of 
-`router1`) is: http://group00.labs.apnictraining.net:8050/api/ipam/ip-addresses/?device=router1:
+`router1`) is: http://npnog10-vm00.labs.apnictraining.net:8050/api/ipam/ip-addresses/?device=router1:
 
 ```json
 {
@@ -509,10 +509,10 @@ addresses. As we've seen previously, IP addresses belong to the IPAM app. The AP
             "role": null,
             "interface": {
                 "id": 261,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/261/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/261/",
                 "device": {
                     "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/1/",
                     "name": "router1",
                     "display_name": "router1"
                 },
@@ -543,10 +543,10 @@ addresses. As we've seen previously, IP addresses belong to the IPAM app. The AP
             "role": null,
             "interface": {
                 "id": 262,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/262/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/262/",
                 "device": {
                     "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/1/",
                     "name": "router1",
                     "display_name": "router1"
                 },
@@ -577,10 +577,10 @@ addresses. As we've seen previously, IP addresses belong to the IPAM app. The AP
             "role": null,
             "interface": {
                 "id": 263,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/263/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/263/",
                 "device": {
                     "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/1/",
                     "name": "router1",
                     "display_name": "router1"
                 },
@@ -611,10 +611,10 @@ addresses. As we've seen previously, IP addresses belong to the IPAM app. The AP
             "role": null,
             "interface": {
                 "id": 264,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/264/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/264/",
                 "device": {
                     "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/1/",
                     "name": "router1",
                     "display_name": "router1"
                 },
@@ -648,10 +648,10 @@ addresses. As we've seen previously, IP addresses belong to the IPAM app. The AP
             },
             "interface": {
                 "id": 357,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/357/",
+                "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/interfaces/357/",
                 "device": {
                     "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+                    "url": "http://npnog10-vm00.labs.apnictraining.net:8050/api/dcim/devices/1/",
                     "name": "router1",
                     "display_name": "router1"
                 },
@@ -672,7 +672,7 @@ addresses. As we've seen previously, IP addresses belong to the IPAM app. The AP
 
 This is a very high level overview of how you can navigate through the NetBox API and explore the apps and their 
 endpoints to find the data. It may not always be obvious where to look, but the API comes with an automatically 
-generated documentation: http://group00.labs.apnictraining.net:8050/api/docs/ where you can find out more details about every 
+generated documentation: http://npnog10-vm00.labs.apnictraining.net:8050/api/docs/ where you can find out more details about every 
 possible HTTP request you can make through the API.
 
 ## Part-3: Using NetBox to populate device information
@@ -693,10 +693,10 @@ ext_pillar:
 ```
 
 The URL in this case is `http://netbox:8001/api`, as this is where NetBox can be found internally 
-(http://group00.labs.apnictraining.net:8050/api would also work, but would have been host-specific, while 
+(http://npnog10-vm00.labs.apnictraining.net:8050/api would also work, but would have been host-specific, while 
 http://netbox:8001/api is the same on every machine). The `api_token` is a generated key which can be used to 
 authenticate the HTTP API requests. This is per-user based, and can be managed at 
-http://group00.labs.apnictraining.net:8050/user/api-tokens/:
+http://npnog10-vm00.labs.apnictraining.net:8050/user/api-tokens/:
 
 ![](images/netbox_api_token.png)
 

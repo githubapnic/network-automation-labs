@@ -39,7 +39,7 @@ ssh admin@router1
 ```
 
 <pre>
-root@group00:~# ssh apnic@router1
+root@npnog10-vm00:~# ssh apnic@router1
 Warning: Permanently added the ECDSA host key for IP address '172.22.0.18' to the list of known hosts.
 Enter passphrase for key '/root/.ssh/id_ed25519': 
 Password:

@@ -9,8 +9,8 @@
 
 **VM Details** 
 <pre>
-[group01.labs.apnictraining.net]
-[group02.labs.apnictraining.net]
+[npnog10-vm01.labs.apnictraining.net]
+[npnog10-vm02.labs.apnictraining.net]
 ......  
 [group10.labs.apnictraining.net]
 [group11.labs.apnictraining.net]
@@ -44,7 +44,7 @@ The most reliable way to check the OS release information is checking the `/etc/
 cat /etc/os-release   
 ```
 <pre>
-root@group00:~# cat /etc/os-release
+root@npnog10-vm00:~# cat /etc/os-release
 PRETTY_NAME="Debian GNU/Linux 10 (buster)"
 NAME="Debian GNU/Linux"
 VERSION_ID="10"
@@ -83,7 +83,7 @@ apt-get update
 ```
 
 ```
-root@group00:~# apt-get update
+root@npnog10-vm00:~# apt-get update
 Hit:1 http://deb.debian.org/debian buster InRelease
 Hit:2 http://deb.debian.org/debian-security buster/updates InRelease
 Hit:3 http://deb.debian.org/debian buster-updates InRelease
@@ -100,7 +100,7 @@ All packages are up to date.
 apt-get install salt-master
 ```
 <pre>
-root@group00:~# apt-get install -y salt-master
+root@npnog10-vm00:~# apt-get install -y salt-master
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
@@ -137,7 +137,7 @@ Processing triggers for systemd (232-25+deb9u12) ...
 apt-get install -y salt-minion
 ```
 <pre>
-root@group00:~# apt-get install -y salt-minion
+root@npnog10-vm00:~# apt-get install -y salt-minion
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
@@ -166,7 +166,7 @@ salt-master -V
 ```
 
 <pre>
-root@group00:~# salt-master -V
+root@npnog10-vm00:~# salt-master -V
 Salt Version:
           Salt: 3006.6
 
