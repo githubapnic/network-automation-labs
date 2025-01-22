@@ -87,12 +87,6 @@ salt-proxy --proxyid router1 -d
   RequestsDependencyWarning)
 </pre>
 
-Add **2> /dev/null** to the end of the commands to suppress the python error. For example:
-
-```bash
-salt-proxy --proxyid router1 -d 2> /dev/null
-```
-
 Continue the same operation for `core1`, `spine1`, and `leaf1`. 
 
 ```bash
@@ -521,6 +515,8 @@ pkill -9 -e -f salt-proxy
 
 Without changing anything in the Pillar Top File, we only need to update the individual Pillar file for each platform.
 
+**ONLY RUN THE _SED_ COMMANDS ONCE**
+
 Update **/srv/salt/pillar/junos.sls** by completing these commands
 
 ```bash
@@ -576,7 +572,7 @@ With that said, we can then start the Proxy Minions for each, in the exact same 
 Start router1 (Junos)
 
 ```bash
-salt-proxy --proxyid router1 -d 2> /dev/null
+salt-proxy --proxyid router1 -d
 ```
 
 **NOTE** Sometimes the pkill is still shutting down the proxy and you may see this error.
@@ -591,19 +587,19 @@ If you see this error, just run the command again.
 Continue the same operation for core1 (Cisco IOSXR)
 
 ```bash
-salt-proxy --proxyid core1 -d 2> /dev/null
+salt-proxy --proxyid core1 -d
 ```
 
 Continue the same operation for leaf1 (Cisco IOS)
 
 ```bash
-salt-proxy --proxyid leaf1 -d 2> /dev/null
+salt-proxy --proxyid leaf1 -d 
 ```
 
 Continue the same operation for spine1 (Arista vEOS)
 
 ```bash
-salt-proxy --proxyid spine1 -d 2> /dev/null
+salt-proxy --proxyid spine1 -d 
 ```
 
 Confirm the salt-proxy processes that are running
