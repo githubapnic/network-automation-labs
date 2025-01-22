@@ -678,6 +678,7 @@ leaf1:
 ...
 </pre>
 
+**If you get an error on the above, have a look at the fsm templates for erroring devices and see if you can solve it!**
 ---
 **End of Lab**
 
