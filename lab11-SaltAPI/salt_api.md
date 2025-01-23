@@ -20,7 +20,7 @@ Besides all of these, there's a new component that we'll need in _Part-2_, which
 The Salt API requires authentication, and therefore we also need to configure the `external_auth` subsystem. In the Master configuration, let's provision and grant access to an username, e.g., `test-usr`, which will have access to run any Salt function, any Salt Runner, and any other Salt job. For testing purposes, we'll use the `auto` External Authentication which doesn't have any external dependencies to set up, but this is highly discouraged in production environments. The configuration is as simple as:
 
 ```bash
-grep external_auth -A 9 /etc/salt/master
+grep external_auth -A 13 /etc/salt/master
 ```
 
 <pre>
@@ -41,6 +41,8 @@ grep cherry -A 2 /etc/salt/master
 ```
 
 ```yaml
+netapi_enable_clients:
+  - local
 rest_cherrypy:
   port: 8080
   disable_ssl: true
