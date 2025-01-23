@@ -317,7 +317,7 @@ beacons:
   napalm:
     - ntp.stats:
         synchronized: false
-    - interval: 60
+    interval: 60
 </pre>
 
 This configuration will ensure that the NAPALM Beacon is executed every 60 seconds (due to the value provided in `interval`), and it executes the `ntp.stats` function, to which it checks whether there's an unsynchronized association.
@@ -374,7 +374,7 @@ beacons:
     - net.interfaces:
         '*':
           is_up: false
-    - interval: 60
+    interval: 60
 </pre>
 
 Using this pattern, we are able to extend this functionality to endless use-cases.
