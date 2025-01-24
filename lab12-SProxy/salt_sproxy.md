@@ -710,12 +710,20 @@ In addition to the what we've seen before, in _Lab 11_, there are two new client
 From the previous lab, again, we have executed the following request:
 
 ```bash
+curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=local -d tgt=router1 -d fun=test.ping
+```
+
+```bash
 root@salt:~# curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=local -d tgt=router1 -d fun=test.ping
 {"return": [{"router1": true}]}
 ```
 
 This used the `local` client. As mention above, in _Part-2_, the local client is not available for this operation, so we 
 switch to using `sproxy` instead:
+
+```bash
+curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=sproxy -d tgt=router1 -d fun=test.ping
+```
 
 ```bash
 root@salt:~# curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=sproxy -d tgt=router1 -d fun=test.ping
