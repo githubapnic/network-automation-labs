@@ -1,7 +1,7 @@
 ![](images/apnic_logo.png)
 # LAB: Introduction to configuration management using Salt
 
-As we will be showcasing different mechanisms, depending on the underlying library used (i.e., NAPALM, Netmiko or junos-enzc), the Proxy Minions are not already started, and we will need to start them up as needed - after updating the Pillar data to point to the appropriate Proxy Module.
+As we will be showcasing different mechanisms, depending on the underlying library used (i.e., NAPALM, Netmiko or junos-enzc), the __Proxy Minions ARE NOT already started__, and we will need to start them up as needed - after updating the Pillar data to point to the appropriate Proxy Module.
 
 Confirm the Pillar Top File is configured as follows:
 
@@ -72,6 +72,7 @@ Once we've verified the contents of the files, let's start one Proxy Minion for 
 ```bash
 salt-proxy -l debug --proxyid router1
 ```
+<b><i>If you have an issue connecting to router1, try router2</i></b>
 
 If everything goes normally, we can then SIGKILL (Ctrl-C) the process, and start it in daemon mode:
 
@@ -79,13 +80,6 @@ If everything goes normally, we can then SIGKILL (Ctrl-C) the process, and start
 salt-proxy --proxyid router1 -d
 ```
 
-**Note**: There may be a python error, but the command completes succesfully
-
-<pre>
-  root@salt:~# salt-proxy --proxyid router1 -d
-/usr/local/lib/python3.6/site-packages/requests/__init__.py:91: RequestsDependencyWarning: urllib3 (1.26.18) or chardet (3.0.4) doesn't match a supported version!
-  RequestsDependencyWarning)
-</pre>
 
 Continue the same operation for `core1`, `spine1`, and `leaf1`. 
 
@@ -797,7 +791,7 @@ salt router* grains.items
 In fact, the Junos Proxy Module, puts the Grains under a dedicated key, `junos_facts`, so whenever you will want to access this data, you will need to nest it under `junos_facts`, e.g.,
 
 ```bash
-salt -G junos_facts:model:VMX --preview
+salt -G junos_facts:model:EX9214 --preview
 ```
 
 <pre>

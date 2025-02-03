@@ -16,6 +16,38 @@ would suffice for now:
 ```bash
 sed -i '/#master: salt/a master: localhost' /etc/salt/minion
 ```
+**All we are doing in the above command is using `sed`  to add a new line to set the salt master to localhost** - If you want to hand edit the file, feel free to do so 
+
+Verify that the file has been added correctly:
+
+```bash
+cat /etc/salt/minion | head -n 20
+```
+
+```
+root@group100:~# cat /etc/salt/minion | head -n 20
+##### Primary configuration settings #####
+##########################################
+# This configuration file is used to manage the behavior of the Salt Minion.
+# With the exception of the location of the Salt Master Server, values that are
+# commented out but have an empty line after the comment are defaults that need
+# not be set in the config. If there is no blank line after the comment, the
+# value is presented as an example and is not the default.
+
+# Per default the minion will automatically include all config files
+# from minion.d/*.conf (minion.d is a directory in the same directory
+# as the main minion config file).
+#default_include: minion.d/*.conf
+
+# Set the location of the salt master server. If the master server cannot be
+# resolved, then the minion will fail to start.
+#master: salt
+master: localhost
+
+# Set http proxy information for the minion when doing requests
+#proxy_host:
+```
+
 
 Once this file is saved, we can start the Salt Minion. For the beginning, starting in debug mode:
 
@@ -38,16 +70,15 @@ root@group00:~# salt-minion -l debug
 At the end you will see the following messages repeatedly:
 
 <pre>
-salt.exceptions.SaltClientError: Attempt to authenticate with the salt master failed with timeout error
-</pre>
-
-or:
-
-<pre>
-[ERROR   ] Error while bringing up minion for multi-master. Is master at localhost responding?
+[DEBUG   ] SaltReqTimeoutError, retrying. (1/7)
+[ERROR   ] Minion unable to successfully connect to a Salt Master.
+[DEBUG   ] SaltReqTimeoutError, retrying. (2/7)
+[DEBUG   ] SaltReqTimeoutError, retrying. (3/7)
 </pre>
 
 These messages are normal, it means that the Minion is unable to connect to the Salt Master we've told it to connect to (which is not currently started). As everything looks as expected, we can terminate this process, and start it in daemon mode, so the Salt Minion will be running in background:
+
+Press `ctrl+c` to exit from this and run the minion in the background:
 
 ```bash
 salt-minion -d
@@ -78,17 +109,18 @@ Two of the most important configuration options are **pillar_roots** and **file_
 
 Before diving further into deeper configuration aspects, let's do a cold start. 
 
-Open a new terminal window and ssh to the groupXX server. Execute the following command to start the Salt Master in debug mode and let it run in the foreground:
+__Open a new terminal window__ and ssh to the groupXX server. Execute the following command to start the Salt Master in debug mode and let it run in the foreground:
 
 ```bash
 salt-master -l debug
 ```
 
 <pre>
-root@group00:~# salt-master -l debug
-[DEBUG   ] Reading configuration from /etc/salt/master
-[DEBUG   ] Configuration file path: /etc/salt/master
-
+root@group100:~# salt-minion -l debug
+[DEBUG   ] Reading configuration from /etc/salt/minion
+[DEBUG   ] Guessing ID. The id can be explicitly set in /etc/salt/minion
+[DEBUG   ] Found minion id from generate_minion_id(): group100
+[DEBUG   ] Configuration file path: /etc/salt/minion
 ...
 ... snip ...
 ...
@@ -108,7 +140,22 @@ As a Salt Minion is trying to connect to this Master (the Minion started in `Par
 As the logs state, in order to have the Minion connected to this Master, we must accept its key by running (Return to the open terminal window that is already logged into the server):
 
 ```bash
-salt-key -y -a $(cat /etc/salt/minion_id)
+salt-key -L
+```
+
+```
+root@group100:~# salt-key -L
+Accepted Keys:
+Denied Keys:
+Unaccepted Keys:
+group100
+Rejected Keys:
+```
+You can see in the above output that there is an unaccepted key for our server. 
+To Autorise the key, we need to tell salt to accept the key
+
+```bash
+salt-key -y -a $minion_id
 salt-key -L
 ```
 
@@ -203,7 +250,7 @@ Create the folder structure mentioned in the above settings, plus extra for the 
 mkdir -p /srv/salt/states /srv/salt/templates/ /srv/salt/pillar /tmp/pillar
 ```
 
-Return to the terminal where the Salt Master debug is runninge, and restart the Salt Master process in debug mode, leaving it running in the foreground:
+**Return to the terminal where the Salt Master debug is running**, and restart the Salt Master process in debug mode, leaving it running in the foreground:
 
 **Note**: press `ctrl+c` to quit the running process
 
@@ -260,6 +307,25 @@ base:
     - ${group_name}_data
 EOF
 ```
+Validate that our `top.sls` file is correct
+
+```bash
+cat /srv/salt/pillar/top.sls
+```
+
+Output should look similar to the below, but with your group number:
+
+```
+root@group100:~# cat /srv/salt/pillar/top.sls
+base:
+  '*':
+    - common
+  'group*':
+    - group_common
+  'group100':
+    - group100_data
+```
+
 
 Let's populate those files and check the Pillar data.
 

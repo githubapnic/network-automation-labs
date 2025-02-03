@@ -24,7 +24,7 @@
 Once successfully logged in, the prompt will change to:
 
 <pre>
-root@salt:~#
+root@group00:~#
 </pre>
 
 **Preinstalled packages**
@@ -97,7 +97,7 @@ All packages are up to date.
 4. Install the Salt Master
 
 ```bash
-apt-get install salt-master
+apt-get install -y salt-master
 ```
 <pre>
 root@group00:~# apt-get install -y salt-master

@@ -55,21 +55,6 @@ router1:
     True
 </pre>
 
-**Note**: There may be a python error, but the command completes succesfully
-
-<pre>
-  root@salt:~# salt router1 test.ping
-/usr/local/lib/python3.6/site-packages/requests/__init__.py:91: RequestsDependencyWarning: urllib3 (1.26.18) or chardet (3.0.4) doesn't match a supported version!
-  RequestsDependencyWarning)
-router1:
-    True
-</pre>
-
-Add **2> /dev/null** to the end of the commands to suppress the python error. For example:
-
-```bash
-salt router1 test.ping 2> /dev/null
-```
 
 ```bash
 salt spine1 grains.get version
@@ -78,7 +63,7 @@ salt spine1 grains.get version
 <pre>
 root@salt:~# salt spine1 grains.get version
 spine1:
-    4.18.1F-4591672.4181F
+    4.30.3M-33434233.4303M
 </pre>
 
 ```bash
@@ -163,18 +148,24 @@ leaf4:
 salt 'spine[1,3]' grains.get version
 ```
 
-<pre>
+```
 root@salt:~# salt 'spine[1,3]' grains.get version
-spine3:
-    4.18.1F-4591672.4181F
 spine1:
-    4.18.1F-4591672.4181F
+    4.30.3M-33434233.4303M
+spine3:
+    4.30.3M-33434233.4303M
+```
+```bash
+salt 'spine[!1,3]' grains.get version
+```
+
+```
 root@salt:~# salt 'spine[!1,3]' grains.get version
 spine2:
-    4.18.1F-4591672.4181F
+    4.30.3M-33434233.4303M
 spine4:
-    4.18.1F-4591672.4181F
-</pre>
+    4.30.3M-33434233.4303M
+```
 
 ## Part-4: Regular expressions
 
@@ -186,14 +177,14 @@ salt -E 'spine\d+' grains.get version
 
 <pre>
 root@salt:~# salt -E 'spine\d+' grains.get version
-spine2:
-    4.18.1F-4591672.4181F
 spine1:
-    4.18.1F-4591672.4181F
-spine4:
-    4.18.1F-4591672.4181F
+    4.30.3M-33434233.4303M
 spine3:
-    4.18.1F-4591672.4181F
+    4.30.3M-33434233.4303M
+spine2:
+    4.30.3M-33434233.4303M
+spine4:
+    4.30.3M-33434233.4303M
 </pre>
 
 ## Part-5: Targeting using Grains
@@ -366,46 +357,75 @@ core1:
 Apply regular expression on Pillar data:
 
 ```bash
-salt -J 'proxy:host:spine[1|2]' net.mac --out=yaml
+salt -J 'proxy:host:spine[1|2]' net.arp --out=yaml
 ```
 
 <pre>
-root@salt:~# salt -J 'proxy:host:spine[1|2]' net.mac --out=yaml
+root@salt:~# salt -J 'proxy:host:spine[1|2]' net.arp --out=yaml
+spine1:
+  spine2:
+  comment: ''
+  out:
+  - age: 3753.0
+    interface: Ethernet1/1
+    ip: 10.23.12.0
+    mac: 0C:00:D1:02:E9:05
+  - age: 3705.0
+    interface: Ethernet1/2
+    ip: 10.23.22.0
+    mac: 0C:00:24:19:BB:06
+  - age: 3755.0
+    interface: Ethernet1/3
+    ip: 10.34.21.1
+    mac: 0C:00:EC:61:4A:02
+  - age: 3759.0
+    interface: Ethernet1/4
+    ip: 10.34.22.1
+    mac: 0C:00:B5:20:24:01
+  - age: 3761.0
+    interface: Ethernet1/5
+    ip: 10.34.24.1
+    mac: 0C:00:C7:2F:2A:04
+  - age: 3752.0
+    interface: Ethernet1/6
+    ip: 10.34.23.1
+    mac: 0C:00:C9:40:32:04
+  - age: 0.0
+    interface: Management1
+    ip: 172.22.0.10
+    mac: 02:42:AC:16:00:0A
+  result: true
 spine1:
   comment: ''
   out:
-  - active: true
-    interface: Ethernet1
-    last_move: 1609870868.989729
-    mac: '52:54:00:06:24:02'
-    moves: 1
-    static: false
-    vlan: 1
-  - active: true
-    interface: Ethernet7
-    last_move: 1609870868.976326
-    mac: 52:54:00:26:D7:01
-    moves: 1
-    static: false
-    vlan: 1
-  result: true
-spine2:
-  comment: ''
-  out:
-  - active: true
-    interface: Ethernet7
-    last_move: 1609870868.419326
-    mac: '52:54:00:06:24:02'
-    moves: 1
-    static: false
-    vlan: 1
-  - active: true
-    interface: Ethernet1
-    last_move: 1609870868.432837
-    mac: 52:54:00:26:D7:01
-    moves: 1
-    static: false
-    vlan: 1
+  - age: 3802.0
+    interface: Ethernet1/1
+    ip: 10.23.11.0
+    mac: 0C:00:45:0A:51:04
+  - age: 3699.0
+    interface: Ethernet1/2
+    ip: 10.23.21.0
+    mac: 0C:00:8C:DA:4A:07
+  - age: 3803.0
+    interface: Ethernet1/3
+    ip: 10.34.12.1
+    mac: 0C:00:E6:D6:02:02
+  - age: 3806.0
+    interface: Ethernet1/4
+    ip: 10.34.11.1
+    mac: 0C:00:65:B2:9C:01
+  - age: 3798.0
+    interface: Ethernet1/5
+    ip: 10.34.14.1
+    mac: 0C:00:06:52:6F:03
+  - age: 3799.0
+    interface: Ethernet1/6
+    ip: 10.34.13.1
+    mac: 0C:00:9A:97:B3:03
+  - age: 0.0
+    interface: Management1
+    ip: 172.22.0.9
+    mac: 02:42:AC:16:00:09
   result: true
 </pre>
 
