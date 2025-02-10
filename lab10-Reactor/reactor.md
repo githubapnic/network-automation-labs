@@ -1,9 +1,9 @@
 ![](images/apnic_logo.png)
 # LAB: The Salt Reactor system
 
-As in the previous labs, the Proxy Minions are started for all the devices in the topology, as well as napalm-logs.
+As in the previous labs, **_the Proxy Minions are started for all the devices in the topology_**, as well as napalm-logs.
 
-The main difference however is that the Salt Master is not started, and we will need to start it manually.
+The main difference however is that **_the Salt Master is not started_**, and we will need to start it manually.
 
 ## Part-1: Salt Reactors 101
 
@@ -23,13 +23,13 @@ root@salt:~# salt-master -l debug
 ...
 </pre>
 
-As the Master is not started in daemon mode, it won't return the CLI, so let's leave it running. Open another terminal window where we'll be watching the Salt event bus:
+As the Master is not started in daemon mode, it won't return the CLI, so let's leave it running. **_Open another terminal window_** where we'll be watching the Salt event bus:
 
 ```bash
 salt-run state.event pretty=True
 ```
 
-Similarly, as seen before, this doesn't return the command line either, so let's open a third terminal window. The other 
+Similarly, as seen before, this doesn't return the command line either, so let's **_open a third terminal window_**. The other 
 two windows will be helpful for us to understand what is the Salt Master doing and what events are being generated.
 
 Execute the following command:
@@ -111,17 +111,8 @@ reactor:
 Now add one of the following code blocks underneath the bkup.sls.
 
 <pre>
-reactor:
   - 'salt/job/*/ret/*':
     - /srv/salt/reactor/test.sls
-</pre>
-
-This Reactor configuration, would invoke the `/srv/salt/reactor/test.sls` Reactor SLS file, on any return event. As the Reactor file is under the Salt file system, this can also be written as:
-
-<pre>
-reactor:
-  - 'salt/job/*/ret/*':
-    - salt://reactor/test.sls
 </pre>
 
 ```bash
@@ -129,6 +120,16 @@ sed -i '/bkup/a \ \ \ \ \- salt\:\/\/reactor\/test.sls' /etc/salt/master
 sed -i "/test.sls/i \ \ \- \'salt\/job\/\*\/ret\/\*\'\:" /etc/salt/master
 grep "reactor:" -A 4 /etc/salt/master
 ```
+
+This Reactor configuration, would invoke the `/srv/salt/reactor/test.sls` Reactor SLS file, on any return event. As the Reactor file is under the Salt file system, this can also be written as:
+
+<pre>
+reactor:
+  - 'napalm/syslog/*/CONFIGURATION_COMMIT_COMPLETED/*':
+    - salt://reactor/bkup.sls
+  - 'salt/job/*/ret/*':
+    - salt://reactor/test.sls
+</pre>
 
 <pre>
 root@salt:~# grep "reactor:" -A 4 /etc/salt/master

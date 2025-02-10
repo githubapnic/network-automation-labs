@@ -11,6 +11,39 @@ data in a vendor-agnostic format, easy to consume. But these low-level API calls
 the next sections we will look into what Salt functions you can use per individual platform. In fact, we've already seen 
 some of those in the previous lab, but now, we'll look into them closely.
 
+**_We are running an older version of Salt (3001) due to an issue in the 3006.9 version with Argument Parsing and RPC specifc to Junos_** 
+
+**You will need to remove the stored keys, please follow the instructions when you get the error EG:**
+```
+dave@DaveP-802876:~$ ssh root@group100.labs.apnictraining.net
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that a host key has just been changed.
+The fingerprint for the ECDSA key sent by the remote host is
+SHA256:8gocDp1eTiBplycmC4HodETsuF6OdS8fZsfYw5i8NG4.
+Please contact your system administrator.
+Add correct host key in /home/dave/.ssh/known_hosts to get rid of this message.
+Offending ECDSA key in /home/dave/.ssh/known_hosts:310
+  remove with:
+  ssh-keygen -f "/home/dave/.ssh/known_hosts" -R "group100.labs.apnictraining.net"
+ECDSA host key for group100.labs.apnictraining.net has changed and you have requested strict checking.
+Host key verification failed.
+
+dave@DaveP-802876:~$ ssh-keygen -f "/home/dave/.ssh/known_hosts" -R "group100.labs.apnictraining.net"
+# Host group100.labs.apnictraining.net found: line 310
+/home/dave/.ssh/known_hosts updated.
+Original contents retained as /home/dave/.ssh/known_hosts.old
+```
+We will also install the pyton requests package.<BR>
+_Ignore the errors, it will still install, it just makes our output error free_
+
+```bash
+pip install requests
+```
+
 ## Part-1: Executing RPC calls on Juniper devices
 
 RPC (Remote Procedure Call) is when a computer program causes a procedure (subroutine, or instruction) on another, 
@@ -243,6 +276,10 @@ a specific value, `ge-0/0/2`, as this is the interface we're interogating for, t
 instead, they have an implicit logical value: True when set, False otherwise. For this reasoning, in Salt, we also 
 provide _boolean_ values:
 
+```bash
+salt router2 napalm.junos_rpc get-interface-information statistics=True detail=True interface-name=ge-0/0/2
+```
+
 ```
 root@salt:~# salt router2 napalm.junos_rpc get-interface-information statistics=True detail=True interface-name=ge-0/0/2
 router2:
@@ -388,9 +425,16 @@ Re-run both commands with `--out=raw`:
 salt spine1 napalm.pyeapi_run_commands "show version" encoding=text --out=raw
 ```
 
-```bash
+```
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" --out=raw
 {'spine1': [{'modelName': 'vEOS', 'internalVersion': '4.18.1F-4591672.4181F', 'systemMacAddress': '52:54:00:c0:88:2b', 'serialNumber': '', 'memTotal': 1893316, 'bootupTimestamp': 1611589526.53, 'memFree': 689992, 'version': '4.18.1F', 'architecture': 'i386', 'isIntlVersion': False, 'internalBuildId': '6fcb426e-70a9-48b8-8958-54bb72ee28ed', 'hardwareRevision': ''}]}
+```
+
+```bash
+salt spine1 napalm.pyeapi_run_commands "show version" encoding=text --out=raw
+```
+
+```
 root@salt:~# salt spine1 napalm.pyeapi_run_commands "show version" encoding=text --out=raw
 {'spine1': ['Arista vEOS\nHardware version:    \nSerial number:       \nSystem MAC address:  5254.00c0.882b\n\nSoftware image version: 4.18.1F\nArchitecture:           i386\nInternal build version: 4.18.1F-4591672.4181F\nInternal build ID:      6fcb426e-70a9-48b8-8958-54bb72ee28ed\n\nUptime:                 1 day, 2 hours and 52 minutes\nTotal memory:           1893316 kB\nFree memory:            690192 kB\n\n']}
 ```

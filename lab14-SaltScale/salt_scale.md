@@ -22,12 +22,18 @@ In the following paragraphs we'll explore some of these possibilities.
 
 For the following labs, we have 4 (four) servers available. These are: `srv1`, `srv2`, `srv3`, and `srv4`.
 
+**_We Have reverted back to 3006.9 from the previous lab.  Again you may get errors around Fingerprint mis-matches.  Remove them and re-login as per the previous lab_**
+
 ## Part-1: Proxy Minions running on a single server
 
 In order to have the Proxy Minions managed automatically, we firstly need to have a "database" of the totality of 
 devices we want to manage. Let's defined them into a Pillar file, for example:
 
 `/srv/salt/pillar/proxies.sls`
+
+```bash
+cat /srv/salt/pillar/proxies.sls
+```
 
 ```yaml
 devices:
@@ -48,6 +54,10 @@ devices:
 In order to have the list of devices available to all the servers, let's include it into the Top File:
 
 `/srv/salt/pillar/top.sls`
+
+```bash
+cat /srv/salt/pillar/top.sls
+```
 
 ```yaml
 base:
@@ -98,6 +108,10 @@ Having this list available, a State SLS would be sufficient to start the all Pro
 
 `/srv/salt/states/pm_single.sls`
 
+```bash
+cat /srv/salt/states/pm_single.sls
+```
+
 ```yaml
 {%- for device in pillar.devices %}
 Startup the Proxy for {{ device }}:
@@ -119,7 +133,8 @@ Startup the Proxy for router1:
 Startup the Proxy for router2:
   cmd.run:
     - name: salt-proxy --proxyid router2 -d
-...
+
+--- snip ---
 ```
 
 The States reference the `cmd.run` function, which simply execute the named command. In this case, the command starts 
@@ -324,6 +339,10 @@ In this case, the State SLS can be as simple as:
 
 `/srv/salt/states/pm_distributed.sls`
 
+```bash
+cat /srv/salt/states/pm_distributed.sls
+```
+
 ```sls
 {%- load_yaml as mapping %}
 srv1: router
@@ -341,15 +360,18 @@ Startup the Proxy for {{ device }}:
 {%- endfor %}
 ```
 
-Let's have a look at this and unpack these details: `{%- load_yaml as mapping %}` defines a mapping between the server 
+Let's have a look at this and unpack these details:<BR>
+ `{%- load_yaml as mapping %}` defines a mapping between the server 
 name and the roles of the Proxy Minions to start for each; the mapping is defined as YAML (hence `load_yaml`) - this is 
-purely for readability, and the contents will be loaded into the `mapping` Jinja variable. The `load_yaml` structure 
+purely for readability, and the contents will be loaded into the `mapping` Jinja variable.<BR>
+ The `load_yaml` structure 
 above, in other words is the exact equivalent of defining a Python dictionary whose keys are the server names, and the 
-values are the device roles: `mapping = {'srv1': 'router1', 'srv2': 'core', 'srv3': 'spine', 'srv4': 'leaf'}`.
+values are the device roles: `mapping = {'srv1': 'router', 'srv2': 'core', 'srv3': 'spine', 'srv4': 'leaf'}`.
 
 Immediately underneath, we find the same structure as in the previous State SLS `/srv/salt/states/pm_single.sls`, the 
 `{%- for device in pillar.devices %}` is just like previously, with one minor distinction: the line `{%- if 
-device.startswith(mapping[opts.id]) %}`. This line looks at every device in the loop (`router1`, `router2`, ..., ) and 
+device.startswith(mapping[opts.id]) %}`.<BR>
+ This line looks at every device in the loop (`router1`, `router2`, ..., ) and 
 checks if the device name starts with the role associated for this server. The variable `mapping` is the one defined 
 above, and `opts.id` provides the server name (i.e., `srv1`, `srv2`, ... ); therefore the construction 
 `mapping[opts.id]` will give the value `router` when the State is executed on `srv1`, `core` when executed on `srv2`, 
@@ -808,6 +830,10 @@ After the Proxies are up and running, we can check the location where they run, 
 Grain:
 
 ```bash
+salt \* grains.get nodename
+```
+
+```
 root@salt:~# salt \* grains.get nodename
 router1:
     srv1
@@ -855,6 +881,8 @@ srv1:
 
 ## Part-3: Proxy Minions as Docker containers
 
+**_This section is purely for your information.  The configurations that exist in the examples reflect the backend of your setups.<BR>  YOU WILL NOT BE ABLE TO RUN THESE COMMANDS ON YOUR CONTAINERS_**
+
 Without aiming to dive into what containers are, we should clarify at least that a container is a standard unit of
 software that packages up code and all its dependencies so the application runs quickly and reliably from one computing
 environment to another. A Docker container image is a lightweight, standalone, executable package of software that
@@ -870,8 +898,9 @@ Kubernetes is well beyond our current scope, however, just simple Docker we can 
 upcoming) lab, when the Proxy Minions were available and pre-started to use, they were nothing else than Docker 
 containers.
 
-Docker containers can be managed via YAML configuration files, through `docker-compose`. `docker-compose` is a tool for 
-defining and running multi-container Docker applications. For out labs scope specifically, the configuration is 
+Docker containers can be managed via YAML configuration files, through `docker-compose`. <BR>
+`docker-compose` is a tool for 
+defining and running multi-container Docker applications. For our labs scope specifically, the configuration is 
 relatively simple:
 
 `docker-compose.yml`

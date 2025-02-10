@@ -376,7 +376,7 @@ The only difference is the tag, which starts with `proxy/runner/` instead of `sa
 same, so if you have Reactors configured to the normal Salt tags, all you have to do it to make sure they also match 
 `proxy/runner/*/new` and/or `proxy/runner/*/ret/*` pattern(s).
 
-For example, previously, in _Lab 12_, we had the following configuration:
+For example, previously, in _Lab 12_, we had the following configuration in our master file:
 
 ```yaml
 reactor:

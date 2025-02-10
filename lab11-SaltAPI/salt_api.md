@@ -6,7 +6,7 @@ For this lab, all the dependencies are installed, so we can start using the Salt
 - _CherryPy_ (required by the `rest_cherrypy` module), version `18.1.0`.
 - _cURL_, for HTTP requests from the command line.
 
-The following applications are also up and running:
+**The following applications are also up and running:**
 
 - Proxy Minions for all the devices in the topology.
 - Salt Master.
@@ -20,7 +20,7 @@ Besides all of these, there's a new component that we'll need in _Part-2_, which
 The Salt API requires authentication, and therefore we also need to configure the `external_auth` subsystem. In the Master configuration, let's provision and grant access to an username, e.g., `test-usr`, which will have access to run any Salt function, any Salt Runner, and any other Salt job. For testing purposes, we'll use the `auto` External Authentication which doesn't have any external dependencies to set up, but this is highly discouraged in production environments. The configuration is as simple as:
 
 ```bash
-grep external_auth -A 13 /etc/salt/master
+grep external_auth -A 10 /etc/salt/master
 ```
 
 <pre>
@@ -30,6 +30,10 @@ external_auth:
     - '@jobs'
     - '@runner'
     - .*
+
+netapi_enable_clients:
+  - local
+  - sproxy
 </pre>
 
 For the Salt API itself, there are similarly multiple options for the back-end system we are able to use. The most stable and production-read API is `rest_cherrypy`, which is based on _CherryPy_ (A Minimalist Python Web Framework). To enable it, we only need to provide the `rest_cherrypy` key in the Master configuration, and a set of configuration options underneath, such as address & port to listen for HTTP requests, SSL certificate and key, and so on. See the complete list of available options at: [https://docs.saltproject.io/en/latest/ref/netapi/all/salt.netapi.rest_cherrypy.html](https://docs.saltproject.io/en/latest/ref/netapi/all/salt.netapi.rest_cherrypy.html).
@@ -41,8 +45,6 @@ grep cherry -A 2 /etc/salt/master
 ```
 
 ```yaml
-netapi_enable_clients:
-  - local
 rest_cherrypy:
   port: 8080
   disable_ssl: true
@@ -323,7 +325,7 @@ router1:
 This generates a syslog message on router1. To view the message ssh into router1.
 
 ```bash
-ssh -o "StrictHostKeyChecking no" admin@router1
+ssh admin@router1
 ```
 
 **password** = admin@123
