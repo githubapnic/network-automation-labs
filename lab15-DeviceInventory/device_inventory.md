@@ -12,6 +12,28 @@ All the Proxy Minions are again up and running, and there are two services that 
 
 These two services are already set up and ready to be used.
 
+Before Starting this lab, lets cleanup any keys that we are not using (The servers)
+
+```bash
+salt-key -d srv*
+```
+
+```
+root@salt:~# salt-key -d srv*
+The following keys are going to be deleted:
+Accepted Keys:
+srv1
+srv2
+srv3
+srv4
+Proceed? [N/y] y
+Key for minion srv1 deleted.
+Key for minion srv2 deleted.
+Key for minion srv3 deleted.
+Key for minion srv4 deleted.
+```
+
+
 ## Part-1: Using the Salt External Pillars
 
 As we have seen in the previous labs, we can introduce data into Salt, via the Pillar subsystem, as files (in SLS 
@@ -83,6 +105,10 @@ option:
 
 `/etc/salt/master`
 
+```bash
+ cat /etc/salt/master | grep -A 2 ext_pillar
+ ```
+
 ```yaml
 ext_pillar:
   - http_json:
@@ -97,6 +123,11 @@ This is what it needs in order to enable the External Pillar to pull the data fr
 properly configured, we can run:
 
 ```bash
+salt router1 pillar.get devices
+```
+
+
+```
 root@salt:~# salt router1 pillar.get devices
 router1:
     ----------
@@ -191,11 +222,8 @@ them. To see more details, we can click on the site name to open a full view pag
 ![](images/netbox_lab1_site.png)
 
 Here we can visualise and edit all the details of the _Lab1_ site, such as Region, Tenant, Address, etc. On the right 
-hand side of the screen, there are also some data center information about this site, such as: devices, racks, rack 
-groups, and topology maps. The topology map is automatically generated based on the data we have provided in NetBox 
-(i.e., devices and cables): http://group00.labs.apnictraining.net:8050/api/extras/topology-maps/1/render/
+hand side of the screen, there are also some data center information about this site, such as: devices, racks, rack groups and other data.
 
-![](images/netbox_lab1_topology.png)
 
 Let's have a look at the Rack Groups: there's a cage named _Cage1_ consisting of 10 racks:
 
@@ -211,15 +239,15 @@ another way to see the racks in the cage, visually:
 Each rack details can also be inspected individually, by clicking on the name. Inside each rack, we also see every 
 device mounted, and we can click on the device to see its details as well. For example, let's have a look at `router1`:
 
-![](imgaes/netbox_router1.png)
+![](images/netbox_router1.png)
 
 Here we can see and edit the information about this device: site, rack, rack position, tenant, device type, serial
 number, role, platform, status, primary IPv4 and IPv6 addresses and so on. We also have the possibility to attach 
-images, or secrets. Underneath, there's a panel where we can see the interfaces of this device:
+images, or secrets. Along the top menu we can see a tab for interfaces
 
 ![](images/netbox_router1_interfaces.png)
 
-`router1` has a total of 97 interfaces: 95 Gigabit Ethernet `ge-0/0/0` ... `ge-0/0/94`, plus the management interface 
+`router1` has a total of 5 interfaces: 3 Gigabit Ethernet `ge-0/0/0` ... `ge-0/0/2`, plus the management interface 
 `fpx1` and `lo0` for loopback. Notice that the representation of each of these shows visually its role. An interface can 
 be connected to another interface of a peer device, and this is shown in the connection details (i.e., termination 
 interface name and termination device). Each connection is represented through a cable, and can be seen if we click on 
@@ -233,7 +261,7 @@ their connections and IP addresses on `core2`:
 ![](images/netbox_core2_interfaces.png)
 
 Besides the DCIM part, NetBox is also an IPAM. We've seen already that the interfaces had IP addresses. These were 
-allocated from two prefixes from the private RFC 1918 pools `10.0.0.0/8` and `172.17.0.0/16`. From the top bar menu, 
+allocated from two prefixes from the private RFC 1918 pools `10.0.0.0/8` and `172.17.0.0/16`. From the Left hand Menu, 
 select _IPAM_ then _Prefixes_ to see them:
 
 ![](images/netbox_prefixes.png)
@@ -348,138 +376,336 @@ http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/:
 }
 ```
 
-From the command line, we can query as:
+We can query this from the command line using `curl` and `jq`.<BR>
+First we will install `jq`
+
+```bash
+apt update
+apt install jq
+```
+Then we will set a Variable for our API Token (we will talk more about this in the next section).
+
+```bash
+TOKEN=59f538de888a4347f70554efc19c649defb9c7da
+```
+
+Then we can run our query:
+
+```bash
+ curl -H "Authorization: Token $TOKEN" http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/ | jq .
+ ```
+
 
 ```
-root@salt:~# curl http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/
-{"id":1,"name":"router1","display_name":"router1","device_type":{"id":1,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/device-types/1/","manufacturer":{"id":5,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/manufacturers/5/","name":"Juniper","slug":"juniper"},"model":"vMX","slug":"vmx","display_name":"Juniper vMX"},"device_role":{"id":7,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/device-roles/7/","name":"Router","slug":"router"},"tenant":{"id":1,"url":"http://group00.labs.apnictraining.net:8050/api/tenancy/tenants/1/","name":"APNIC","slug":"apnic"},"platform":{"id":3,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/platforms/3/","name":"Juniper Junos","slug":"juniper-junos"},"serial":"VM601162CA2B","asset_tag":null,"site":{"id":1,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/sites/1/","name":"Lab1","slug":"lab1"},"rack":{"id":1,"url":"http://group00.labs.apnictraining.net:8050/api/dcim/racks/1/","name":"R1","display_name":"R1"},"position":20,"face":{"value":0,"label":"Front"},"parent_device":null,"status":{"value":1,"label":"Active"},"primary_ip":{"id":2,"url":"http://group00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/","family":4,"address":"172.17.1.1/32"},"primary_ip4":{"id":2,"url":"http://group00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/","family":4,"address":"172.17.1.1/32"},"primary_ip6":null,"cluster":null,"virtual_chassis":null,"vc_position":null,"vc_priority":null,"comments":"","local_context_data":null,"tags":[],"custom_fields":{},"config_context":{},"created":"2019-08-12","last_updated":"2021-01-29T13:42:19.668741Z"}
+root@salt:~# curl -H "Authorization: Token $TOKEN"  http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/ | jq .
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  2481  100  2481    0     0   9691      0 --:--:-- --:--:-- --:--:--  9729
+{
+  "id": 1,
+  "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+  "display": "router1",
+  "name": "router1",
+  "device_type": {
+    "id": 1,
+    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/device-types/1/",
+    "display": "vMX",
+    "manufacturer": {
+      "id": 5,
+      "url": "http://group00.labs.apnictraining.net:8050/api/dcim/manufacturers/5/",
+      "display": "Juniper",
+      "name": "Juniper",
+      "slug": "juniper"
+    },
+    "model": "vMX",
+    "slug": "vmx"
+  },
+  "role": {
+    "id": 7,
+    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/device-roles/7/",
+    "display": "Router",
+    "name": "Router",
+    "slug": "router"
+  },
+  "device_role": {
+    "id": 7,
+    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/device-roles/7/",
+    "display": "Router",
+    "name": "Router",
+    "slug": "router"
+  },
+  "tenant": {
+    "id": 1,
+    "url": "http://group00.labs.apnictraining.net:8050/api/tenancy/tenants/1/",
+    "display": "APNIC",
+    "name": "APNIC",
+    "slug": "apnic"
+  },
+  "platform": {
+    "id": 3,
+    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/platforms/3/",
+    "display": "Juniper Junos",
+    "name": "Juniper Junos",
+    "slug": "juniper-junos"
+  },
+  "serial": "",
+  "asset_tag": null,
+  "site": {
+    "id": 1,
+    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/sites/1/",
+    "display": "Lab1",
+    "name": "Lab1",
+    "slug": "lab1"
+  },
+  "location": {
+    "id": 1,
+    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/locations/1/",
+    "display": "Cage1",
+    "name": "Cage1",
+    "slug": "cage1",
+    "_depth": 0
+  },
+  "rack": {
+    "id": 1,
+    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/racks/1/",
+    "display": "R1",
+    "name": "R1"
+  },
+  "position": 20,
+  "face": {
+    "value": "front",
+    "label": "Front"
+  },
+  "latitude": null,
+  "longitude": null,
+  "parent_device": null,
+  "status": {
+    "value": "active",
+    "label": "Active"
+  },
+  "airflow": null,
+  "primary_ip": {
+    "id": 2,
+    "url": "http://group00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/",
+    "display": "172.17.1.1/32",
+    "family": 4,
+    "address": "172.17.1.1/32"
+  },
+  "primary_ip4": {
+    "id": 2,
+    "url": "http://group00.labs.apnictraining.net:8050/api/ipam/ip-addresses/2/",
+    "display": "172.17.1.1/32",
+    "family": 4,
+    "address": "172.17.1.1/32"
+  },
+  "primary_ip6": null,
+  "oob_ip": null,
+  "cluster": null,
+  "virtual_chassis": null,
+  "vc_position": null,
+  "vc_priority": null,
+  "description": "",
+  "comments": "",
+  "config_template": null,
+  "config_context": {},
+  "local_context_data": null,
+  "tags": [],
+  "custom_fields": {},
+  "created": "2019-08-12T00:00:00Z",
+  "last_updated": "2021-01-29T13:42:19.668741Z",
+  "console_port_count": 0,
+  "console_server_port_count": 0,
+  "power_port_count": 0,
+  "power_outlet_count": 0,
+  "interface_count": 5,
+  "front_port_count": 0,
+  "rear_port_count": 0,
+  "device_bay_count": 0,
+  "module_bay_count": 0,
+  "inventory_item_count": 0
+}
 ```
 
 Here we notice several details we've seen in the web interface. But the interfaces are missing. This is because the 
 interfaces are organised under a separate NetBox endpoint (however still under the DCIM app): 
-http://group00.labs.apnictraining.net:8050/api/dcim/interface-connections/?device=router1:
+http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/?device=router1:
 
-```json
+```bash
+root@salt:~# curl -H "Authorization: Token $TOKEN" http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/?device=router1 | jq .
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  7735  100  7735    0     0  24944      0 --:--:-- --:--:-- --:--:-- 24951
 {
-    "count": 3,
-    "next": null,
-    "previous": null,
-    "results": [
+  "count": 5,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 262,
+      "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/262/",
+      "display": "ge-0/0/0",
+      "device": {
+        "id": 1,
+        "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+        "display": "router1",
+        "name": "router1"
+      },
+      "vdcs": [],
+      "module": null,
+      "name": "ge-0/0/0",
+      "label": "",
+      "type": {
+        "value": "1000base-t",
+        "label": "1000BASE-T (1GE)"
+      },
+      "enabled": true,
+      "parent": null,
+      "bridge": null,
+      "lag": null,
+      "mtu": null,
+      "mac_address": null,
+      "speed": null,
+      "duplex": null,
+      "wwn": null,
+      "mgmt_only": false,
+      "description": "",
+      "mode": null,
+      "rf_role": null,
+      "rf_channel": null,
+      "poe_mode": null,
+      "poe_type": null,
+      "rf_channel_frequency": null,
+      "rf_channel_width": null,
+      "tx_power": null,
+      "untagged_vlan": null,
+      "tagged_vlans": [],
+      "mark_connected": false,
+      "cable": {
+        "id": 1,
+        "url": "http://group00.labs.apnictraining.net:8050/api/dcim/cables/1/",
+        "display": "#1",
+        "label": ""
+      },
+      "cable_end": "A",
+      "wireless_link": null,
+      "link_peers": [
         {
-            "interface_a": {
-                "id": 4,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/4/",
-                "device": {
-                    "id": 3,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/3/",
-                    "name": "core1",
-                    "display_name": "core1"
-                },
-                "name": "GigabitEthernet0/0/0/2",
-                "cable": 2,
-                "connection_status": {
-                    "value": true,
-                    "label": "Connected"
-                }
-            },
-            "interface_b": {
-                "id": 263,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/263/",
-                "device": {
-                    "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
-                    "name": "router1",
-                    "display_name": "router1"
-                },
-                "name": "ge-0/0/1",
-                "cable": 2,
-                "connection_status": {
-                    "value": true,
-                    "label": "Connected"
-                }
-            },
-            "connection_status": {
-                "value": true,
-                "label": "Connected"
-            }
-        },
-        {
-            "interface_a": {
-                "id": 135,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/135/",
-                "device": {
-                    "id": 4,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/4/",
-                    "name": "core2",
-                    "display_name": "core2"
-                },
-                "name": "GigabitEthernet0/0/0/3",
-                "cable": 4,
-                "connection_status": {
-                    "value": true,
-                    "label": "Connected"
-                }
-            },
-            "interface_b": {
-                "id": 264,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/264/",
-                "device": {
-                    "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
-                    "name": "router1",
-                    "display_name": "router1"
-                },
-                "name": "ge-0/0/2",
-                "cable": 4,
-                "connection_status": {
-                    "value": true,
-                    "label": "Connected"
-                }
-            },
-            "connection_status": {
-                "value": true,
-                "label": "Connected"
-            }
-        },
-        {
-            "interface_a": {
-                "id": 262,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/262/",
-                "device": {
-                    "id": 1,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
-                    "name": "router1",
-                    "display_name": "router1"
-                },
-                "name": "ge-0/0/0",
-                "cable": 1,
-                "connection_status": {
-                    "value": true,
-                    "label": "Connected"
-                }
-            },
-            "interface_b": {
-                "id": 359,
-                "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/359/",
-                "device": {
-                    "id": 2,
-                    "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/2/",
-                    "name": "router2",
-                    "display_name": "router2"
-                },
-                "name": "ge-0/0/0",
-                "cable": 1,
-                "connection_status": {
-                    "value": true,
-                    "label": "Connected"
-                }
-            },
-            "connection_status": {
-                "value": true,
-                "label": "Connected"
-            }
+          "id": 359,
+          "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/359/",
+          "display": "ge-0/0/0",
+          "device": {
+            "id": 2,
+            "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/2/",
+            "display": "router2",
+            "name": "router2"
+          },
+          "name": "ge-0/0/0",
+          "cable": 1,
+          "_occupied": true
         }
-    ]
+      ],
+      "link_peers_type": "dcim.interface",
+      "wireless_lans": [],
+      "vrf": null,
+      "l2vpn_termination": null,
+      "connected_endpoints": [
+        {
+          "id": 359,
+          "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/359/",
+          "display": "ge-0/0/0",
+          "device": {
+            "id": 2,
+            "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/2/",
+            "display": "router2",
+            "name": "router2"
+          },
+          "name": "ge-0/0/0",
+          "cable": 1,
+          "_occupied": true
+        }
+      ],
+      "connected_endpoints_type": "dcim.interface",
+      "connected_endpoints_reachable": true,
+      "tags": [],
+      "custom_fields": {},
+      "created": "2025-01-30T00:00:00Z",
+      "last_updated": "2025-01-30T05:47:01.424707Z",
+      "count_ipaddresses": 1,
+      "count_fhrp_groups": 0,
+      "_occupied": true
+    },
+
+    --------- SNIP ------
+
+    {
+      "id": 264,
+      "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/264/",
+      "display": "ge-0/0/1",
+      "device": {
+        "id": 1,
+        "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+        "display": "router1",
+        "name": "router1"
+
+      "id": 357,
+      "url": "http://group00.labs.apnictraining.net:8050/api/dcim/interfaces/357/",
+      "display": "lo0",
+      "device": {
+        "id": 1,
+        "url": "http://group00.labs.apnictraining.net:8050/api/dcim/devices/1/",
+        "display": "router1",
+        "name": "router1"
+      },
+      "vdcs": [],
+      "module": null,
+      "name": "lo0",
+      "label": "",
+      "type": {
+        "value": "virtual",
+        "label": "Virtual"
+      },
+      "enabled": true,
+      "parent": null,
+      "bridge": null,
+      "lag": null,
+      "mtu": null,
+      "mac_address": null,
+      "speed": null,
+      "duplex": null,
+      "wwn": null,
+      "mgmt_only": false,
+      "description": "",
+      "mode": null,
+      "rf_role": null,
+      "rf_channel": null,
+      "poe_mode": null,
+      "poe_type": null,
+      "rf_channel_frequency": null,
+      "rf_channel_width": null,
+      "tx_power": null,
+      "untagged_vlan": null,
+      "tagged_vlans": [],
+      "mark_connected": false,
+      "cable": null,
+      "cable_end": "",
+      "wireless_link": null,
+      "link_peers": [],
+      "link_peers_type": null,
+      "wireless_lans": [],
+      "vrf": null,
+      "l2vpn_termination": null,
+      "connected_endpoints": null,
+      "connected_endpoints_type": null,
+      "connected_endpoints_reachable": null,
+      "tags": [],
+      "custom_fields": {},
+      "created": "2025-01-30T00:00:00Z",
+      "last_updated": "2025-01-30T05:47:01.424707Z",
+      "count_ipaddresses": 1,
+      "count_fhrp_groups": 0,
+      "_occupied": false
+    }
+  ]
 }
 ```
 
@@ -683,20 +909,24 @@ it available as Pillar.
 Enabling it is very simple, under the same `ext_pillar` configuration option, provide the address URL where NetBox is 
 found, as well as a token for authentication:
 
-`/etc/salt/master`:
+```bash
+ cat /etc/salt/master | grep -A 5 ext_pillar
+ ```
 
 ```yaml
 ext_pillar:
+  - http_json:
+      url: http://http_api:8888/
   - netbox:
-      api_url: http://netbox:8001/api
+      api_url: http://netbox:8080/api
       api_token: 59f538de888a4347f70554efc19c649defb9c7da
 ```
 
-The URL in this case is `http://netbox:8001/api`, as this is where NetBox can be found internally 
+The URL in this case is `http://netbox:8080/api`, as this is where NetBox can be found internally 
 (http://group00.labs.apnictraining.net:8050/api would also work, but would have been host-specific, while 
-http://netbox:8001/api is the same on every machine). The `api_token` is a generated key which can be used to 
+http://netbox:8080/api is the same on every machine). The `api_token` is a generated key which can be used to 
 authenticate the HTTP API requests. This is per-user based, and can be managed at 
-http://group00.labs.apnictraining.net:8050/user/api-tokens/:
+http://group00.labs.apnictraining.net:8050/user/api-tokens/ (This can also be found under the top Right User Menu under API Tokens):
 
 ![](images/netbox_api_token.png)
 
@@ -971,11 +1201,12 @@ root@salt:~# salt -I netbox:primary_ip:address:172.17.3.1/32 --preview
 And so on, the list of possibilities can be open ended.
 
 We are also able to use this data in Jinja templates, or SLS files, for example generate the MOTD: let's consider the 
-following template:
+following template (_This template does not exist yet_):
 
 `/srv/salt/templates/motd.jinja`
 
-```jinja
+```bash 
+cat <<EOR> /srv/salt/templates/motd.jinja
 {%- if grains.os == 'junos' %}
 set system login message "This device is property of {{ pillar.netbox.site.tenant.name }}"
 set system login announcement "Location: {{ pillar.netbox.site.physical_address.replace('\n', ' ').replace('\r', '') }}\n"
@@ -990,29 +1221,50 @@ EOF
 banner login "This device is property of {{ pillar.netbox.site.tenant.name }}"
 banner motd "Location: {{ pillar.netbox.site.physical_address.replace('\n', ' ').replace('\r', '') }}\n"
 {%- endif %}
+EOR
 ```
 
 This simple template covers the login and MOTD banners for all the platforms in the topology, with the syntax specifics. 
 The NetBox data is referenced from the Pillar: `pillar.netbox.site.tenant.name` references the site tenant name (check 
 the value by running `salt \* pillar.get netbox:site:tenant:name`).
 
-Now, deploy the changes:
+Now, do a test deploy of the changes the changes:
 
 ```bash
-salt \* net.load_template salt://templates/motd.jinja
+salt \* net.load_template salt://templates/motd.jinja test=true
 ```
 
 ```bash
-root@salt:~# salt \* net.load_template salt://templates/motd.jinja
-router1:
+root@salt:~# salt \* net.load_template salt://templates/motd.jinja test=true
+spine4:
     ----------
     already_configured:
         False
     comment:
+        Configuration discarded.
     diff:
-        [edit system login]
-        +   announcement "Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n";
-        +   message "This device is property of APNIC";
+        +banner login
+        +"This device is property of APNIC"
+        +EOF
+        +banner motd
+        +"Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n"
+        +EOF
+    loaded_config:
+    result:
+        True
+spine3:
+    ----------
+    already_configured:
+        False
+    comment:
+        Configuration discarded.
+    diff:
+        +banner login
+        +"This device is property of APNIC"
+        +EOF
+        +banner motd
+        +"Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n"
+        +EOF
     loaded_config:
     result:
         True
@@ -1021,25 +1273,160 @@ spine2:
     already_configured:
         False
     comment:
+        Configuration discarded.
     diff:
-        @@ -77,6 +77,13 @@
-         !
-         ip routing
-         !
         +banner login
         +"This device is property of APNIC"
         +EOF
         +banner motd
         +"Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n"
         +EOF
-        +!
-         management api http-commands
-            protocol unix-socket
-            no shutdown
+    loaded_config:
+    result:
+        True
+spine1:
+    ----------
+    already_configured:
+        False
+    comment:
+        Configuration discarded.
+    diff:
+        +banner login
+        +"This device is property of APNIC"
+        +EOF
+        +banner motd
+        +"Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n"
+        +EOF
+    loaded_config:
+    result:
+        True
+core2:
+    ----------
+    already_configured:
+        False
+    comment:
+        Configuration discarded.
+    diff:
+        ---
+        +++
+        @@ -1,5 +1,6 @@
+         !
+         hostname core2
+        +banner login "This device is property of APNIC"
+         interface Loopback0
+          ipv4 address 10.4.2.2 255.255.255.255
+         !
+    loaded_config:
+    result:
+        True
+core1:
+    ----------
+    already_configured:
+        False
+    comment:
+        Configuration discarded.
+    diff:
+        ---
+        +++
+        @@ -1,5 +1,6 @@
+         !
+         hostname core1
+        +banner login "This device is property of APNIC"
+         interface Loopback0
+          ipv4 address 10.4.2.1 255.255.255.0
+         !
+    loaded_config:
+    result:
+        True
+router1:
+    ----------
+    already_configured:
+        False
+    comment:
+        Configuration discarded.
+    diff:
+        [edit system login]
+        +   announcement "Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n";
+        +   message "This device is property of APNIC";
+    loaded_config:
+    result:
+        True
+router2:
+    ----------
+    already_configured:
+        False
+    comment:
+        Configuration discarded.
+    diff:
+        [edit system login]
+        +   announcement "Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n";
+        +   message "This device is property of APNIC";
+    loaded_config:
+    result:
+        True
+leaf1:
+    ----------
+    already_configured:
+        False
+    comment:
+        Configuration discarded.
+    diff:
+        +banner login "This device is property of APNIC"
+        +banner motd "Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n"
+    loaded_config:
+    result:
+        True
+leaf4:
+    ----------
+    already_configured:
+        False
+    comment:
+        Configuration discarded.
+    diff:
+        +banner login "This device is property of APNIC"
+        +banner motd "Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n"
+    loaded_config:
+    result:
+        True
+leaf2:
+    ----------
+    already_configured:
+        False
+    comment:
+        Configuration discarded.
+    diff:
+        +banner login "This device is property of APNIC"
+        +banner motd "Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n"
+    loaded_config:
+    result:
+        True
+leaf3:
+    ----------
+    already_configured:
+        False
+    comment:
+        Configuration discarded.
+    diff:
+        +banner login "This device is property of APNIC"
+        +banner motd "Location: 6 Cordelia Street, South Brisbane, QLD 4101, Australia\n"
     loaded_config:
     result:
         True
 ```
+
+**_IF YOU GET ERRORS THESE WILL NEED TO BE RESOLVED FIRST_**
+
+    Some Tips to resolving:
+    Try and clear and refresh the pillar data for the erroring device eg for core1:
+        
+        salt-run cache.clear_pillar 'core1'
+        salt core1 saltutil.refresh_pillar
+        salt core1 pillar.items netbox
+    
+    then run your test again.
+
+Once the test succeeds, remvee the `test=true` flag and your MOTD banners should be updated.
+
 
 To see the new banners, let's log into a couple of devices:
 
@@ -1072,14 +1459,18 @@ We have previously had the Roster defined as an SLS file (`roster: file` and wit
 `roster_file: /etc/salt/roster` specifying the location of this SLS file). Changing to use a dynamic Roster, it only 
 takes the following:
 
-`/etc/salt/master`
-
+```bash
+sed -i -e 's/roster:\ file/roster:\ netbox/g' /etc/salt/master
+cat /etc/salt/master`| grep roster
+```
 ```yaml
 roster: netbox
 
-netbox:
-  url: http://netbox:8001/
-  token: 59f538de888a4347f70554efc19c649defb9c7da
+```
+As we have made a change in our master file, we need to restart the master:
+
+```bash
+pkill -9 -e -f salt-master
 ```
 
 The `roster` option now points to the `netbox` Roster; in addition to this, we also need to provide the URL and the 
