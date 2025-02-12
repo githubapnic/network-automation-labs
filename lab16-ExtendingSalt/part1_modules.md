@@ -78,6 +78,10 @@ function is defined, let's craft our own, say `example.first`. That is, a functi
 
 `/srv/salt/_modules/example.py`
 
+```bash
+cat /srv/salt/_modules/example.py
+```
+
 ```python
 def first():
     return True
@@ -158,6 +162,8 @@ __func_alias__ = {
 def true_():
     return True
 ```
+
+
 
 
 Sync then we can run `example.true`:

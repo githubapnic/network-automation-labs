@@ -144,7 +144,7 @@ module named followed by a dot and the function name. Example:
 salt-run test.arg
 ```
 
-```bash
+```
 root@salt:~# salt-run test.arg
 args:
 kwargs:
@@ -154,7 +154,8 @@ kwargs:
 ```bash
 salt-run test.arg foo salt-run bar=baz
 ```
-```bash
+
+```
 root@salt:~# salt-run test.arg foo salt-run bar=baz
 args:
     - foo
@@ -281,7 +282,7 @@ The call above executes the code of the simplest function `test.ping`, on the Ma
 The code is being executed with the Master-specific environment. To verify this, check out the output of `test.get_opts` 
 Execution Function when being run on the Master:
 
-```bash
+```
 root@salt:~# salt-run salt.cmd test.get_opts
 __cli:
     salt-run
@@ -298,6 +299,11 @@ configuration? That depends where the code is being executed: when `test.get_opt
 program, `__opts__` provides the Minion configuration, while on the Master, it provides the Master configuration:
 
 ```bash
+salt router1 test.get_opts
+```
+
+
+```
 root@salt:~# salt router1 test.get_opts
 router1:
     ----------

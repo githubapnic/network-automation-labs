@@ -296,7 +296,7 @@ This can be seen in (after sync):
 salt router1 grains.get level1
 ```
 
-```bash
+```
 root@salt:~# salt router1 grains.get level1
 router1:
     ----------
@@ -312,7 +312,7 @@ Targeting on multiple levels, can be done by separating the levels by colon (`:`
 salt -G level1:level2:level3:some-value --preview
 ```
 
-```bash
+```
 root@salt:~# salt -G level1:level2:level3:some-value --preview
 - spine3
 - core1
@@ -356,7 +356,7 @@ After synchronizing the Grain module, we can find out that all our Proxy Minions
 salt \* grains.get docker
 ```
 
-```bash
+```
 root@salt:~# salt \* grains.get docker
 spine4:
     True
@@ -394,7 +394,7 @@ One of the most interesting options is `id` which is nothing else than the Minio
 salt router1 config.get id
 ```
 
-```bash
+```
 root@salt:~# salt router1 config.get id
 router1:
     router1
@@ -414,7 +414,7 @@ The new Grain `device_name` returns the Minion ID value for each:
 salt \* grains.get device_name
 ```
 
-```bash
+```
 root@salt:~# salt \* grains.get device_name
 leaf2:
     leaf2
@@ -452,7 +452,7 @@ what it runs under the hood:
 salt \* grains.get id
 ```
 
-```bash
+```
 root@salt:~# salt \* grains.get id
 router1:
     router1
@@ -523,7 +523,7 @@ The function above does just this, and after a sync, we can check that the `role
 salt \* grains.get role
 ```
 
-```bash
+```
 root@salt:~# salt \* grains.get role
 spine1:
     spine
