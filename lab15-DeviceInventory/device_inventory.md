@@ -1425,7 +1425,7 @@ leaf3:
     
     then run your test again.
 
-Once the test succeeds, remvee the `test=true` flag and your MOTD banners should be updated.
+Once the test succeeds, remove the `test=true` flag and your MOTD banners should be updated.
 
 
 To see the new banners, let's log into a couple of devices:
@@ -1497,6 +1497,10 @@ root@salt:~# salt-sproxy \* --preview
 This returns all the devices we have in NetBox. To confirm these are retrieved from NetBox indeed, we can use the debug 
 mode (`-l debug`):
 
+```bash
+salt-sproxy \* --preview -l debug
+```
+
 ```
 root@salt:~# salt-sproxy \* --preview -l debug
 ```
@@ -1505,7 +1509,7 @@ In the debug logs, you should notice the following lines (within many others):
 
 ```
 [DEBUG   ] Starting new HTTP connection (1): netbox:8001
-[DEBUG   ] http://netbox:8001 "GET /api/dcim/devices/ HTTP/1.1" 200 15702
+[DEBUG   ] http://netbox:8080 "GET /api/dcim/devices/ HTTP/1.1" 200 15702
 
 ...
 
@@ -1515,7 +1519,656 @@ In the debug logs, you should notice the following lines (within many others):
 
 This shows that the list of devices is retrieved from NetBox as we wanted.
 
---
+## Part-5: Using NetBox to assist with configuration management.
+
+In previous Labs we have used the state system as well as Jijna templates to perform some simple tasks.<BR>
+Lets do something a bit more interesting.  If you check the IP addresses we have assigned in Netbox, you will notice that there are some differences between our running ennvironment and our Source of Truth.  Partiularly the Loopback addresses.
+
+![](images/netbox_loopbacks.png)
+
+Log into a router and have alook at the IP addresses.
+
+```bash
+ssh admin@core1
+
+```
+
+```
+RP/0/0/CPU0:core1#sh ip int br
+Sun Feb 16 23:12:05.105 UTC
+
+Interface                      IP-Address      Status          Protocol Vrf-Name
+Loopback0                      10.4.2.1        Up              Up       default
+MgmtEth0/0/CPU0/0              10.0.0.15       Up              Up       default
+GigabitEthernet0/0/0/0         10.2.12.0       Up              Up       default
+GigabitEthernet0/0/0/1         10.12.11.1      Up              Up       default
+GigabitEthernet0/0/0/2         10.12.21.1      Up              Up       default
+GigabitEthernet0/0/0/3         10.23.11.0      Up              Up       default
+GigabitEthernet0/0/0/4         10.23.12.0      Up              Up       default
+GigabitEthernet0/0/0/5         10.23.13.0      Up              Up       default
+GigabitEthernet0/0/0/6         10.23.14.0      Up              Up       default
+```
+We can see that the Loopbacks are currnetly set to come from the `10.4.0.0/16` range
+
+From our Pillar data above, there is some detail missing.  We don't have the interface and IP information as that is held in a different section of Netbox.  
+
+Since Nebox version 3004.X we can now get Interface and IP information from Netbox and extract it as pillar data for the device.
+
+To do this, we will need to edit the `master` file and enable this feature.
+
+```bash
+cat /etc/salt/master | grep -A 8 ext_pillar
+```
+
+```
+root@salt:~# cat /etc/salt/master | grep -A 8 ext_pillar
+ext_pillar:
+  - http_json:
+      url: http://http_api:8888/
+  - netbox:
+      api_url: http://netbox:8080/api
+      api_token: 59f538de888a4347f70554efc19c649defb9c7da
+      # interfaces: true
+      # interface_ips: true
+```
+
+Using an editor of your choice, remove the `#` from the `interface` and `interface_ips` lines.
+
+You will then need to restart your salt master
+
+```bash
+pkill -9 -e -f salt-master
+```
+
+After the Master has started and settled down, refresh the pillar items and show the pillar data
+
+This is an example using `spine1`
+
+```bash
+salt spine1 pillar.items
+```
+
+```
+root@salt:~# salt spine1 pillar.items
+spine1:
+    ----------
+    devices:
+        ----------
+        core1:
+            ----------
+            role:
+                core
+        core2:
+            ----------
+            role:
+                core
+
+       ------ SNIP -------
+            
+            
+            role:
+                spine
+        spine4:
+            ----------
+            role:
+                spine
+    netbox:
+        ----------
+        airflow:
+            None
+        asset_tag:
+            None
+        cluster:
+            None
+        comments:
+        config_context:
+            ----------
+        config_template:
+            None
+        console_port_count:
+            0
+        console_server_port_count:
+            0
+        created:
+            2020-12-07T00:00:00Z
+        custom_fields:
+            ----------
+        description:
+        device_bay_count:
+            0
+        device_role:
+            ----------
+            display:
+                Spine Switch
+            id:
+                10
+            name:
+                Spine Switch
+            slug:
+                spine-switch
+            url:
+                http://netbox:8080/api/dcim/device-roles/10/
+        device_type:
+            ----------
+            display:
+                vEOS
+            id:
+                3
+            manufacturer:
+                ----------
+                display:
+                    Arista
+                id:
+                    6
+                name:
+                    Arista
+                slug:
+                    arista
+                url:
+                    http://netbox:8080/api/dcim/manufacturers/6/
+            model:
+                vEOS
+            slug:
+                veos
+            url:
+                http://netbox:8080/api/dcim/device-types/3/
+        display:
+            spine1
+        face:
+            ----------
+            label:
+                Front
+            value:
+                front
+        front_port_count:
+            0
+        id:
+            11
+        interface_count:
+            8
+        interfaces:
+            |_
+              ----------
+              _occupied:
+                  True
+              bridge:
+                  None
+              cable:
+                  ----------
+                  display:
+                      #8
+                  id:
+                      8
+                  label:
+                  url:
+                      http://netbox:8080/api/dcim/cables/8/
+              cable_end:
+                  A
+              connected_endpoints:
+                  |_
+                    ----------
+                    _occupied:
+                        True
+                    cable:
+                        8
+                    device:
+                        ----------
+                        display:
+                            core1
+                        id:
+                            3
+                        name:
+                            core1
+                        url:
+                            http://netbox:8080/api/dcim/devices/3/
+                    display:
+                        GigabitEthernet0/0/0/3
+                    id:
+                        6
+                    name:
+                        GigabitEthernet0/0/0/3
+                    url:
+                        http://netbox:8080/api/dcim/interfaces/6/
+              connected_endpoints_reachable:
+                  True
+              connected_endpoints_type:
+                  dcim.interface
+              count_fhrp_groups:
+                  0
+              count_ipaddresses:
+                  1
+              created:
+                  2025-01-30T00:00:00Z
+              custom_fields:
+                  ----------
+              description:
+              display:
+                  Ethernet1/1
+              duplex:
+                  None
+              enabled:
+                  True
+              id:
+                  456
+              ip_addresses:
+                  |_
+                    ----------
+                    address:
+                        10.23.11.1/31
+                    comments:
+                    created:
+                        2020-12-07T00:00:00Z
+                    custom_fields:
+                        ----------
+                    description:
+                    display:
+                        10.23.11.1/31
+                    dns_name:
+                    family:
+                        ----------
+                        label:
+                            IPv4
+                        value:
+                            4
+                    id:
+                        38
+                    last_updated:
+                        2020-12-07T18:13:19.907915Z
+                    nat_inside:
+                        None
+                    nat_outside:
+                    role:
+                        None
+                    status:
+                        ----------
+                        label:
+                            Active
+                        value:
+                            active
+                    tags:
+                    tenant:
+                        None
+                    url:
+                        http://netbox:8080/api/ipam/ip-addresses/38/
+                    vrf:
+                        None
+              l2vpn_termination:
+                  None
+              label:
+              lag:
+                  None
+              last_updated:
+                  2025-01-30T05:47:01.424707Z
+              link_peers:
+                  |_
+                    ----------
+                    _occupied:
+                        True
+                    cable:
+                        8
+                    device:
+                        ----------
+                        display:
+                            core1
+                        id:
+                            3
+                        name:
+
+```
+
+Notice that we now have interface information as well as the IP addresses assigned, any Tags and Roles assigned to those.
+
+In the above format, it can be quite difficult to establish how the data is nested within our Pillar, so lets look at the output as formated JSON.
+
+I recommend looking at a device with a lower connected interface count, such as a `router` or `core` device
+
+
+```bsah
+ salt router1 pillar.items --out=json
+```
+
+We can see from the output that our data is structured as:
+
+```
+Device Name
+ -- Netbox
+   -- Interfaces
+     -- ip_addresses
+```
+So we can filter further using `jq`
+
+```bash
+salt router1 pillar.items --out=json | jq  '.router1.netbox.interfaces[] | {ip_addresses}'
+```
+
+```
+root@salt:~# salt router1 pillar.items --out=json | jq  '.router1.netbox.interfaces[] | {ip_addresses}'
+{
+  "ip_addresses": [
+    {
+      "id": 5,
+      "url": "http://netbox:8080/api/ipam/ip-addresses/5/",
+      "display": "10.1.12.0/31",
+      "family": {
+        "value": 4,
+        "label": "IPv4"
+      },
+      "address": "10.1.12.0/31",
+      "vrf": null,
+      "tenant": null,
+      "status": {
+        "value": "active",
+        "label": "Active"
+      },
+      "role": null,
+      "nat_inside": null,
+      "nat_outside": [],
+      "dns_name": "",
+      "description": "",
+      "comments": "",
+      "tags": [],
+      "custom_fields": {},
+      "created": "2020-12-07T00:00:00Z",
+      "last_updated": "2020-12-07T17:13:49.249596Z"
+    }
+  ]
+}
+{
+  "ip_addresses": [
+    {
+      "id": 8,
+      "url": "http://netbox:8080/api/ipam/ip-addresses/8/",
+      "display": "10.12.12.0/31",
+      "family": {
+        "value": 4,
+        "label": "IPv4"
+      },
+      "address": "10.12.12.0/31",
+      "vrf": null,
+      "tenant": null,
+      "status": {
+        "value": "active",
+        "label": "Active"
+      },
+      "role": null,
+      "nat_inside": null,
+      "nat_outside": [],
+      "dns_name": "",
+      "description": "",
+      "comments": "",
+      "tags": [],
+      "custom_fields": {},
+      "created": "2020-12-07T00:00:00Z",
+      "last_updated": "2020-12-07T17:23:05.358440Z"
+    }
+  ]
+}
+{
+  "ip_addresses": [
+    {
+      "id": 7,
+      "url": "http://netbox:8080/api/ipam/ip-addresses/7/",
+      "display": "10.12.11.0/31",
+      "family": {
+        "value": 4,
+        "label": "IPv4"
+      },
+      "address": "10.12.11.0/31",
+      "vrf": null,
+      "tenant": null,
+      "status": {
+        "value": "active",
+        "label": "Active"
+      },
+      "role": null,
+      "nat_inside": null,
+      "nat_outside": [],
+      "dns_name": "",
+      "description": "",
+      "comments": "",
+      "tags": [],
+      "custom_fields": {},
+      "created": "2020-12-07T00:00:00Z",
+      "last_updated": "2020-12-07T17:22:49.400427Z"
+    }
+  ]
+}
+{
+  "ip_addresses": [
+    {
+      "id": 3,
+      "url": "http://netbox:8080/api/ipam/ip-addresses/3/",
+      "display": "10.0.0.15/24",
+      "family": {
+        "value": 4,
+        "label": "IPv4"
+      },
+      "address": "10.0.0.15/24",
+      "vrf": null,
+      "tenant": null,
+      "status": {
+        "value": "active",
+        "label": "Active"
+      },
+      "role": null,
+      "nat_inside": null,
+      "nat_outside": [],
+      "dns_name": "",
+      "description": "",
+      "comments": "",
+      "tags": [],
+      "custom_fields": {},
+      "created": "2020-12-07T00:00:00Z",
+      "last_updated": "2020-12-07T17:10:17.298216Z"
+    }
+  ]
+}
+{
+  "ip_addresses": [
+    {
+      "id": 2,
+      "url": "http://netbox:8080/api/ipam/ip-addresses/2/",
+      "display": "172.17.1.1/32",
+      "family": {
+        "value": 4,
+        "label": "IPv4"
+      },
+      "address": "172.17.1.1/32",
+      "vrf": null,
+      "tenant": null,
+      "status": {
+        "value": "active",
+        "label": "Active"
+      },
+      "role": {
+        "value": "loopback",
+        "label": "Loopback"
+      },
+      "nat_inside": null,
+      "nat_outside": [],
+      "dns_name": "",
+      "description": "",
+      "comments": "",
+      "tags": [],
+      "custom_fields": {},
+      "created": "2020-12-07T00:00:00Z",
+      "last_updated": "2020-12-07T22:51:13.217785Z"
+    }
+  ]
+}
+```
+
+So Under the `ip_addresses` tree we also have a `role` and `value` key that we can use to establish the IP address of an interface.
+
+We can use this information to create a jinja template that can extract this information, and apply the changes to our devices.
+
+Lets have a look at `/srv/salt/templates/update_loopback.j2`
+
+```bash
+cat /srv/salt/templates/update_loopback.j2
+```
+
+```
+{%- set interfaces = salt['pillar.get']('netbox:interfaces', []) %}
+
+{%- set device_os = grains['os'] | lower %}
+
+{% set ns = namespace(loopback_ip=None) %}
+
+{%- for iface in interfaces %}
+    {%- for ip in iface.get('ip_addresses', []) %}
+        {%- if ip.get('role') and ip['role'].get('value') == 'loopback' %}
+           {% set ns.loopback_ip = ip['address'] %}
+            {%- break %}
+        {%- endif %}
+    {%- endfor %}
+{%- endfor %}
+
+{%- set ip_netmask = salt['network.convert_cidr'](ns.loopback_ip) %}
+
+{%- if ns.loopback_ip %}
+  {%- if 'ios' in device_os %}
+interface Loopback0
+
+  ip address {{ ns.loopback_ip.split('/')[0] }} {{ ip_netmask['netmask'] }}
+  description Renumbered Loopback Address {{ opts.id }}
+  end
+
+  {%- elif 'iosxr' in device_os %}
+
+interface Loopback0
+  ipv4 address {{ ns.loopback_ip.split('/')[0] }} {{ ip_netmask['netmask'] }}
+  description Renumbered Loopback Address {{opts.id }}
+
+  {%- elif 'junos' in device_os %}
+interfaces {
+  lo0 {
+    unit 0 {
+      family inet {
+        address {{ ns.loopback_ip }};
+      }
+    }
+  }
+}
+
+  {%- elif 'eos' in device_os %}
+interface Loopback0
+  ip address {{ ns.loopback_ip }}
+  description Renumbered Loopback Address {{ opts.id }}
+
+  {%- else %}
+# DEBUG: Unsupported OS for {{ grains['id'] }}
+  {%- endif %}
+{%- else %}
+# DEBUG: No loopback IP found for {{ grains['id'] }}
+{%- endif %}
+```
+
+At first glance this may appear confusing, but lets break it down.<BR>
+The first 3 lines are simplay setting some variables.  The `loopback_ip` is being set as a namespace as Python scopes variables in the context of it's loops.
+
+```
+{%- for iface in interfaces %}
+    {%- for ip in iface.get('ip_addresses', []) %}
+        {%- if ip.get('role') and ip['role'].get('value') == 'loopback' %}
+           {% set ns.loopback_ip = ip['address'] %}
+            {%- break %}
+        {%- endif %}
+    {%- endfor %}
+{%- endfor %}
+```
+
+In the Above, we are itterating over the interfaces.  For each IP address we retrieve, we check to see if the `role.value` combination is `loopback`.  if it is, we store the IP address we have retrieved in the namespace loopback_ip
+
+The next line 
+```
+{%- set ip_netmask = salt['network.convert_cidr'](ns.loopback_ip) %}
+```
+ 
+is a salt function that splits the network address out into three values.  
+
+eg:
+
+```
+root@salt:~# salt spine1 network.convert_cidr 172.17.1.1/32
+spine1:
+    ----------
+    broadcast:
+        172.17.1.1
+    netmask:
+        255.255.255.255
+    network:
+        172.17.1.1
+```
+we only need the netmask portion, as not all of our routers use CIDR notation (IE Cisco)
+
+We then check to see if we have a value returned in our namespace, compare the OS grains and create the template for the appropriate OS.
+
+The second piece to this puzzle is the state.<BR>
+If we look at `/srv/salt/states/update_loopback.sls` 
+
+```
+update_loopback:
+  netconfig.managed:
+    - template_name: salt://templates/update_loopback.j2
+    - debug: True
+```
+We are using the `netconfig.managed` function and appluing our templates.
+
+Lets test against a device:
+
+```bash
+salt router1 state.apply states/update_loopback test=true
+```
+
+```
+root@salt:~# salt router1 state.apply states/update_loopback test=true
+router1:
+----------
+          ID: update_loopback
+    Function: netconfig.managed
+      Result: None
+     Comment: Configuration discarded.
+
+              Configuration diff:
+
+              [edit interfaces lo0 unit 0 family inet]
+                      address 10.4.1.1/32 { ... }
+              +       address 172.17.1.1/32;
+
+              Loaded config:
+
+
+
+
+
+              interfaces {
+                lo0 {
+                  unit 0 {
+                    family inet {
+                      address 172.17.1.1/32;
+                    }
+                  }
+                }
+              }
+     Started: 00:25:28.573558
+    Duration: 1336.57 ms
+     Changes:
+
+Summary for router1
+------------
+Succeeded: 1 (unchanged=1)
+Failed:    0
+------------
+Total states run:     1
+Total run time:   1.337 s
+```
+
+We can see the proposed changes.  Test against some other devices and observe the output.  
+
+
+---
+
 **End of Lab**
 
 ---
