@@ -203,10 +203,10 @@ The configuration expected has the following pattern:
 
 <pre>
 pillar_roots:
-  \<environment_name\>:
+  &lt;environment_name&gt;:
     - /path/to/some/pillar/dir
     - /path/to/another/pillar/dir
-  \<another_environment\>:
+  &lt;another_environment&gt;:
     - /path/to/specific/pillar/dir
 </pre>
 
