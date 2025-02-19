@@ -203,10 +203,10 @@ The configuration expected has the following pattern:
 
 <pre>
 pillar_roots:
-  <environment_name>:
+  \<environment_name\>:
     - /path/to/some/pillar/dir
     - /path/to/another/pillar/dir
-  <another_environment>:
+  \<another_environment\>:
     - /path/to/specific/pillar/dir
 </pre>
 
@@ -241,7 +241,7 @@ EOF
 **Hint**: These settings could also be added to the **/etc/salt/master** file
 
 ```bash
-grep -in -B 4 "pillar_roots:" /etc/salt/master
+grep -in -A 4 "pillar_roots:" /etc/salt/master
 ```
 
 Create the folder structure mentioned in the above settings, plus extra for the rest of this lab guide.
