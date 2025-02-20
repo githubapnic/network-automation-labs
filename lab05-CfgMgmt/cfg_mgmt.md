@@ -827,11 +827,9 @@ root@salt:~#
 
 As the file is located under the Salt file system, we can reference it as `salt://static/junos`:
 
-```bash
-salt router* junos.install_config salt://static/junos format=set
-```
+For example:
 
-<pre>
+```
 root@salt:~# salt router* junos.install_config salt://static/junos format=set
 router1:
     ----------
@@ -845,7 +843,7 @@ router2:
         Successfully loaded and committed!
     out:
         True
-</pre>
+```
 
 Loading the configuration, and specifying that the contents as `set`, will configure the device and commit the results. The Junos module doesn't have capabilities to execute a dry-run before deploying the configuration to check the diff. It does however provide the individual features in order to somewhat reproduce what you could do from your network device command line. This means, a multi-step procedure:
 
