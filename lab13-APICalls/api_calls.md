@@ -915,7 +915,7 @@ The file has been uploaded to our home directory (for the `admin` user):
 
 ```bash
 salt router1 net.cli 'file list /var/home/admin'
-salt router1 net.cli 'file show /var/home/apnic/junos'
+salt router1 net.cli 'file show /var/home/admin/junos'
 ```
 
 ```bash
@@ -925,13 +925,13 @@ router1:
     comment:
     out:
         ----------
-        file list /var/home/apnic:
-            /var/home/apnic:
+        file list /var/home/admin:
+            /var/home/admin:
             junos
     result:
         True
 
-root@salt:~# salt router1 net.cli 'file show /var/home/apnic/junos'
+root@salt:~# salt router1 net.cli 'file show /var/home/admin/junos'
 router1:
     ----------
     comment:
