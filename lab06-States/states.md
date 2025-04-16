@@ -1,11 +1,11 @@
 ![](images/apnic_logo.png)
 # LAB: Salt States: Advanced Configuration Management
 
-In this lab we will continue the exercise from _Lab 5_ and continue from there with the configuration management capabilities of Junos and NAPALM through the State system. As of present, Netmiko doesn't provide a State module to manage the configuration, however the function we've seen earlier, `netmiko.send_config` can be accessed through the `module.run` State function (see https://docs.saltstack.com/en/master/ref/states/all/salt.states.module.html for further details on this particular topic).
+In this lab we will continue the exercise from _Lab 5_ and continue from there with the configuration management capabilities of Junos and NAPALM through the State system. As of present, Netmiko doesn't provide a State module to manage the configuration, however the function we've seen earlier, `netmiko.send_config` can be accessed through the `module.run` State function (see https://docs.saltproject.io/en/master/ref/states/all/salt.states.module.html for further details on this particular topic).
 
 ## Part-1: The Junos State Module
 
-The documentation for this State Module is available at [https://docs.saltstack.com/en/master/ref/states/all/salt.states.junos.html](https://docs.saltstack.com/en/master/ref/states/all/salt.states.junos.html).
+The documentation for this State Module is available at [https://saltstack.github.io/docs-saltproject-io/en/latest/ref/states/all/salt.states.junos.html](https://saltstack.github.io/docs-saltproject-io/en/latest/ref/states/all/salt.states.junos.html).
 
 As the previous lab concluded with using the Junos module, the `/srv/salt/pillar/junos.sls` Pillar file should still have the following content:
 
@@ -147,7 +147,7 @@ Display diffs:
       - junos: Configure hostname
 </pre>
 
-Besides the _Configure hostname_, there's another State defined in the SLS file: _Display diffs_, which executes the `cmd.run` State function: see [https://docs.saltstack.com/en/latest/ref/states/all/salt.states.cmd.html](https://docs.saltstack.com/en/latest/ref/states/all/salt.states.cmd.html) for more details. This State runs a simple shell command, `cat /tmp/diff`, in order to display the contents of the `/tmp/diff` file, where the config diffs have been saved. This State however is executed _only_ when _Configure hostname_ is applied successfully.
+Besides the _Configure hostname_, there's another State defined in the SLS file: _Display diffs_, which executes the `cmd.run` State function: see [https://docs.saltproject.io/en/latest/ref/states/all/salt.states.cmd.html](https://docs.saltproject.io/en/latest/ref/states/all/salt.states.cmd.html) for more details. This State runs a simple shell command, `cat /tmp/diff`, in order to display the contents of the `/tmp/diff` file, where the config diffs have been saved. This State however is executed _only_ when _Configure hostname_ is applied successfully.
 
 Firstly let's rollback the changes to the previous state:
 
@@ -232,7 +232,7 @@ cat /srv/salt/static/junos.diff
 +   }
 </pre>
 
-For this, we will need a way to compare the two files. For this task, we can use the [`file.managed`](https://docs.saltstack.com/en/latest/ref/states/all/salt.states.file.html#salt.states.file.managed) State function, which is one of the most widely used for managing the contents of the `/srv/salt/states/hostname.sls`
+For this, we will need a way to compare the two files. For this task, we can use the [`file.managed`](https://docs.saltproject.io/en/latest/ref/states/all/salt.states.file.html#salt.states.file.managed) State function, which is one of the most widely used for managing the contents of the `/srv/salt/states/hostname.sls`
 
 <pre>
 Check diffs:
