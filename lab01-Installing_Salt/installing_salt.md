@@ -59,7 +59,7 @@ BUG_REPORT_URL="https://bugs.debian.org/"
 
 ## Part-2: Installing Salt
 
-The official SaltStack repository is the recommended source to be installing Salt packages from. SaltStack hosts the repository information at [https://repo.saltstack.com](https://repo.saltstack.com), with the detailed installation specifics for every
+The official SaltStack repository is the recommended source to be installing Salt packages from. SaltStack hosts the repository information at [[https://repo.saltstack.com](https://docs.saltproject.io/salt/install-guide/en/latest/index.html)]([https://repo.saltstack.com](https://docs.saltproject.io/salt/install-guide/en/latest/index.html)), with the detailed installation specifics for every
 OS distribution.
 
 As per above (from the `/etc/os-release` file), we will install Salt on a _Debian 10 (Buster)_ machine. Looking under [https://docs.saltproject.io/salt/install-guide/en/latest/topics/install-by-operating-system/index.html#install-by-operating-system-index](https://docs.saltproject.io/salt/install-guide/en/latest/topics/install-by-operating-system/index.html#install-by-operating-system-index) and selecting the _Debin 10 (Latest Onedir), we will see the installation notes for this specific distribution:
