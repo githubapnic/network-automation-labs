@@ -7,7 +7,7 @@
 
 Once installed, the Salt Minion can be started as-is. We are however able to configure a great number of options that allows us for better and more granular control.
 
-The complete list of options are documented at [https://docs.saltstack.com/en/latest/ref/configuration/minion.html](https://docs.saltstack.com/en/latest/ref/configuration/minion.html).
+The complete list of options are documented at [https://docs.saltproject.io/en/latest/ref/configuration/minion.html](https://docs.saltproject.io/en/latest/ref/configuration/minion.html).
 
 
 Perhaps the most important configuration - that you need to provide - is the location of the Salt Master. This can be provided through the `master` configuration option. As our Master will be running locally, the following configuration
@@ -99,7 +99,7 @@ In the next section, we'll take care of the counter-part configuration, on the M
 
 Once installed, the Salt Master can be started as-is. We are however able to configure a great number of options that allows us for better and more granular control.
 
-The complete list of options are documented at [https://docs.saltstack.com/en/latest/ref/configuration/master.html](https://docs.saltstack.com/en/latest/ref/configuration/master.html).
+The complete list of options are documented at [https://docs.saltproject.io/en/latest/ref/configuration/master.html](https://docs.saltproject.io/en/latest/ref/configuration/master.html).
 
 For starters, the Master is able to start correctly even with an empty configuration file. The default location of the configuration file is **/etc/salt/master**.
 
