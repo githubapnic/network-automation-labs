@@ -529,7 +529,7 @@ proxy:
   password: admin@123
 </pre>
 
-The `proxytype` should now point to `netmiko`, while the `device_type` should be `juniper_junos` as documented in [https://docs.saltstack.com/en/master/ref/proxy/all/salt.proxy.netmiko_px.html](https://docs.saltstack.com/en/master/ref/proxy/all/salt.proxy.netmiko_px.html), as this is what Netmiko expects.
+The `proxytype` should now point to `netmiko`, while the `device_type` should be `juniper_junos` as documented in [https://docs.saltproject.io/en/latest/ref/proxy/all/salt.proxy.netmiko_px.html](https://docs.saltproject.io/en/latest/ref/proxy/all/salt.proxy.netmiko_px.html), as this is what Netmiko expects.
 
 Similarly, the `device_type` will be as following:
 
