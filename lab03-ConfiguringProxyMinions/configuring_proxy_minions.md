@@ -16,7 +16,7 @@ Once done, we can proceed with the rest of the lab
 
 ## Part-1: Configuring the NAPALM Proxy Minion
 
-As with the regular Minion, Proxy Minions have a dedicated configuration file, by default `/etc/salt/proxy`. In this file we can configure the same options as for the regular Minion, plus others specific to the Proxy Minions only: [https://docs.saltstack.com/en/latest/ref/configuration/proxy.html](https://docs.saltstack.com/en/latest/ref/configuration/proxy.html).
+As with the regular Minion, Proxy Minions have a dedicated configuration file, by default `/etc/salt/proxy`. In this file we can configure the same options as for the regular Minion, plus others specific to the Proxy Minions only: [https://docs.saltproject.io/en/latest/ref/configuration/proxy.html](https://docs.saltproject.io/en/latest/ref/configuration/proxy.html).
 
 One particular option to mention, inherited from the regular Minion, is `multiprocessing` which needs to be turned off for SSH-based Proxy Minions (i.e., when the communication channel is based on SSH); this option will ensure the Proxy Minion will be in multithreading mode instead.
 
