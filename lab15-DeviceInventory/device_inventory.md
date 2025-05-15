@@ -1570,11 +1570,13 @@ ext_pillar:
   - netbox:
       api_url: http://netbox:8080/api
       api_token: 59f538de888a4347f70554efc19c649defb9c7da
-      # interfaces: true
-      # interface_ips: true
+      interfaces: true
+      interface_ips: true
 ```
 
-Your Master file should now look like the above, **IF NOT** please let the instructor know
+Your Master file should now look like the above, **IF NOT** please let the instructor know.
+
+(We have removed the comments that were in place for `interfaces` and `interface_ips`)
 
 Let's have a look at the pillar data now
 
@@ -1832,6 +1834,13 @@ Device Name
      -- ip_addresses
 ```
 So we can filter further using `jq`
+
+For this we will need to install jq.
+
+```bash
+apt update && apt install -y jq
+```
+
 
 ```bash
 salt router1 pillar.items --out=json | jq  '.router1.netbox.interfaces[] | {ip_addresses}'
