@@ -1521,6 +1521,8 @@ This shows that the list of devices is retrieved from NetBox as we wanted.
 
 ## Part-5: Using NetBox to assist with configuration management.
 
+### DO NOT PROCEED WITH THIS SECTION UNTIL ADVISED BY THE INSTRUCTOR
+
 In previous Labs we have used the state system as well as Jijna templates to perform some simple tasks.<BR>
 Lets do something a bit more interesting.  If you check the IP addresses we have assigned in Netbox, you will notice that there are some differences between our running ennvironment and our Source of Truth.  Partiularly the Loopback addresses.
 
@@ -1572,15 +1574,9 @@ ext_pillar:
       # interface_ips: true
 ```
 
-Using an editor of your choice, remove the `#` from the `interface` and `interface_ips` lines.
+Your Master file should now look like the above, **IF NOT** please let the instructor know
 
-You will then need to restart your salt master
-
-```bash
-pkill -9 -e -f salt-master
-```
-
-After the Master has started and settled down, refresh the pillar items and show the pillar data
+Let's have a look at the pillar data now
 
 This is an example using `spine1`
 
