@@ -2094,6 +2094,10 @@ is a salt function that splits the network address out into three values.
 
 eg:
 
+```bash
+salt spine1 network.convert_cidr 172.17.1.1/32
+```
+
 ```
 root@salt:~# salt spine1 network.convert_cidr 172.17.1.1/32
 spine1:
@@ -2105,6 +2109,7 @@ spine1:
     network:
         172.17.1.1
 ```
+
 we only need the netmask portion, as not all of our routers use CIDR notation (IE Cisco)
 
 We then check to see if we have a value returned in our namespace, compare the OS grains and create the template for the appropriate OS.
@@ -2112,13 +2117,17 @@ We then check to see if we have a value returned in our namespace, compare the O
 The second piece to this puzzle is the state.<BR>
 If we look at `/srv/salt/states/update_loopback.sls` 
 
+```bash
+cat srv/salt/states/update_loopback.sls
+```
+
 ```
 update_loopback:
   netconfig.managed:
     - template_name: salt://templates/update_loopback.j2
     - debug: True
 ```
-We are using the `netconfig.managed` function and appluing our templates.
+We are using the `netconfig.managed` function and applying our templates.
 
 Lets test against a device:
 
