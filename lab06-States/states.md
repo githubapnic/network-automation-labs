@@ -927,12 +927,12 @@ Total run time:   1.361 s
 For instance, the following command generates the Arista-specific configuration for an ACL filter named _filter-name_, which allows traffic from `172.17.0.0/16` to `192.168.0.0/16`:
 
 ```bash
-salt router1 capirca.get_term_config arista filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
+salt spine1 capirca.get_term_config arista filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
 ```
 
 <pre>
-root@salt:~# salt router1 capirca.get_term_config arista filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
-router1:
+root@salt:~# salt spine1 capirca.get_term_config arista filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
+spine1:
     ! $Date: 2021/01/08 $
     no ip access-list filter-name
     ip access-list filter-name
@@ -947,12 +947,12 @@ router1:
 With the exact same input, just updating the platform name to _juniper_, it would provide the configuration for a Juniper device:
 
 ```bash
-salt router1 capirca.get_term_config juniper filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
+salt spine1 capirca.get_term_config juniper filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
 ```
 
 <pre>
-root@salt:~# salt router1 capirca.get_term_config juniper filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
-router1:
+root@salt:~# salt spine1 capirca.get_term_config juniper filter-name term-name source_address=172.17.0.0/16 destination_address=192.168.0.0/24 action=accept
+spine1:
     firewall {
         family inet {
             replace:
