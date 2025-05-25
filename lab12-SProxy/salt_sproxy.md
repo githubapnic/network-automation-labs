@@ -27,6 +27,10 @@ The Roster file has the following contents:
 
 `/etc/salt/roster`
 
+```bash
+cat /etc/salt/roster
+```
+
 ```sls
 router1:
   grains:
@@ -36,7 +40,7 @@ router2:
     role: router
 core1:
   grains:
-    role: coreclear
+    role: core
 core2:
   grains:
     role: core
@@ -173,6 +177,10 @@ All of these are equally available now, when running through salt-sproxy, withou
 Running the following command, you can check what Minions are connected to this Master:
 
 ```bash
+salt-key -L
+```
+
+```
 root@salt:~# salt-key -L
 Accepted Keys:
 core1
@@ -232,7 +240,7 @@ If we'd be running commands against the routers, cores or spines, we'd get the f
 salt router1 test.ping
 ```
 
-```bash
+```
 root@salt:~# salt router1 test.ping
 No minions matched the target. No command was sent, no jid was assigned.
 ERROR: No return received
@@ -244,7 +252,7 @@ salt-sproxy router1 test.ping
 ```
 
 
-```bash
+```
 root@salt:~# salt-sproxy router1 test.ping
 router1:
     True
@@ -257,7 +265,7 @@ debug mode:
 salt-sproxy router1 test.ping -l debug
 ```
 
-```bash
+```
 root@salt:~# salt-sproxy router1 test.ping -l debug
 
 ... snip ...
@@ -273,7 +281,7 @@ That also means that the execution time depends on the way _salt-sproxy_ connect
 via NETCONF, which is over an SSH channel, and therefore slower than, for example, a platform managed through HTTP 
 request, such as Arista EOS:
 
-```bash
+```
 time salt-sproxy router1 test.ping
 time salt-sproxy spine1 test.ping
 ```
@@ -320,7 +328,7 @@ configured in `/etc/salt/master`, _salt-sproxy_ will also attempt to run command
 salt-sproxy -G role:leaf test.ping
 ```
 
-```bash
+```
 root@salt:~# salt-sproxy -G role:leaf test.ping
 leaf2:
     True
@@ -444,7 +452,7 @@ this, in order to find it. We can do so by running:
 salt-run saltutil.sync_all
 ```
 
-```bash
+```
 root@salt:~# salt-run saltutil.sync_all
 cache:
 clouds:
@@ -475,12 +483,12 @@ wheel:
 ```
 
 With these changes, let's apply a configuration change on `router1` and then watch the Salt event bus:
+
 ```bash
 salt-sproxy router1 net.load_config text='set system name-server 1.1.1.1'
 ```
 
-
-```bash
+```
 root@salt:~# salt-sproxy router1 net.load_config text='set system name-server 1.1.1.1'
 router1:
     ----------
@@ -675,13 +683,13 @@ In this, we notice:
 
 While for the event-driven methodologies there are some slight changes required, in order to make _salt-sproxy_ calls 
 through the Salt API. The only difference is that instead of starting the API using `salt-api`, we will do:
+*_In a new windows_*
 
 ```bash
 salt-sapi -l debug
 ```
 
-
-```bash
+```
 root@salt:~# salt-sapi -l debug
 
 ...
@@ -699,7 +707,7 @@ Open a separate terminal window where we'll be executing commands. For starters,
 curl http://0.0.0.0:8080
 ```
 
-```bash
+```
 root@salt:~# curl http://0.0.0.0:8080
 {"return": "Welcome", "clients": ["local", "local_async", "local_batch", "local_subset", "runner", "runner_async", "sproxy", "sproxy_async", "ssh", "wheel", "wheel_async"]}
 ```
@@ -713,7 +721,7 @@ From the previous lab, again, we have executed the following request:
 curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=local -d tgt=router1 -d fun=test.ping
 ```
 
-```bash
+```
 root@salt:~# curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=local -d tgt=router1 -d fun=test.ping
 {"return": [{"router1": true}]}
 ```
@@ -725,7 +733,7 @@ switch to using `sproxy` instead:
 curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=sproxy -d tgt=router1 -d fun=test.ping
 ```
 
-```bash
+```
 root@salt:~# curl http://0.0.0.0:8080/run -d eauth=auto -d username=test-usr -d password=test -d client=sproxy -d tgt=router1 -d fun=test.ping
 {"return": [{"router1": true}]}
 ```
@@ -740,6 +748,10 @@ The package is provided with a Proxy Module named `ssh` which can be used to mak
 external (_salt-sproxy_ is just a plugin), we need to make Salt aware of these modules:
 
 ```bash
+salt-run saltutil.sync_all
+```
+
+```
 root@salt:~# salt-run saltutil.sync_all
 cache:
 clouds:
@@ -791,7 +803,9 @@ root@srv1:~#
 In order for _salt-sproxy_ to have these credentials, let's put them into a Pillar file, referencing the `ssh` Proxy 
 Module:
 
-`/srv/salt/pillar/ssh.sls`
+```bash
+cat /srv/salt/pillar/ssh.sls`
+```
 
 ```yaml
 proxy:
@@ -835,6 +849,10 @@ srv4: {}
 With these, we can start running commands against the servers managed through SSH:
 
 ```bash
+salt-sproxy srv* test.ping
+```
+
+```
 root@salt:~# salt-sproxy srv* test.ping
 srv1:
     True
