@@ -133,13 +133,7 @@ While very helpful to ensure that napalm-logs correctly receives the syslog mess
 
 Return to the open terminal window where **napalm-logs** is running. Stop `napalm-logs` by pressing **ctrl+c**, then change the configuration file:
 
-Normally you can use **sed** to search and replace or insert the changes, but the files are shared from a mounted volume in docker and the below commands will cause an error.
-
-```bash
-sed -i 's/debug/error/' /etc/napalm/logs
-sed -i '/publisher/a \ \ \- cli:' /etc/napalm/logs
-sed  '/prometheus/i \ \ \ \ \ \ serializer\:\ json' /etc/napalm/logs
-```
+Normally you can use **sed** to search and replace or insert the changes, but the files are shared from a mounted volume in docker and will cause an error.
 
 Instead just replace the whole file with the following:
 
