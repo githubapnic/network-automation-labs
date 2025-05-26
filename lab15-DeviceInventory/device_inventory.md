@@ -1461,7 +1461,7 @@ takes the following:
 
 ```bash
 sed -i -e 's/roster:\ file/roster:\ netbox/g' /etc/salt/master
-cat /etc/salt/master`| grep roster
+cat /etc/salt/master | grep roster
 ```
 ```yaml
 roster: netbox
