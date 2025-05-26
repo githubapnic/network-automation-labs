@@ -2118,7 +2118,7 @@ The second piece to this puzzle is the state.<BR>
 If we look at `/srv/salt/states/update_loopback.sls` 
 
 ```bash
-cat srv/salt/states/update_loopback.sls
+cat /srv/salt/states/update_loopback.sls
 ```
 
 ```
