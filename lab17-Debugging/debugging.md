@@ -536,7 +536,7 @@ Update `/srv/salt/pillar/junos.sls` and re-configure `username: apnic` in order 
 
 Start the Proxy Minion for `router1` in daemon mode, to have it run in background, but logging at debug level:
 ```bash
-salt-proxy -l debug --proxyid router1
+salt-proxy -l debug --proxyid router1 -d
 ```
 ```bash
 root@salt:~# salt-proxy -l debug --proxyid router1 -d
