@@ -64,9 +64,10 @@ OS distribution.
 
 As per above (from the `/etc/os-release` file), we will install Salt on a _Debian 10 (Buster)_ machine. Looking under [https://docs.saltproject.io/salt/install-guide/en/latest/topics/install-by-operating-system/index.html#install-by-operating-system-index](https://docs.saltproject.io/salt/install-guide/en/latest/topics/install-by-operating-system/index.html#install-by-operating-system-index) and selecting the _Debin 10 (Latest Onedir), we will see the installation notes for this specific distribution:
 
-1. Import the SaltStack repository key:
+1. Update the APT repository list and Import the SaltStack repository key:
 
 ```bash
+sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list
 mkdir -p /etc/apt/keyrings
 curl -fsSL https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public | sudo tee /etc/apt/keyrings/salt-archive-keyring.pgp
 ```
