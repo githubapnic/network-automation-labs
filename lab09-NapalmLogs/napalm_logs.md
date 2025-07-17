@@ -44,7 +44,7 @@ listener:
 publisher:
   - prometheus: {}
   - zmq:
-      port: 49117
+      port: 49017
       serializer: msgpack
 </pre>
 
@@ -167,7 +167,7 @@ publisher:
       serializer: json
   - prometheus: {}
   - zmq:
-      port: 49117
+      port: 49017
       serializer: msgpack
 EOF
 ```
