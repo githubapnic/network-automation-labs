@@ -41,7 +41,7 @@ To save time, the following essential packages have been pre-installed on the co
 The most reliable way to check the OS release information is checking the `/etc/os-release` file:
 
 ```
-cat /etc/os-release   
+cat /etc/os-release
 ```
 <pre>
 root@group00:~# cat /etc/os-release
@@ -78,7 +78,13 @@ curl -fsSL https://packages.broadcom.com/artifactory/api/security/keypair/SaltPr
 curl -fsSL https://github.com/saltstack/salt-install-guide/releases/latest/download/salt.sources | sudo tee /etc/apt/sources.list.d/salt.sources
 ```
 
-3. Refresh the system package cache:
+3. Pin SaltStack and PyEZ installation packages to their compatible versions.
+
+```
+echo -e "Package: salt-*\nPin: version 3007.14\nPin-Priority: 1001" > /etc/apt/preferences.d/salt_pin; c=/etc/pip_const; s=/etc/profile.d/pip.sh; echo "junos-eznc==2.7.4" > $c; echo "export PIP_CONSTRAINT=$c" > $s; . $s
+```
+
+4. Refresh the system package cache:
 ```bash
 apt-get update
 ```
