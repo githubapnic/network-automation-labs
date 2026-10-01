@@ -149,7 +149,7 @@ apnic@router1> show ospf neighbor | display xml
 ```
 
 This command is safe for show commands, however remember that it displays the output _after_ the command has been 
-executed(***DO NOT RUN THIS COMMAND!):
+executed(***DO NOT RUN THIS COMMAND!***):
 
 
 ```
