@@ -59,7 +59,8 @@ Here are some examples to try:
 show version | display xml rpc
 ```
 
-<pre>
+<table><td><pre>
+
 apnic@router1> show version | display xml rpc
 <rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
     <rpc>
@@ -70,7 +71,9 @@ apnic@router1> show version | display xml rpc
         <banner></banner>
     </cli>
 </rpc-reply>
-</pre>
+
+</table></td></pre>
+
 
 The RPC call for `show version` is `get-software-information` (under the `<rpc>` tag). In general, the RPC call for
 _show_ commands are prefixed by `get-`, and sometimes suffixed by `-information`. Other examples:
