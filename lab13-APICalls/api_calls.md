@@ -149,11 +149,8 @@ apnic@router1> show ospf neighbor | display xml
 ```
 
 This command is safe for show commands, however remember that it displays the output _after_ the command has been 
-executed:
+executed(***DO NOT RUN THIS COMMAND!):
 
-```
-request system software delete jservices-mobile | display xml
-```
 
 ```
 apnic@router1> request system software delete jservices-mobile | display xml
