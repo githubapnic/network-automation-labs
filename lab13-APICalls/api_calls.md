@@ -52,7 +52,7 @@ requests in order to execute show commands, or request various operations on the
 upgrade, clear DHCP leases, etc.), or configuration management oriented operations.
 
 On Juniper, almost any CLI command has an RPC call equivalent. To see this, append `| display xml rpc` to your command. 
-Here are some examples to try:
+Here are some examples to try on `router1` or `router2`:<BR>
 **Don't Forget** Juniper user and pass is `admin`/`admin@123`
 <BR>
 ```
