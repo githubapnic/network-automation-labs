@@ -52,23 +52,32 @@ requests in order to execute show commands, or request various operations on the
 upgrade, clear DHCP leases, etc.), or configuration management oriented operations.
 
 On Juniper, almost any CLI command has an RPC call equivalent. To see this, append `| display xml rpc` to your command. 
-Examples:
+Here are some examples to try:
+**Don't Forget** Juniper user and pass is `admin`/`admin@123`
+<BR>
+```
+show version | display xml rpc
+```
 
-```
-apnic@router1> show version | display xml rpc
-<rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
-    <rpc>
-        <get-software-information>
-        </get-software-information>
-    </rpc>
-    <cli>
-        <banner></banner>
-    </cli>
-</rpc-reply>
-```
+
+>apnic@router1> show version | display xml rpc
+><rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
+>    <rpc>
+>        <get-software-information>
+>        </get-software-information>
+>    </rpc>
+>    <cli>
+>        <banner></banner>
+>    </cli>
+></rpc-reply>
+
 
 The RPC call for `show version` is `get-software-information` (under the `<rpc>` tag). In general, the RPC call for
 _show_ commands are prefixed by `get-`, and sometimes suffixed by `-information`. Other examples:
+
+```
+show ospf neighbor | display xml rpc
+```
 
 ```
 apnic@router1>  show ospf neighbor | display xml rpc
@@ -84,7 +93,8 @@ apnic@router1>  show ospf neighbor | display xml rpc
 
 ```
 
-There are also commands that don't have an RPC call:
+There are also commands that don't have an RPC call:<BR>
+*These will probably work - updated version of Junos is running*
 
 ```
 apnic@router1> show ntp associations | display xml rpc
