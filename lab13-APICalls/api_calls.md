@@ -58,9 +58,7 @@ Here are some examples to try:
 ```
 show version | display xml rpc
 ```
-
-<table><td><pre>
-
+```
 apnic@router1> show version | display xml rpc
 <rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
     <rpc>
@@ -72,8 +70,7 @@ apnic@router1> show version | display xml rpc
     </cli>
 </rpc-reply>
 
-</table></td></pre>
-
+```
 
 The RPC call for `show version` is `get-software-information` (under the `<rpc>` tag). In general, the RPC call for
 _show_ commands are prefixed by `get-`, and sometimes suffixed by `-information`. Other examples:
@@ -100,6 +97,10 @@ There are also commands that don't have an RPC call:<BR>
 *These will probably work - updated version of Junos is running*
 
 ```
+show ntp associations | display xml rpc
+```
+
+```
 apnic@router1> show ntp associations | display xml rpc
 <rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
     <message>
@@ -115,6 +116,10 @@ As it says under the `<message>` tag, the `show ntp associations` command doesn'
 
 The RPC calls are important, as when executed, they provide a standardised response. From the command line, we can also 
 visualise the RPC responses, by adding `| display xml` to the command:
+
+```
+show ospf neighbor | display xml
+```
 
 ```
 apnic@router1> show ospf neighbor | display xml
@@ -145,6 +150,10 @@ apnic@router1> show ospf neighbor | display xml
 
 This command is safe for show commands, however remember that it displays the output _after_ the command has been 
 executed:
+
+```
+request system software delete jservices-mobile | display xml
+```
 
 ```
 apnic@router1> request system software delete jservices-mobile | display xml
@@ -223,6 +232,7 @@ Salt. It may help if you run with `--out=raw` to see the exact Python structure.
 
 The same pattern can be used for any other commands. For example `request`-type CLI calls:
 
+
 ```
 apnic@router1> request system software delete jservices-mobile | display xml rpc
 <rpc-reply xmlns:junos="http://xml.juniper.net/junos/17.2R1/junos">
@@ -266,6 +276,10 @@ as a keyword-value argument `package-name=jservices-mobile`.
 This can be extended to any other RPC call, as complex as we need it to be. For example, if we want to see the 
 statistics for the `ge-0/0/2` interface, we'd run the `show interfaces ge-0/0/2 statistics detail` show command. Let's 
 check its RPC structure:
+
+```
+show interfaces ge-0/0/2 statistics detail | display xml rpc
+```
 
 ```
 apnic@router1> show interfaces ge-0/0/2 statistics detail | display xml rpc
@@ -336,9 +350,13 @@ simpler from this perspective, as we only need to know the CLI command. The comm
 open source library maintained by Arista. eAPI is the proprietary API used by Arista, available on all the switches, and 
 it is an HTTP-based API.
 
-To check what eAPI would return, from the command line, we only need to prefix the command with `| json`:
+To check what eAPI would return, log into `spine` and from the command line, we only need to prefix the command with `| json`:
 
-```bash
+```
+show version | json
+```
+
+```text
 spine1#show version
 Arista vEOS
 Hardware version:
@@ -550,7 +568,10 @@ For NAPALM Minions, we can similarly executed commands via Netmiko, even though 
 established over a separate channel. This is mostly useful on devices that don't provide an API, such as Cisco IOS, but 
 can also be useful on the rest, in some particular circumstances.
 
-Let's take one of the leaf switches and run a very simple command:
+Let's take one of the leaf (`leaf1`) switches and run a very simple command:
+```
+show clock
+```
 
 ```
 leaf2#show clock
